@@ -1,0 +1,145 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "winres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""winres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// PNG
+//
+
+BERSERKER               PNG                     "assets\\berserker_16x16.png"
+
+BLADESWORN              PNG                     "assets\\bladesworn_16x16.png"
+
+CATALYST                PNG                     "assets\\catalyst_16x16.png"
+
+CHRONOMANCER            PNG                     "assets\\chronomancer_16x16.png"
+
+DAREDEVIL               PNG                     "assets\\daredevil_16x16.png"
+
+DEADEYE                 PNG                     "assets\\deadeye_16x16.png"
+
+DRAGONHUNTER            PNG                     "assets\\dragonhunter_16x16.png"
+
+DRUID                   PNG                     "assets\\druid_16x16.png"
+
+ELEMENTALIST            PNG                     "assets\\elementalist_16x16.png"
+
+ENGINEER                PNG                     "assets\\engineer_16x16.png"
+
+FIREBRAND               PNG                     "assets\\firebrand_16x16.png"
+
+GUARDIAN                PNG                     "assets\\guardian_16x16.png"
+
+HARBINGER               PNG                     "assets\\harbinger_16x16.png"
+
+HERALD                  PNG                     "assets\\herald_16x16.png"
+
+HOLOSMITH               PNG                     "assets\\holosmith_16x16.png"
+
+MECHANIST               PNG                     "assets\\mechanist_16x16.png"
+
+MESMER                  PNG                     "assets\\mesmer_16x16.png"
+
+MIRAGE                  PNG                     "assets\\mirage_16x16.png"
+
+NECROMANCER             PNG                     "assets\\necromancer_16x16.png"
+
+RANGER                  PNG                     "assets\\ranger_16x16.png"
+
+REAPER                  PNG                     "assets\\reaper_16x16.png"
+
+RENEGADE                PNG                     "assets\\renegade_16x16.png"
+
+REVENANT                PNG                     "assets\\revenant_16x16.png"
+
+SCOURGE                 PNG                     "assets\\scourge_16x16.png"
+
+SCRAPPER                PNG                     "assets\\scrapper_16x16.png"
+
+SOULBEAST               PNG                     "assets\\soulbeast_16x16.png"
+
+SPECTER                 PNG                     "assets\\specter_16x16.png"
+
+SPELLBREAKER            PNG                     "assets\\spellbreaker_16x16.png"
+
+TEMPEST                 PNG                     "assets\\tempest_16x16.png"
+
+THIEF                   PNG                     "assets\\thief_16x16.png"
+
+UNTAMED                 PNG                     "assets\\untamed_16x16.png"
+
+VINDICATOR              PNG                     "assets\\vindicator_16x16.png"
+
+VIRTUOSO                PNG                     "assets\\virtuoso_16x16.png"
+
+WARRIOR                 PNG                     "assets\\warrior_16x16.png"
+
+WEAVER                  PNG                     "assets\\weaver_16x16.png"
+
+WILLBENDER              PNG                     "assets\\willbender_16x16.png"
+
+DEATH                   PNG                     "assets\\death_16x16.png"
+
+DOWNED                  PNG                     "assets\\downed_24x24.png"
+
+SQUAD                   PNG                     "assets\\squad_16x16.png"
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
