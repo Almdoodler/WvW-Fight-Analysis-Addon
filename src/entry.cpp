@@ -189,14 +189,14 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 1;
-    AddonDef.Version.Revision = 4;
-    AddonDef.Author = "Unreal";
+    AddonDef.Version.Revision = 5;
+    AddonDef.Author = "jake-greygoose";
     AddonDef.Description = "EVTC Parser for WvW logs";
     AddonDef.Load = AddonLoad;
     AddonDef.Unload = AddonUnload;
     AddonDef.Flags = EAddonFlags_None;
     AddonDef.Provider = EUpdateProvider_GitHub;
-    AddonDef.UpdateLink = "https://github.com/jake-greygoose/EVTC-Team-Counter/";
+    AddonDef.UpdateLink = "https://github.com/jake-greygoose/EVTC-Team-Counter";
     return &AddonDef;
 }
 
@@ -252,6 +252,7 @@ void AddonUnload()
 
     APIDefs->DeregisterRender(AddonRender);
     APIDefs->DeregisterRender(AddonOptions);
+    APIDefs->DeregisterKeybind("KB_MI_TOGGLEVISIBLE");
     
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon unloaded successfully.");
 }
@@ -316,12 +317,27 @@ void AddonRender()
                 {
                     ImGui::Text("Parsing logs...");
                 }
-                ImGui::PopStyleVar(2); // Added to prevent style stack underflow
-                ImGui::End(); // Added to ensure ImGui::End() is called before returning
+                ImGui::PopStyleVar(2);
+                ImGui::End();
                 return;
             }
 
-            ImGui::Text("Current Log: %s", parsedLogs[currentLogIndex].filename.c_str());
+            std::regex dateTimeRegex(R"((\d{8}-\d{6})\.zevtc)");
+            std::smatch match;
+            std::string dateTimeStr;
+            if (std::regex_search(parsedLogs[currentLogIndex].filename, match, dateTimeRegex)) {
+                dateTimeStr = match[1];
+            }
+            else {
+                dateTimeStr = "Unknown";
+            }
+            uint64_t durationMs = parsedLogs[currentLogIndex].data.combatEndTime - parsedLogs[currentLogIndex].data.combatStartTime;
+            auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::milliseconds(durationMs));
+            int minutes = duration.count() / 60;
+            int seconds = duration.count() % 60;
+            std::string displayName = dateTimeStr + " (" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s)";
+
+            ImGui::Text("Current Log: %s", displayName.c_str());
 
             const auto& currentLogData = parsedLogs[currentLogIndex].data;
             const char* team_names[] = { "Red", "Blue", "Green" };
@@ -456,7 +472,6 @@ void AddonRender()
                                 char buffer[64];
                                 snprintf(buffer, sizeof(buffer), "%d %s", count, eliteSpec.c_str());
 
-                                // Get the profession name
                                 std::string professionName;
                                 auto it = eliteSpecToProfession.find(eliteSpec);
                                 if (it != eliteSpecToProfession.end()) {
@@ -500,7 +515,6 @@ void AddonRender()
                     {
                         const auto& log = parsedLogs[i];
 
-                        // Extract date and time from filename
                         std::regex dateTimeRegex(R"((\d{8}-\d{6})\.zevtc)");
                         std::smatch match;
                         std::string dateTimeStr;
@@ -511,13 +525,10 @@ void AddonRender()
                             dateTimeStr = "Unknown";
                         }
 
-                        // Calculate duration
                         uint64_t durationMs = log.data.combatEndTime - log.data.combatStartTime;
                         auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::milliseconds(durationMs));
                         int minutes = duration.count() / 60;
                         int seconds = duration.count() % 60;
-
-                        // Combine filename and duration
                         std::string displayName = dateTimeStr + " (" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s)";
 
                         if (ImGui::RadioButton(displayName.c_str(), &currentLogIndex, i))

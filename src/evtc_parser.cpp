@@ -109,10 +109,6 @@ ParsedData parseEVTCFile(const std::string& filePath) {
                 if (it != teamIDs.end()) {
                     Agent& agent = agentsByAddress[srcAgent];
                     agent.team = it->second;
-                    APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-                        ("Player assigned to team: " + agent.name + " -> " + agent.team +
-                            ", Address: " + std::to_string(srcAgent) +
-                            ", srcInstid: " + std::to_string(srcInstid)).c_str());
                 }
             }
         }
@@ -138,15 +134,9 @@ ParsedData parseEVTCFile(const std::string& filePath) {
                 if (team != "Unknown") {
                     if (isStateChange == 4) {
                         result.teamStats[team].totalDeaths++;
-                        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-                            ("Death recorded for team: " + team + ", Player: " + player->name +
-                                ", Total deaths: " + std::to_string(result.teamStats[team].totalDeaths)).c_str());
                     }
                     else {
                         result.teamStats[team].totalDowned++;
-                        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-                            ("Downed player recorded for team: " + team + ", Player: " + player->name +
-                                ", Total downed: " + std::to_string(result.teamStats[team].totalDowned)).c_str());
                     }
                 }
             }
