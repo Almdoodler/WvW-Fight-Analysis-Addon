@@ -70,10 +70,11 @@ extern int currentLogIndex;
 // Structures
 struct Agent {
     uint64_t address;
+    uint16_t id = 0;
+    std::string name;
     std::string profession;
     std::string eliteSpec;
-    std::string name;
-    std::string team;
+    std::string team = "Unknown";
 };
 
 struct TeamStats {
@@ -85,6 +86,16 @@ struct TeamStats {
 
 struct ParsedData {
     std::unordered_map<std::string, TeamStats> teamStats;
+    uint64_t combatStartTime = 0;
+    uint64_t combatEndTime = 0;
+
+    // Method to calculate combat duration in seconds
+    double getCombatDurationSeconds() const {
+        if (combatEndTime > combatStartTime) {
+            return (combatEndTime - combatStartTime) / 1000.0;
+        }
+        return 0.0;  // Return 0 if end time is not after start time
+    }
 };
 
 struct ParsedLog {

@@ -13,6 +13,8 @@
 #include "Shared.h"
 #include "Settings.h"
 #include <zip.h>
+#include <regex>
+#include <chrono>
 #include <shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
 
@@ -187,7 +189,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 1;
-    AddonDef.Version.Revision = 2;
+    AddonDef.Version.Revision = 4;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "EVTC Parser for WvW logs";
     AddonDef.Load = AddonLoad;
@@ -496,14 +498,35 @@ void AddonRender()
                 {
                     for (int i = 0; i < parsedLogs.size(); ++i)
                     {
-                        if (ImGui::RadioButton(parsedLogs[i].filename.c_str(), &currentLogIndex, i))
+                        const auto& log = parsedLogs[i];
+
+                        // Extract date and time from filename
+                        std::regex dateTimeRegex(R"((\d{8}-\d{6})\.zevtc)");
+                        std::smatch match;
+                        std::string dateTimeStr;
+                        if (std::regex_search(log.filename, match, dateTimeRegex)) {
+                            dateTimeStr = match[1];
+                        }
+                        else {
+                            dateTimeStr = "Unknown";
+                        }
+
+                        // Calculate duration
+                        uint64_t durationMs = log.data.combatEndTime - log.data.combatStartTime;
+                        auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::milliseconds(durationMs));
+                        int minutes = duration.count() / 60;
+                        int seconds = duration.count() % 60;
+
+                        // Combine filename and duration
+                        std::string displayName = dateTimeStr + " (" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s)";
+
+                        if (ImGui::RadioButton(displayName.c_str(), &currentLogIndex, i))
                         {
-                            
+                            // Your existing selection logic here
                         }
                     }
                     ImGui::EndMenu();
                 }
-
                 ImGui::EndPopup();
             }
 
