@@ -9,3 +9,4 @@ void initMaps();
 void monitorDirectory();
 void waitForFile(const std::string& filePath);
 std::vector<char> extractZipFile(const std::string& filePath);
+std::string formatDamage(float damage);

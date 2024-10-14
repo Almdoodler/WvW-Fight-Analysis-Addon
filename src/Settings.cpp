@@ -13,6 +13,15 @@ const char* SHOW_CLASS_NAMES = "ShowClassNames";
 const char* USE_SHORT_CLASS_NAMES = "UseShortClassNames";
 const char* SHOW_CLASS_ICONS = "ShowClassIcons";
 
+// Team Stats
+const char* SHOW_TEAM_TOTAL_PLAYERS = "ShowTeamTotalPlayers";
+const char* SHOW_TEAM_DEATHS = "ShowTeamDeaths";
+const char* SHOW_TEAM_DOWNED = "ShowTeamDowned";
+const char* SHOW_TEAM_DAMAGE = "ShowTeamDamage";
+// Window Style
+const char* SHOW_SCROLL_BAR = "ShowScrollBar";
+
+
 namespace Settings
 {
 	std::mutex	Mutex;
@@ -67,7 +76,29 @@ namespace Settings
 			Settings[CUSTOM_LOG_PATH].get_to<std::string>(LogDirectoryPath);
 			strcpy_s(LogDirectoryPathC, sizeof(LogDirectoryPathC), LogDirectoryPath.c_str());
 		}
-		/* Widget */
+		/* Team Stats */
+		if (!Settings[SHOW_TEAM_TOTAL_PLAYERS].is_null())
+		{
+			Settings[SHOW_TEAM_TOTAL_PLAYERS].get_to<bool>(showTeamTotalPlayers);
+		}
+		if (!Settings[SHOW_TEAM_DEATHS].is_null())
+		{
+			Settings[SHOW_TEAM_DEATHS].get_to<bool>(showTeamDeaths);
+		}
+		if (!Settings[SHOW_TEAM_DOWNED].is_null())
+		{
+			Settings[SHOW_TEAM_DOWNED].get_to<bool>(showTeamDowned);
+		}
+		if (!Settings[SHOW_TEAM_DAMAGE].is_null())
+		{
+			Settings[SHOW_TEAM_DAMAGE].get_to<bool>(showTeamDamage);
+		}
+		/* Window Style */
+		if (!Settings[SHOW_SCROLL_BAR].is_null())
+		{
+			Settings[SHOW_SCROLL_BAR].get_to<bool>(showScrollBar);
+		}
+
 	}
 	void Save(std::filesystem::path aPath)
 	{
@@ -91,4 +122,13 @@ namespace Settings
 	bool showClassIcons = true;
 	std::string LogDirectoryPath;
 	char LogDirectoryPathC[256] = "";
+
+	// Team Stats
+	bool showTeamTotalPlayers = true;
+	bool showTeamDeaths = true;
+	bool showTeamDowned = true;
+	bool showTeamDamage = true;
+
+	// Window Style
+	bool showScrollBar = true;
 }

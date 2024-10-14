@@ -128,6 +128,8 @@ DOWNED                  PNG                     "assets\\downed_24x24.png"
 
 SQUAD                   PNG                     "assets\\squad_16x16.png"
 
+DAMAGE                  PNG                     "assets\\damage_18x18.png"
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 

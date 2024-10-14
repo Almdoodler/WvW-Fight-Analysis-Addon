@@ -57,6 +57,7 @@ extern Texture* Willbender;
 extern Texture* Death;
 extern Texture* Downed;
 extern Texture* Squad;
+extern Texture* Damage;
 
 
 // New declarations
@@ -81,7 +82,9 @@ struct TeamStats {
     int totalPlayers = 0;
     int totalDeaths = 0;
     int totalDowned = 0;
+    uint64_t totalDamage = 0;
     std::unordered_map<std::string, int> eliteSpecCounts;
+
 };
 
 struct ParsedData {

@@ -159,7 +159,31 @@ void initMaps() {
     };
 }
 
-
+std::string formatDamage(float damage) {
+    if (damage >= 1000000) {
+        if (fmod(damage, 1000000.0f) == 0.0f) {
+            return std::to_string(static_cast<int>(damage / 1000000.0f)) + "M";  // No decimal for whole numbers in millions
+        }
+        else {
+            char buffer[10];
+            snprintf(buffer, sizeof(buffer), "%.1fM", damage / 1000000.0f);  // Show decimal for non-whole numbers in millions
+            return std::string(buffer);
+        }
+    }
+    else if (damage >= 1000) {
+        if (fmod(damage, 1000.0f) == 0.0f) {
+            return std::to_string(static_cast<int>(damage / 1000.0f)) + "k";  // No decimal for whole numbers in thousands
+        }
+        else {
+            char buffer[10];
+            snprintf(buffer, sizeof(buffer), "%.1fk", damage / 1000.0f);  // Show decimal for non-whole numbers in thousands
+            return std::string(buffer);
+        }
+    }
+    else {
+        return std::to_string(static_cast<int>(damage));  // Show raw value for less than 1000
+    }
+}
 
 void monitorDirectory()
 {

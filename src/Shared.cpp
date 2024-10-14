@@ -50,6 +50,7 @@ Texture* Willbender = nullptr;
 Texture* Death = nullptr;
 Texture* Downed = nullptr;
 Texture* Squad = nullptr;
+Texture* Damage = nullptr;
 
 // New definitions
 std::atomic<bool> initialParsingComplete{ false };
@@ -70,5 +71,5 @@ std::unordered_map<std::string, std::string> eliteSpecShortNames;
 std::unordered_map<std::string, ImVec4> professionColors;
 
 // Constants
-const char* const ADDON_NAME = "Mist Insight Addon";
+const char* const ADDON_NAME = "WvW Fight Analysis Addon";
 const char* KB_TOGGLE_SHOW_WINDOW_LOG_PROOFS = "KB_TOGGLE_SHOW_WINDOW_LOG_PROOFS";

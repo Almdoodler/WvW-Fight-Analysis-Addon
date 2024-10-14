@@ -174,5 +174,6 @@
     </Image>
     <Image Include="assets\downed_24x24.png" />
     <Image Include="assets\squad_16x16.png" />
+    <Image Include="assets\damage_18x18.png" />
   </ItemGroup>
 </Project>

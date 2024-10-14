@@ -14,6 +14,15 @@ extern const char* USE_SHORT_CLASS_NAMES;
 extern const char* SHOW_CLASS_NAMES;
 extern const char* SHOW_CLASS_ICONS;
 
+// Team Stats
+extern const char* SHOW_TEAM_TOTAL_PLAYERS;
+extern const char* SHOW_TEAM_DEATHS;
+extern const char* SHOW_TEAM_DOWNED;
+extern const char* SHOW_TEAM_DAMAGE;
+
+// Window Style
+extern const char* SHOW_SCROLL_BAR;
+
 namespace Settings
 {
 	extern std::mutex	Mutex;
@@ -34,6 +43,15 @@ namespace Settings
 	extern bool showClassIcons;
 	extern std::string LogDirectoryPath;
 	extern char LogDirectoryPathC[256];
+
+	// Team Stats
+	extern bool showTeamTotalPlayers;
+	extern bool showTeamDeaths;
+	extern bool showTeamDowned;
+	extern bool showTeamDamage;
+
+	// Window Style
+	extern bool showScrollBar;
 }
 
 #endif

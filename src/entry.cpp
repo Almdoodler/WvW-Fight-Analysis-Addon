@@ -189,8 +189,8 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 1;
-    AddonDef.Version.Revision = 5;
-    AddonDef.Author = "jake-greygoose";
+    AddonDef.Version.Revision = 6;
+    AddonDef.Author = "Unreal";
     AddonDef.Description = "EVTC Parser for WvW logs";
     AddonDef.Load = AddonLoad;
     AddonDef.Unload = AddonUnload;
@@ -211,8 +211,8 @@ void AddonLoad(AddonAPI* aApi)
     APIDefs->RegisterRender(ERenderType_OptionsRender, AddonOptions);
     APIDefs->RegisterRender(ERenderType_Render, AddonRender);
 
-    AddonPath = APIDefs->GetAddonDirectory("MistInsight");
-    SettingsPath = APIDefs->GetAddonDirectory("MistInsight/settings.json");
+    AddonPath = APIDefs->GetAddonDirectory("WvWFightAnalysis");
+    SettingsPath = APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json");
     std::filesystem::create_directory(AddonPath);
     Settings::Load(SettingsPath);
 
@@ -300,7 +300,7 @@ void AddonRender()
 
     if (Settings::IsAddonWindowEnabled)
     {
-        if (ImGui::Begin("Mist Insights", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse))
+        if (ImGui::Begin("WvW Fight Analysis", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse))
         {
 
             ImGuiStyle& style = ImGui::GetStyle();
@@ -337,7 +337,7 @@ void AddonRender()
             int seconds = duration.count() % 60;
             std::string displayName = dateTimeStr + " (" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s)";
 
-            ImGui::Text("Current Log: %s", displayName.c_str());
+            ImGui::Text("%s", displayName.c_str());
 
             const auto& currentLogData = parsedLogs[currentLogIndex].data;
             const char* team_names[] = { "Red", "Blue", "Green" };
@@ -357,11 +357,19 @@ void AddonRender()
                     teamHasData[i] = true;
                 }
             }
-
+            ImGuiTableFlags table_flags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoPadOuterX;
+            if (Settings::showScrollBar)
+            {
+                table_flags |= ImGuiTableFlags_ScrollY;
+            }
+            else
+            {
+                table_flags |= ImGuiTableFlags_NoKeepColumnsVisible;
+            }
             if (teamsWithData == 0) {
                 ImGui::Text("No team data available meeting the player threshold.");
             }
-            else if (ImGui::BeginTable("TeamTable", teamsWithData, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ScrollY))
+            else if (ImGui::BeginTable("TeamTable", teamsWithData, table_flags))
             {
                 ImGui::TableSetupScrollFreeze(0, 1);
 
@@ -395,64 +403,94 @@ void AddonRender()
                         {
                             const auto& teamData = teamIt->second;
                             ImGui::Spacing();
-                            if (Settings::showClassIcons)
-                            {
-                                if (Squad && Squad->Resource)
+                            if (Settings::showTeamTotalPlayers) {
+                                if (Settings::showClassIcons)
                                 {
-                                    ImGui::Image(Squad->Resource, ImVec2(sz, sz));
-                                    ImGui::SameLine(0, 5);
+                                    if (Squad && Squad->Resource)
+                                    {
+                                        ImGui::Image(Squad->Resource, ImVec2(sz, sz));
+                                        ImGui::SameLine(0, 5);
+                                    }
+                                    else {
+                                        Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
+                                    }
                                 }
-                                else {
-                                    Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
-                                }
-                            }
-                            if (Settings::showClassNames)
-                            {
-                                ImGui::Text("Total: %d", teamData.totalPlayers);
-                            }
-                            else
-                            {
-                                ImGui::Text("%d", teamData.totalPlayers);
-                            }
-                            if (Settings::showClassIcons) 
-                            {
-                                if (Death && Death->Resource)
+                                if (Settings::showClassNames)
                                 {
-                                    ImGui::Image(Death->Resource, ImVec2(sz, sz));
-                                    ImGui::SameLine(0, 5);
+                                    ImGui::Text("Total: %d", teamData.totalPlayers);
                                 }
-                                else 
+                                else
                                 {
-                                    Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
+                                    ImGui::Text("%d", teamData.totalPlayers);
                                 }
                             }
-                            if (Settings::showClassNames)
-                            {
-                                ImGui::Text("Deaths: %d", teamData.totalDeaths);
-                            }
-                            else
-                            {
-                                ImGui::Text("%d", teamData.totalDeaths);
-                            }
-                            if (Settings::showClassIcons)
-                            {
-                                if (Downed && Downed->Resource)
+                            if (Settings::showTeamDeaths) {
+                                if (Settings::showClassIcons)
                                 {
-                                    ImGui::Image(Downed->Resource, ImVec2(sz, sz));
-                                    ImGui::SameLine(0, 5);
+                                    if (Death && Death->Resource)
+                                    {
+                                        ImGui::Image(Death->Resource, ImVec2(sz, sz));
+                                        ImGui::SameLine(0, 5);
+                                    }
+                                    else
+                                    {
+                                        Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
+                                    }
                                 }
-                                else 
+                                if (Settings::showClassNames)
                                 {
-                                    Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
+                                    ImGui::Text("Deaths: %d", teamData.totalDeaths);
+                                }
+                                else
+                                {
+                                    ImGui::Text("%d", teamData.totalDeaths);
                                 }
                             }
-                            if (Settings::showClassNames)
-                            {
-                                ImGui::Text("Downed: %d", teamData.totalDowned);
+                            if (Settings::showTeamDowned) {
+                                if (Settings::showClassIcons)
+                                {
+                                    if (Downed && Downed->Resource)
+                                    {
+                                        ImGui::Image(Downed->Resource, ImVec2(sz, sz));
+                                        ImGui::SameLine(0, 5);
+                                    }
+                                    else
+                                    {
+                                        Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
+                                    }
+                                }
+                                if (Settings::showClassNames)
+                                {
+                                    ImGui::Text("Downed: %d", teamData.totalDowned);
+                                }
+                                else
+                                {
+                                    ImGui::Text("%d", teamData.totalDowned);
+                                }
                             }
-                            else
-                            {
-                                ImGui::Text("%d", teamData.totalDowned);
+                            if (Settings::showTeamDamage) {
+                                if (Settings::showClassIcons)
+                                {
+                                    if (Damage && Damage->Resource)
+                                    {
+                                        ImGui::Image(Damage->Resource, ImVec2(sz, sz));
+                                        ImGui::SameLine(0, 5);
+                                    }
+                                    else
+                                    {
+                                        Damage = APIDefs->GetTextureOrCreateFromResource("DAMAGE_ICON", DAMAGE, hSelf);
+                                    }
+                                }
+                                std::string formattedDamage = formatDamage(teamData.totalDamage);
+                                if (Settings::showClassNames)
+                                {
+                                    
+                                    ImGui::Text("Damage: %s", formattedDamage.c_str());
+                                }
+                                else
+                                {
+                                    ImGui::Text("%s", formattedDamage.c_str());
+                                }
                             }
                             ImGui::Separator();
 
@@ -538,6 +576,53 @@ void AddonRender()
                     }
                     ImGui::EndMenu();
                 }
+                if (ImGui::BeginMenu("Display")) {
+                    if (ImGui::Checkbox("Short Class Names", &Settings::useShortClassNames))
+                    {
+                        Settings::Settings[USE_SHORT_CLASS_NAMES] = Settings::useShortClassNames;
+                        Settings::Save(SettingsPath);
+                    }
+                    if (ImGui::Checkbox("Show Class Names", &Settings::showClassNames))
+                    {
+                        Settings::Settings[SHOW_CLASS_NAMES] = Settings::showClassNames;
+                        Settings::Save(SettingsPath);
+                    }
+                    if (ImGui::Checkbox("Show Class Icons", &Settings::showClassIcons))
+                    {
+                        Settings::Settings[SHOW_CLASS_ICONS] = Settings::showClassIcons;
+                        Settings::Save(SettingsPath);
+                    }
+                    ImGui::Separator();
+                    if (ImGui::Checkbox("Team Count", &Settings::showTeamTotalPlayers))
+                    {
+                        Settings::Settings[SHOW_TEAM_TOTAL_PLAYERS] = Settings::showTeamTotalPlayers;
+                        Settings::Save(SettingsPath);
+                    }
+                    if (ImGui::Checkbox("Team Deaths", &Settings::showTeamDeaths))
+                    {
+                        Settings::Settings[SHOW_TEAM_DEATHS] = Settings::showTeamDeaths;
+                        Settings::Save(SettingsPath);
+                    }
+                    if (ImGui::Checkbox("Team Downed", &Settings::showTeamDowned))
+                    {
+                        Settings::Settings[SHOW_TEAM_DOWNED] = Settings::showTeamDowned;
+                        Settings::Save(SettingsPath);
+                    }
+                    if (ImGui::Checkbox("Team Damage", &Settings::showTeamDamage))
+                    {
+                        Settings::Settings[SHOW_TEAM_DAMAGE] = Settings::showTeamDamage;
+                        Settings::Save(SettingsPath);
+                    }
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Style")) {
+                    if (ImGui::Checkbox("Show Scroll Bar", &Settings::showScrollBar))
+                    {
+                        Settings::Settings[SHOW_SCROLL_BAR] = Settings::showScrollBar;
+                        Settings::Save(SettingsPath);
+                    }
+                    ImGui::EndMenu();
+                }
                 ImGui::EndPopup();
             }
 
@@ -553,13 +638,13 @@ void AddonRender()
 
 void AddonOptions()
 {
-    ImGui::Text("Mist Insight Settings");
-    if (ImGui::Checkbox("Enabled##MistInsight", &Settings::IsAddonWindowEnabled))
+    ImGui::Text("WvW Fight Analysis Settings");
+    if (ImGui::Checkbox("Enabled##WvWFightAnalysis", &Settings::IsAddonWindowEnabled))
     {
         Settings::Settings[IS_ADDON_WINDOW_VISIBLE] = Settings::IsAddonWindowEnabled;
         Settings::Save(SettingsPath);
     }
-    if (ImGui::Checkbox("Visible In Combat##MistInsight", &Settings::showWindowInCombat))
+    if (ImGui::Checkbox("Visible In Combat##WvWFightAnalysis", &Settings::showWindowInCombat))
     {
         Settings::Settings[IS_WINDOW_VISIBLE_IN_COMBAT] = Settings::showWindowInCombat;
         Settings::Save(SettingsPath);
@@ -570,23 +655,23 @@ void AddonOptions()
         ImGui::Text("Untick to hide in combat.");
         ImGui::EndTooltip();
     }
-    if (ImGui::Checkbox("Show Class Names##MistInsight", &Settings::showClassNames))
+    if (ImGui::Checkbox("Show Class Names##WvWFightAnalysis", &Settings::showClassNames))
     {
         Settings::Settings[SHOW_CLASS_NAMES] = Settings::showClassNames;
         Settings::Save(SettingsPath);
     }
-    if (ImGui::Checkbox("Use Short Class Names##MistInsight", &Settings::useShortClassNames))
+    if (ImGui::Checkbox("Use Short Class Names##WvWFightAnalysis", &Settings::useShortClassNames))
     {
         Settings::Settings[USE_SHORT_CLASS_NAMES] = Settings::useShortClassNames;
         Settings::Save(SettingsPath);
     }
-    if (ImGui::Checkbox("Show Class Icons##MistInsight", &Settings::showClassIcons))
+    if (ImGui::Checkbox("Show Class Icons##WvWFightAnalysis", &Settings::showClassIcons))
     {
         Settings::Settings[SHOW_CLASS_ICONS] = Settings::showClassIcons;
         Settings::Save(SettingsPath);
     }
     ImGui::Text("Team Player Threshold: ");
-    if (ImGui::InputInt("Team Player Threshold##MistInsight", &Settings::teamPlayerThreshold))
+    if (ImGui::InputInt("Team Player Threshold##WvWFightAnalysis", &Settings::teamPlayerThreshold))
     {
         Settings::Settings[TEAM_PLAYER_THRESHOLD] = Settings::teamPlayerThreshold;
         Settings::Save(SettingsPath);
@@ -598,7 +683,7 @@ void AddonOptions()
         ImGui::EndTooltip();
     }
     ImGui::Text("Custom Log Path: ");
-    if (ImGui::InputText("Log Path##MistInsight", Settings::LogDirectoryPathC, sizeof(Settings::LogDirectoryPathC)))
+    if (ImGui::InputText("Log Path##WvWFightAnalysis", Settings::LogDirectoryPathC, sizeof(Settings::LogDirectoryPathC)))
     {
         Settings::LogDirectoryPath = Settings::LogDirectoryPathC;
         Settings::Settings[CUSTOM_LOG_PATH] = Settings::LogDirectoryPath;

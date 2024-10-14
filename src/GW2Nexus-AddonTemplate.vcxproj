@@ -218,6 +218,7 @@
     <Image Include="assets\bladesworn_16x16.png" />
     <Image Include="assets\catalyst_16x16.png" />
     <Image Include="assets\chronomancer_16x16.png" />
+    <Image Include="assets\damage_18x18.png" />
     <Image Include="assets\daredevil_16x16.png" />
     <Image Include="assets\deadeye_16x16.png" />
     <Image Include="assets\death_16x16.png" />

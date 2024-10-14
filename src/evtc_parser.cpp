@@ -1,9 +1,9 @@
+#define NOMINMAX
 #include "evtc_parser.h"
 #include "Settings.h"
 #include "Shared.h"
 #include "utils.h"
 #include <zip.h>
-#include <algorithm>
 #include <thread>
 #include <chrono>
 #include <filesystem>
@@ -12,7 +12,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <cstring>
-
+#include <algorithm>
+#include <vector>
 
 ParsedData parseEVTCFile(const std::string& filePath) {
     ParsedData result;
@@ -66,12 +67,23 @@ ParsedData parseEVTCFile(const std::string& filePath) {
 
     std::unordered_map<uint16_t, Agent*> playersBySrcInstid;
 
-    // First pass: Assign teams to players and map srcInstid
+    // Initialize times
+    uint64_t logStartTime = UINT64_MAX;
+    uint64_t logEndTime = 0;
+    result.combatStartTime = UINT64_MAX;
+    result.combatEndTime = 0;
+    uint64_t earliestTime = UINT64_MAX;
+    uint64_t latestTime = 0;
+
+    // First pass: Parse events and collect times
     for (size_t i = 0; i < eventCount; ++i) {
         size_t eventOffset = offset + (i * eventSize);
         if (eventOffset + eventSize > bytes.size()) {
             break;
         }
+
+        uint64_t time;
+        std::memcpy(&time, bytes.data() + eventOffset, sizeof(uint64_t));
 
         uint8_t isStateChange;
         std::memcpy(&isStateChange, bytes.data() + eventOffset + 56, sizeof(uint8_t));
@@ -81,11 +93,20 @@ ParsedData parseEVTCFile(const std::string& filePath) {
         std::memcpy(&srcAgent, bytes.data() + eventOffset + 8, sizeof(uint64_t));
         std::memcpy(&srcInstid, bytes.data() + eventOffset + 40, sizeof(uint16_t));
 
-        uint64_t time;
-        std::memcpy(&time, bytes.data() + eventOffset, sizeof(uint64_t));
+        earliestTime = std::min(earliestTime, time);
+        latestTime = std::max(latestTime, time);
 
+        // LogStart & LogEnd events
+        if (isStateChange == 9) {  // LogStart
+            logStartTime = time;
+        }
+        else if (isStateChange == 10) {  // LogEnd
+            logEndTime = time;
+        }
+
+        // EnterCombat & ExitCombat events
         if (isStateChange == 1) {  // EnterCombat
-            if (result.combatStartTime == 0 || time < result.combatStartTime) {
+            if (time < result.combatStartTime) {
                 result.combatStartTime = time;
             }
         }
@@ -112,6 +133,13 @@ ParsedData parseEVTCFile(const std::string& filePath) {
                 }
             }
         }
+    }
+
+    if (result.combatStartTime == UINT64_MAX) {
+        result.combatStartTime = (logStartTime != UINT64_MAX) ? logStartTime : earliestTime;
+    }
+    if (result.combatEndTime == 0) {
+        result.combatEndTime = (logEndTime != 0) ? logEndTime : latestTime;
     }
 
     // Second pass: Count deaths and downs
@@ -143,6 +171,55 @@ ParsedData parseEVTCFile(const std::string& filePath) {
         }
     }
 
+    // Third pass: Process damage events
+// Third pass: Process damage events
+    for (size_t i = 0; i < eventCount; ++i) {
+        size_t eventOffset = offset + (i * eventSize);
+        if (eventOffset + eventSize > bytes.size()) {
+            break;
+        }
+
+        uint8_t isStateChange;
+        std::memcpy(&isStateChange, bytes.data() + eventOffset + 56, sizeof(uint8_t));
+
+        // Normal events
+        if (isStateChange == 0) {
+            uint8_t isActivation;
+            uint8_t isBuff;
+            uint8_t resultCode;
+            std::memcpy(&isActivation, bytes.data() + eventOffset + 57, sizeof(uint8_t));
+            std::memcpy(&isBuff, bytes.data() + eventOffset + 58, sizeof(uint8_t));
+            std::memcpy(&resultCode, bytes.data() + eventOffset + 59, sizeof(uint8_t));
+
+            // Damage events
+            if (isActivation == 0) {
+                if (resultCode == 1 || resultCode == 2 || resultCode == 3) {  // Normal, Critical, Glance
+                    uint16_t srcInstid;
+                    uint16_t dstInstid;
+                    std::memcpy(&srcInstid, bytes.data() + eventOffset + 40, sizeof(uint16_t));
+                    std::memcpy(&dstInstid, bytes.data() + eventOffset + 42, sizeof(uint16_t));
+
+                    int32_t damageValue;
+                    std::memcpy(&damageValue, bytes.data() + eventOffset + 16, sizeof(int32_t));
+
+                    if (damageValue != 0) {
+                        auto srcIt = playersBySrcInstid.find(srcInstid);
+                        auto dstIt = playersBySrcInstid.find(dstInstid);
+                        if (srcIt != playersBySrcInstid.end() && dstIt != playersBySrcInstid.end()) {
+                            // Both source and destination are players
+                            Agent* agent = srcIt->second;
+                            const std::string& team = agent->team;
+                            if (team != "Unknown") {
+                                result.teamStats[team].totalDamage += damageValue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
     // Collect statistics
     for (const auto& [srcInstid, player] : playersBySrcInstid) {
         if (player->team != "Unknown") {
@@ -156,10 +233,22 @@ ParsedData parseEVTCFile(const std::string& filePath) {
         }
     }
 
-    APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Parsed EVTC file. Found " + std::to_string(playersBySrcInstid.size()) + " unique players").c_str());
+    // Log the totals
+    for (const auto& [teamName, stats] : result.teamStats) {
+        std::string message = "Team: " + teamName +
+            ", Total Damage: " + std::to_string(stats.totalDamage) +
+            ", Total Players: " + std::to_string(stats.totalPlayers) +
+            ", Total Downs: " + std::to_string(stats.totalDowned) +
+            ", Total Deaths: " + std::to_string(stats.totalDeaths);
+        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, message.c_str());
+    }
+
+    APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
+        ("Parsed EVTC file. Found " + std::to_string(playersBySrcInstid.size()) + " unique players").c_str());
 
     return result;
 }
+
 
 
 void parseInitialLogs() {
