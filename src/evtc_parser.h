@@ -15,6 +15,7 @@ void parseInitialLogs();
 std::vector<char> extractZipFile(const std::string& filePath);
 void processNewEVTCFile(const std::string& filePath);
 
+
 // Extern declarations for global variables
 
 extern int currentLogIndex;

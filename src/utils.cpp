@@ -9,6 +9,9 @@
 #include <shlobj.h>
 #include <sstream>
 #include <filesystem>
+#include <cmath>
+#include <string>
+#include <cstdio>
 
 const char* ADDON_WINDOW_VISIBLE = "KB_MISTINSIGHT_WINDOW_VISIBLE";
 
@@ -159,31 +162,40 @@ void initMaps() {
     };
 }
 
-std::string formatDamage(float damage) {
-    if (damage >= 1000000) {
-        if (fmod(damage, 1000000.0f) == 0.0f) {
-            return std::to_string(static_cast<int>(damage / 1000000.0f)) + "M";  // No decimal for whole numbers in millions
+std::string formatDamage(double damage) {
+    if (damage >= 1'000'000.0) {
+        if (std::fmod(damage, 1'000'000.0) == 0.0) {
+            return std::to_string(static_cast<int>(damage / 1'000'000.0)) + "M";
         }
         else {
             char buffer[10];
-            snprintf(buffer, sizeof(buffer), "%.1fM", damage / 1000000.0f);  // Show decimal for non-whole numbers in millions
+            std::snprintf(buffer, sizeof(buffer), "%.1fM", damage / 1'000'000.0);
+            if (buffer[strlen(buffer) - 3] == '.' && buffer[strlen(buffer) - 2] == '0') {
+                buffer[strlen(buffer) - 3] = 'M';  // Overwrite '.' with 'M'
+                buffer[strlen(buffer) - 2] = '\0'; // Terminate string after 'M'
+            }
             return std::string(buffer);
         }
     }
-    else if (damage >= 1000) {
-        if (fmod(damage, 1000.0f) == 0.0f) {
-            return std::to_string(static_cast<int>(damage / 1000.0f)) + "k";  // No decimal for whole numbers in thousands
+    else if (damage >= 1'000.0) {
+        if (std::fmod(damage, 1'000.0) == 0.0) {
+            return std::to_string(static_cast<int>(damage / 1'000.0)) + "k";
         }
         else {
             char buffer[10];
-            snprintf(buffer, sizeof(buffer), "%.1fk", damage / 1000.0f);  // Show decimal for non-whole numbers in thousands
+            std::snprintf(buffer, sizeof(buffer), "%.1fk", damage / 1'000.0);
+            if (buffer[strlen(buffer) - 3] == '.' && buffer[strlen(buffer) - 2] == '0') {
+                buffer[strlen(buffer) - 3] = 'k';  // Overwrite '.' with 'k'
+                buffer[strlen(buffer) - 2] = '\0'; // Terminate string after 'k'
+            }
             return std::string(buffer);
         }
     }
     else {
-        return std::to_string(static_cast<int>(damage));  // Show raw value for less than 1000
+        return std::to_string(static_cast<int>(damage));
     }
 }
+
 
 void monitorDirectory()
 {

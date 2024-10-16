@@ -71,6 +71,8 @@ extern int currentLogIndex;
 // Structures
 struct Agent {
     uint64_t address;
+    uint32_t professionId;
+    int32_t eliteSpecId;
     uint16_t id = 0;
     std::string name;
     std::string profession;
@@ -78,13 +80,17 @@ struct Agent {
     std::string team = "Unknown";
 };
 
-struct TeamStats {
-    int totalPlayers = 0;
-    int totalDeaths = 0;
-    int totalDowned = 0;
+struct SpecStats {
+    int count = 0;
     uint64_t totalDamage = 0;
-    std::unordered_map<std::string, int> eliteSpecCounts;
+};
 
+struct TeamStats {
+    uint32_t totalPlayers = 0;
+    uint32_t totalDeaths = 0;
+    uint32_t totalDowned = 0;
+    uint64_t totalDamage = 0;
+    std::unordered_map<std::string, SpecStats> eliteSpecStats;
 };
 
 struct ParsedData {
@@ -107,6 +113,102 @@ struct ParsedLog {
 };
 
 extern std::deque<ParsedLog> parsedLogs;
+
+// Combat Event Structure
+#pragma pack(push, 1)  // Disable padding
+struct CombatEvent {
+    uint64_t time;
+    uint64_t srcAgent;
+    uint64_t dstAgent;
+    int32_t value;
+    int32_t buffDmg;
+    uint32_t overstackValue;
+    uint32_t skillId;
+    uint16_t srcInstid;
+    uint16_t dstInstid;
+    uint16_t srcMasterInstid;
+    uint16_t dstMasterInstid;
+    uint8_t iff;
+    uint8_t buff;
+    uint8_t result;
+    uint8_t isActivation;
+    uint8_t isBuffRemove;
+    uint8_t isNinety;
+    uint8_t isFifty;
+    uint8_t isMoving;
+    uint8_t isStateChange;
+    uint8_t isFlanking;
+    uint8_t isShields;
+    uint8_t isOffCycle;
+    uint32_t pad;
+};
+#pragma pack(pop)
+
+
+// enum
+
+enum class StateChange : uint8_t {
+    None = 0,
+    EnterCombat = 1,
+    ExitCombat = 2,
+    ChangeUp = 3,
+    ChangeDead = 4,
+    ChangeDown = 5,
+    Spawn = 6,
+    Despawn = 7,
+    HealthUpdate = 8,
+    LogStart = 9,
+    LogEnd = 10,
+    WeaponSwap = 11,
+    MaxHealthUpdate = 12,
+    PointOfView = 13,
+    Language = 14,
+    GWBuild = 15,
+    ShardId = 16,
+    Reward = 17,
+    BuffInitial = 18,
+    Position = 19,
+    Velocity = 20,
+    Facing = 21,
+    TeamChange = 22,
+    AttackTarget = 23,
+    Targetable = 24,
+    MapID = 29,
+    ReplInfo = 25,
+    StackActive = 26,
+    StackReset = 27,
+    Guild = 28,
+    Error = 0xFF
+};
+
+enum class ResultCode : uint8_t {
+    Normal = 0,
+    Critical = 1,
+    Glance = 2,
+    Block = 3,
+    Evade = 4,
+    Interrupt = 5,
+    Absorb = 6,
+    Blind = 7,
+    KillingBlow = 8,
+    Downed = 9
+};
+
+enum class Activation : uint8_t {
+    None = 0,
+    Normal = 1,
+    Quickness = 2,
+    CancelFire = 3,
+    CancelCancel = 4,
+    Reset = 5
+};
+
+enum class BuffRemove : uint8_t {
+    None = 0,
+    All = 1,
+    Single = 2,
+    Manual = 3
+};
 
 // Maps
 extern std::unordered_map<int, std::string> professions;

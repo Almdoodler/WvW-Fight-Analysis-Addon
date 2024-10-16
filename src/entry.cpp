@@ -81,7 +81,8 @@ Texture** getTextureInfo(const std::string& eliteSpec, int* outResourceId) {
 }
 
 
-void DrawBar(const float frac, const char* text, const ImVec4& color, const std::string& eliteSpec)
+// Updated DrawBar function
+void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, const std::string& eliteSpec, bool showDamage)
 {
     ImVec2 cursor_pos = ImGui::GetCursorPos();
     ImVec2 screen_pos = ImGui::GetCursorScreenPos();
@@ -98,13 +99,10 @@ void DrawBar(const float frac, const char* text, const ImVec4& color, const std:
     // Set cursor position for text
     ImGui::SetCursorPos(ImVec2(cursor_pos.x + 5, cursor_pos.y + 2)); // Add some padding
 
-    // Draw count
-    int count;
-    sscanf(text, "%d", &count);
     ImGui::Text("%d", count);
+    // Draw count and optionally damage
 
     // Calculate position for icon
-    float count_width = ImGui::GetItemRectSize().x;
     ImGui::SameLine(0, 5); // Add some space between count and icon
 
     // Draw icon
@@ -142,7 +140,7 @@ void DrawBar(const float frac, const char* text, const ImVec4& color, const std:
     // Draw elite spec name
     if (Settings::showClassNames)
     {
-        if (Settings::useShortClassNames) 
+        if (Settings::useShortClassNames)
         {
             std::string shortClassName;
             auto clnIt = eliteSpecShortNames.find(eliteSpec);
@@ -150,19 +148,26 @@ void DrawBar(const float frac, const char* text, const ImVec4& color, const std:
                 shortClassName = clnIt->second;
                 ImGui::Text("%s", shortClassName.c_str());
             }
-            else 
+            else
             {
                 shortClassName = "Unk";
+                ImGui::Text("%s", shortClassName.c_str());
             }
         }
-        else 
+        else
         {
             ImGui::Text("%s", eliteSpec.c_str());
-        }      
+        }
     }
-    else 
+    else
     {
-        ImGui::Text(" ", eliteSpec.c_str());
+        ImGui::Text(" ");
+    }
+    if (showDamage) {
+        ImGui::SameLine(0, 5); // Add some space between icon and name
+        // Format the damage using your function
+        std::string formattedDamage = formatDamage(static_cast<double>(totalDamage));
+        ImGui::Text("(%s)", formattedDamage.c_str());
     }
 
     // Move cursor to next line for the next bar
@@ -300,6 +305,7 @@ void AddonRender()
 
     if (Settings::IsAddonWindowEnabled)
     {
+        ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
         if (ImGui::Begin("WvW Fight Analysis", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse))
         {
 
@@ -494,22 +500,49 @@ void AddonRender()
                             }
                             ImGui::Separator();
 
-                            // Sort classes by count in descending order
-                            std::vector<std::pair<std::string, int>> sortedClasses(teamData.eliteSpecCounts.begin(), teamData.eliteSpecCounts.end());
-                            std::sort(sortedClasses.begin(), sortedClasses.end(),
-                                [](const auto& a, const auto& b) { return a.second > b.second; });
+                            bool sortByDamage = Settings::sortSpecDamage;
+                            bool showDamage = Settings::showSpecDamage;
 
-                            int maxCount = sortedClasses.empty() ? 0 : sortedClasses[0].second;
+                            // Sort classes by count or damage in descending order
+                            std::vector<std::pair<std::string, SpecStats>> sortedClasses;
+
+                            for (const auto& [eliteSpec, stats] : teamData.eliteSpecStats) {
+                                sortedClasses.emplace_back(eliteSpec, stats);
+                            }
+
+                            std::sort(sortedClasses.begin(), sortedClasses.end(),
+                                [sortByDamage](const std::pair<std::string, SpecStats>& a, const std::pair<std::string, SpecStats>& b) {
+                                    if (sortByDamage) {
+                                        return a.second.totalDamage > b.second.totalDamage;
+                                    }
+                                    else {
+                                        return a.second.count > b.second.count;
+                                    }
+                                });
+
+                            // Get the maximum value for scaling the bars
+                            uint64_t maxValue = 0;
+                            if (!sortedClasses.empty()) {
+                                if (sortByDamage) {
+                                    maxValue = sortedClasses[0].second.totalDamage;
+                                }
+                                else {
+                                    maxValue = sortedClasses[0].second.count;
+                                }
+                            }
 
                             for (const auto& specPair : sortedClasses)
                             {
                                 const std::string& eliteSpec = specPair.first;
-                                int count = specPair.second;
-                                float frac = (maxCount > 0) ? static_cast<float>(count) / maxCount : 0.0f;
+                                const SpecStats& stats = specPair.second;
+                                int count = stats.count;
+                                uint64_t totalDamage = stats.totalDamage;
 
-                                char buffer[64];
-                                snprintf(buffer, sizeof(buffer), "%d %s", count, eliteSpec.c_str());
+                                // Determine the value and fraction based on the sorting criterion
+                                uint64_t value = sortByDamage ? totalDamage : count;
+                                float frac = (maxValue > 0) ? static_cast<float>(value) / maxValue : 0.0f;
 
+                                // Get the profession name
                                 std::string professionName;
                                 auto it = eliteSpecToProfession.find(eliteSpec);
                                 if (it != eliteSpecToProfession.end()) {
@@ -519,6 +552,7 @@ void AddonRender()
                                     professionName = "Unknown";
                                 }
 
+                                // Get the color for the profession
                                 ImVec4 color;
                                 auto colorIt = professionColors.find(professionName);
                                 if (colorIt != professionColors.end()) {
@@ -528,7 +562,8 @@ void AddonRender()
                                     color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
                                 }
 
-                                DrawBar(frac, buffer, color, eliteSpec);
+                                // Draw the bar with the updated parameters
+                                DrawBar(frac, count, totalDamage, color, eliteSpec, showDamage);
                             }
                         }
                     }
@@ -590,6 +625,16 @@ void AddonRender()
                     if (ImGui::Checkbox("Show Class Icons", &Settings::showClassIcons))
                     {
                         Settings::Settings[SHOW_CLASS_ICONS] = Settings::showClassIcons;
+                        Settings::Save(SettingsPath);
+                    }
+                    if (ImGui::Checkbox("Show Class Damage", &Settings::showSpecDamage))
+                    {
+                        Settings::Settings[SHOW_SPEC_DAMAGE] = Settings::showSpecDamage;
+                        Settings::Save(SettingsPath);
+                    }
+                    if (ImGui::Checkbox("Sort Class Damage", &Settings::sortSpecDamage))
+                    {
+                        Settings::Settings[SORT_SPEC_DAMAGE] = Settings::sortSpecDamage;
                         Settings::Save(SettingsPath);
                     }
                     ImGui::Separator();

@@ -18,6 +18,9 @@ const char* SHOW_TEAM_TOTAL_PLAYERS = "ShowTeamTotalPlayers";
 const char* SHOW_TEAM_DEATHS = "ShowTeamDeaths";
 const char* SHOW_TEAM_DOWNED = "ShowTeamDowned";
 const char* SHOW_TEAM_DAMAGE = "ShowTeamDamage";
+//Specs
+const char* SHOW_SPEC_DAMAGE = "ShowSpecDamage";
+const char* SORT_SPEC_DAMAGE = "SortSpecDamage";
 // Window Style
 const char* SHOW_SCROLL_BAR = "ShowScrollBar";
 
@@ -93,6 +96,15 @@ namespace Settings
 		{
 			Settings[SHOW_TEAM_DAMAGE].get_to<bool>(showTeamDamage);
 		}
+		/* Spec Stats */
+		if (!Settings[SHOW_SPEC_DAMAGE].is_null())
+		{
+			Settings[SHOW_SPEC_DAMAGE].get_to<bool>(showSpecDamage);
+		}
+		if (!Settings[SORT_SPEC_DAMAGE].is_null())
+		{
+			Settings[SORT_SPEC_DAMAGE].get_to<bool>(sortSpecDamage);
+		}
 		/* Window Style */
 		if (!Settings[SHOW_SCROLL_BAR].is_null())
 		{
@@ -128,7 +140,9 @@ namespace Settings
 	bool showTeamDeaths = true;
 	bool showTeamDowned = true;
 	bool showTeamDamage = true;
-
+	// Spec Stats
+	bool showSpecDamage = true;
+	bool sortSpecDamage = false;
 	// Window Style
 	bool showScrollBar = true;
 }
