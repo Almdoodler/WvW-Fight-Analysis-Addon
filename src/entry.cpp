@@ -194,7 +194,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 1;
-    AddonDef.Version.Revision = 6;
+    AddonDef.Version.Revision = 7;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "EVTC Parser for WvW logs";
     AddonDef.Load = AddonLoad;
@@ -228,11 +228,9 @@ void AddonLoad(AddonAPI* aApi)
     Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
     initMaps();
 
-    // Start the initial parsing in a separate thread
-    initialParsingThread = std::thread(parseInitialLogs);
 
-    // Start the directory monitoring thread
-    directoryMonitorThread = std::thread(monitorDirectory);
+    size_t numInitialLogsToParse = 10;
+    directoryMonitorThread = std::thread(monitorDirectory, numInitialLogsToParse);
 
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon loaded successfully.");
 }
@@ -520,7 +518,6 @@ void AddonRender()
                                     }
                                 });
 
-                            // Get the maximum value for scaling the bars
                             uint64_t maxValue = 0;
                             if (!sortedClasses.empty()) {
                                 if (sortByDamage) {

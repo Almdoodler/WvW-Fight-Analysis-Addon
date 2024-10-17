@@ -9,9 +9,7 @@
 
 
 // Function declarations
-
-
-void parseInitialLogs();
+void monitorDirectory(size_t numLogsToParse);
 std::vector<char> extractZipFile(const std::string& filePath);
 void processNewEVTCFile(const std::string& filePath);
 
