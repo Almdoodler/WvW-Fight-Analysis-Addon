@@ -78,31 +78,26 @@ Texture** getTextureInfo(const std::string& eliteSpec, int* outResourceId) {
 }
 
 
-// Updated DrawBar function
+
 void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, const std::string& eliteSpec, bool showDamage)
 {
     ImVec2 cursor_pos = ImGui::GetCursorPos();
     ImVec2 screen_pos = ImGui::GetCursorScreenPos();
     float bar_width = ImGui::GetContentRegionAvail().x * frac;
-    float bar_height = ImGui::GetTextLineHeight() + 4; // Add some padding
+    float bar_height = ImGui::GetTextLineHeight() + 4;
 
-    // Draw the bar
     ImGui::GetWindowDrawList()->AddRectFilled(
         screen_pos,
         ImVec2(screen_pos.x + bar_width, screen_pos.y + bar_height),
         ImGui::ColorConvertFloat4ToU32(color)
     );
 
-    // Set cursor position for text
-    ImGui::SetCursorPos(ImVec2(cursor_pos.x + 5, cursor_pos.y + 2)); // Add some padding
+    ImGui::SetCursorPos(ImVec2(cursor_pos.x + 5, cursor_pos.y + 2));
 
     ImGui::Text("%d", count);
-    // Draw count and optionally damage
 
-    // Calculate position for icon
-    ImGui::SameLine(0, 5); // Add some space between count and icon
+    ImGui::SameLine(0, 5);
 
-    // Draw icon
     if (Settings::showClassIcons)
     {
         float sz = ImGui::GetFontSize();
@@ -123,18 +118,18 @@ void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, c
                 }
                 else
                 {
-                    ImGui::Text("%c%c", eliteSpec[0], eliteSpec[1]); // Use first two letters as fallback
+                    ImGui::Text("%c%c", eliteSpec[0], eliteSpec[1]);
                 }
             }
             else
             {
-                ImGui::Text("%c%c", eliteSpec[0], eliteSpec[1]); // Use first two letters as fallback
+                ImGui::Text("%c%c", eliteSpec[0], eliteSpec[1]);
             }
         }
-        ImGui::SameLine(0, 5); // Add some space between icon and name
+        ImGui::SameLine(0, 5);
     }
 
-    // Draw elite spec name
+
     if (Settings::showClassNames)
     {
         if (Settings::useShortClassNames)
@@ -161,14 +156,14 @@ void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, c
         ImGui::Text(" ");
     }
     if (showDamage) {
-        ImGui::SameLine(0, 5); // Add some space between icon and name
-        // Format the damage using your function
+        ImGui::SameLine(0, 5);
+
         std::string formattedDamage = formatDamage(static_cast<double>(totalDamage));
         ImGui::Text("(%s)", formattedDamage.c_str());
     }
 
-    // Move cursor to next line for the next bar
-    ImGui::SetCursorPosY(cursor_pos.y + bar_height + 2); // Add a small gap between bars
+
+    ImGui::SetCursorPosY(cursor_pos.y + bar_height + 2);
 }
 
 void RenderSimpleRatioBar(int red, int green, int blue,
@@ -178,30 +173,30 @@ void RenderSimpleRatioBar(int red, int green, int blue,
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     const ImVec2 p = ImGui::GetCursorScreenPos();
 
-    // Normalize values
+
     float total = static_cast<float>(red + green + blue);
     if (total == 0.0f) total = 1.0f;
     float r_frac = static_cast<float>(red) / total;
     float g_frac = static_cast<float>(green) / total;
     float b_frac = static_cast<float>(blue) / total;
 
-    // Convert colors
+
     ImU32 colRed = ImGui::ColorConvertFloat4ToU32(colorRed);
     ImU32 colGreen = ImGui::ColorConvertFloat4ToU32(colorGreen);
     ImU32 colBlue = ImGui::ColorConvertFloat4ToU32(colorBlue);
 
-    // Bar dimensions
+
     float x = p.x;
     float y = p.y;
     float width = size.x;
     float height = size.y;
 
-    // Widths for each team
+
     float r_width = width * r_frac;
     float g_width = width * g_frac;
     float b_width = width * b_frac;
 
-    // Positions
+
     float x_red_start = x;
     float x_red_end = x + r_width;
 
@@ -211,7 +206,7 @@ void RenderSimpleRatioBar(int red, int green, int blue,
     float x_blue_start = x_green_end;
     float x_blue_end = x + width;
 
-    // Draw rectangles
+
     draw_list->AddRectFilled(ImVec2(x_red_start, y), ImVec2(x_red_end, y + height), colRed);
     draw_list->AddRectFilled(ImVec2(x_green_start, y), ImVec2(x_green_end, y + height), colGreen);
     draw_list->AddRectFilled(ImVec2(x_blue_start, y), ImVec2(x_blue_end, y + height), colBlue);
@@ -274,7 +269,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 1;
-    AddonDef.Version.Revision = 7;
+    AddonDef.Version.Revision = ;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "EVTC Parser for WvW logs";
     AddonDef.Load = AddonLoad;
