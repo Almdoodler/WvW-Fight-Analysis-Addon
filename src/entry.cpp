@@ -28,9 +28,6 @@ void AddonRender();
 void AddonOptions();
 void ProcessKeybinds(const char* aIdentifier);
 
-
-
-
 /* globals */
 AddonDefinition AddonDef = {};
 HMODULE hSelf = nullptr;
@@ -174,6 +171,89 @@ void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, c
     ImGui::SetCursorPosY(cursor_pos.y + bar_height + 2); // Add a small gap between bars
 }
 
+void RenderSimpleRatioBar(int red, int green, int blue,
+    const ImVec4& colorRed, const ImVec4& colorGreen, const ImVec4& colorBlue,
+    const ImVec2& size)
+{
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    const ImVec2 p = ImGui::GetCursorScreenPos();
+
+    // Normalize values
+    float total = static_cast<float>(red + green + blue);
+    if (total == 0.0f) total = 1.0f;
+    float r_frac = static_cast<float>(red) / total;
+    float g_frac = static_cast<float>(green) / total;
+    float b_frac = static_cast<float>(blue) / total;
+
+    // Convert colors
+    ImU32 colRed = ImGui::ColorConvertFloat4ToU32(colorRed);
+    ImU32 colGreen = ImGui::ColorConvertFloat4ToU32(colorGreen);
+    ImU32 colBlue = ImGui::ColorConvertFloat4ToU32(colorBlue);
+
+    // Bar dimensions
+    float x = p.x;
+    float y = p.y;
+    float width = size.x;
+    float height = size.y;
+
+    // Widths for each team
+    float r_width = width * r_frac;
+    float g_width = width * g_frac;
+    float b_width = width * b_frac;
+
+    // Positions
+    float x_red_start = x;
+    float x_red_end = x + r_width;
+
+    float x_green_start = x_red_end;
+    float x_green_end = x_green_start + g_width;
+
+    float x_blue_start = x_green_end;
+    float x_blue_end = x + width;
+
+    // Draw rectangles
+    draw_list->AddRectFilled(ImVec2(x_red_start, y), ImVec2(x_red_end, y + height), colRed);
+    draw_list->AddRectFilled(ImVec2(x_green_start, y), ImVec2(x_green_end, y + height), colGreen);
+    draw_list->AddRectFilled(ImVec2(x_blue_start, y), ImVec2(x_blue_end, y + height), colBlue);
+
+    draw_list->AddRect(ImVec2(x, y), ImVec2(x + width, y + height), IM_COL32_WHITE);
+
+    ImGuiIO& io = ImGui::GetIO();
+    ImFont* font = io.FontDefault;
+
+    char bufRed[32], bufGreen[32], bufBlue[32];
+    snprintf(bufRed, sizeof(bufRed), "%d", red);
+    snprintf(bufGreen, sizeof(bufGreen), "%d", green);
+    snprintf(bufBlue, sizeof(bufBlue), "%d", blue);
+
+    ImVec2 textSizeRed = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f, bufRed);
+    ImVec2 textSizeGreen = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f, bufGreen);
+    ImVec2 textSizeBlue = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f, bufBlue);
+
+    float red_center_x = x_red_start + r_width / 2.0f - textSizeRed.x / 2.0f;
+    float green_center_x = x_green_start + g_width / 2.0f - textSizeGreen.x / 2.0f;
+    float blue_center_x = x_blue_start + b_width / 2.0f - textSizeBlue.x / 2.0f;
+
+    float center_y = y + height / 2.0f - textSizeRed.y / 2.0f;
+
+    if (r_width >= textSizeRed.x)
+    {
+        draw_list->AddText(ImVec2(red_center_x, center_y), IM_COL32_WHITE, bufRed);
+    }
+    if (g_width >= textSizeGreen.x)
+    {
+        draw_list->AddText(ImVec2(green_center_x, center_y), IM_COL32_WHITE, bufGreen);
+    }
+    if (b_width >= textSizeBlue.x)
+    {
+        draw_list->AddText(ImVec2(blue_center_x, center_y), IM_COL32_WHITE, bufBlue);
+    }
+
+    ImGui::Dummy(size);
+}
+
+
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     switch (ul_reason_for_call)
@@ -301,6 +381,62 @@ void AddonRender()
     // Hide if in Combat
     if (MumbleLink->Context.IsInCombat && !Settings::showWindowInCombat) { return; }
 
+    if (Settings::IsAddonWidgetEnabled) {
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
+            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+
+        float barHeight = 20.0f;
+        ImVec2 barSize = ImVec2(320.0f, barHeight);
+        ImGui::SetNextWindowSize(barSize);
+
+        if (ImGui::Begin("Team Ratio Bar", nullptr, window_flags))
+        {
+            if (parsedLogs.empty())
+            {
+                ImGui::Text(initialParsingComplete ? "No logs parsed yet." : "Parsing logs...");
+                ImGui::End();
+                ImGui::PopStyleVar(4);
+                return;
+            }
+
+            const auto& currentLogData = parsedLogs[currentLogIndex].data;
+            const char* team_names[] = { "Red", "Blue", "Green" };
+            ImVec4 team_colors[] = {
+                ImGui::ColorConvertU32ToFloat4(IM_COL32(0xff, 0x44, 0x44, 0xff)), // Red
+                ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xb5, 0xe5, 0xff)), // Blue
+                ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xcc, 0x00, 0xff))  // Green
+            };
+
+            int teamCounts[3] = { 0, 0, 0 };
+            for (int i = 0; i < 3; ++i)
+            {
+                auto teamIt = currentLogData.teamStats.find(team_names[i]);
+                if (teamIt != currentLogData.teamStats.end())
+                {
+                    teamCounts[i] = teamIt->second.totalPlayers;
+                }
+            }
+
+            RenderSimpleRatioBar(
+                teamCounts[0],        // Red count
+                teamCounts[2],        // Green count
+                teamCounts[1],        // Blue count
+                team_colors[0],       // Red color
+                team_colors[2],       // Green color
+                team_colors[1],       // Blue color
+                ImVec2(barSize.x, barHeight)
+            );
+        }
+        ImGui::End();
+        ImGui::PopStyleVar(4);
+
+    }
+
     if (Settings::IsAddonWindowEnabled)
     {
         ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
@@ -345,12 +481,12 @@ void AddonRender()
 
             const auto& currentLogData = parsedLogs[currentLogIndex].data;
             const char* team_names[] = { "Red", "Blue", "Green" };
+            int teamCounts[3] = { 0, 0, 0 };
             ImVec4 team_colors[] = {
                 ImGui::ColorConvertU32ToFloat4(IM_COL32(0xff, 0x44, 0x44, 0xff)), // Red
                 ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xb5, 0xe5, 0xff)), // Blue
                 ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xcc, 0x00, 0xff))  // Green
             };
-
             // Count how many teams have data and meet the threshold
             int teamsWithData = 0;
             bool teamHasData[3] = { false, false, false };
@@ -684,6 +820,11 @@ void AddonOptions()
     if (ImGui::Checkbox("Enabled##WvWFightAnalysis", &Settings::IsAddonWindowEnabled))
     {
         Settings::Settings[IS_ADDON_WINDOW_VISIBLE] = Settings::IsAddonWindowEnabled;
+        Settings::Save(SettingsPath);
+    }
+    if (ImGui::Checkbox("WidgetEnabled##WvWFightAnalysis", &Settings::IsAddonWidgetEnabled))
+    {
+        Settings::Settings[IS_ADDON_WIDGET_VISIBLE] = Settings::IsAddonWidgetEnabled;
         Settings::Save(SettingsPath);
     }
     if (ImGui::Checkbox("Visible In Combat##WvWFightAnalysis", &Settings::showWindowInCombat))

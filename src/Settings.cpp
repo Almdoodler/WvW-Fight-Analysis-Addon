@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 
+const char*  IS_ADDON_WIDGET_VISIBLE = "IsWidgetVisible";
 const char* IS_ADDON_WINDOW_VISIBLE = "IsWindowVisible";
 const char* IS_WINDOW_VISIBLE_IN_COMBAT = "IsWindowVisibleInCombat";
 const char* CUSTOM_LOG_PATH = "CustomLogDirectoryPath";
@@ -48,7 +49,11 @@ namespace Settings
 			}
 		}
 		Settings::Mutex.unlock();
-
+		/* Widget */
+		if (!Settings[IS_ADDON_WIDGET_VISIBLE].is_null())
+		{
+			Settings[IS_ADDON_WIDGET_VISIBLE].get_to<bool>(IsAddonWidgetEnabled);
+		}
 		/* Window */
 		if (!Settings[IS_ADDON_WINDOW_VISIBLE].is_null())
 		{
@@ -124,6 +129,8 @@ namespace Settings
 	}
 
 	/* Global */
+
+	bool IsAddonWidgetEnabled = true;
 
 	/* Banner */
 	bool IsAddonWindowEnabled = true;

@@ -6,6 +6,7 @@
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
 
+extern const char* IS_ADDON_WIDGET_VISIBLE;
 extern const char* IS_ADDON_WINDOW_VISIBLE;
 extern const char* IS_WINDOW_VISIBLE_IN_COMBAT;
 extern const char* CUSTOM_LOG_PATH;
@@ -36,7 +37,7 @@ namespace Settings
 	void Save(std::filesystem::path aPath);
 
 	/* Global */
-
+	extern bool IsAddonWidgetEnabled;
 	extern bool IsAddonWindowEnabled;
 	extern bool showWindowInCombat;
 	extern int teamPlayerThreshold;
