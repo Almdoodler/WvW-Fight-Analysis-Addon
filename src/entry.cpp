@@ -303,9 +303,7 @@ void AddonLoad(AddonAPI* aApi)
     Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
     initMaps();
 
-
-    size_t numInitialLogsToParse = 10;
-    directoryMonitorThread = std::thread(monitorDirectory, numInitialLogsToParse);
+    directoryMonitorThread = std::thread(monitorDirectory, Settings::logHistorySize);
 
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon loaded successfully.");
 }
@@ -816,35 +814,35 @@ void AddonOptions()
         ImGui::Text("Untick to hide in combat.");
         ImGui::EndTooltip();
     }
-    if (ImGui::Checkbox("Show Class Names##WvWFightAnalysis", &Settings::showClassNames))
-    {
-        Settings::Settings[SHOW_CLASS_NAMES] = Settings::showClassNames;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::Checkbox("Use Short Class Names##WvWFightAnalysis", &Settings::useShortClassNames))
-    {
-        Settings::Settings[USE_SHORT_CLASS_NAMES] = Settings::useShortClassNames;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::Checkbox("Show Class Icons##WvWFightAnalysis", &Settings::showClassIcons))
-    {
-        Settings::Settings[SHOW_CLASS_ICONS] = Settings::showClassIcons;
-        Settings::Save(SettingsPath);
-    }
     ImGui::Text("Team Player Threshold: ");
     if (ImGui::InputInt("Team Player Threshold##WvWFightAnalysis", &Settings::teamPlayerThreshold))
     {
+        Settings::teamPlayerThreshold = std::clamp(
+            Settings::teamPlayerThreshold, 0,100
+        );
         Settings::Settings[TEAM_PLAYER_THRESHOLD] = Settings::teamPlayerThreshold;
         Settings::Save(SettingsPath);
     }
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
-        ImGui::Text("Set a minimum amount of team players required to render column.");
+        ImGui::Text("Set a minimum amount of team players required to render team.");
         ImGui::EndTooltip();
     }
-    ImGui::Text("Custom Log Path: ");
-    if (ImGui::InputText("Log Path##WvWFightAnalysis", Settings::LogDirectoryPathC, sizeof(Settings::LogDirectoryPathC)))
+    int tempLogHistorySize = static_cast<int>(Settings::logHistorySize);
+    if (ImGui::InputInt("Log History Size##WvWFightAnalysis", &tempLogHistorySize))
+    {
+        Settings::logHistorySize = static_cast<size_t>(std::clamp(tempLogHistorySize, 1, 20));
+        Settings::Settings[LOG_HISTORY_SIZE] = Settings::logHistorySize;
+        Settings::Save(SettingsPath);
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text("How many parsed logs to keep.");
+        ImGui::EndTooltip();
+    }
+    if (ImGui::InputText("Custom Log Path##WvWFightAnalysis", Settings::LogDirectoryPathC, sizeof(Settings::LogDirectoryPathC)))
     {
         Settings::LogDirectoryPath = Settings::LogDirectoryPathC;
         Settings::Settings[CUSTOM_LOG_PATH] = Settings::LogDirectoryPath;

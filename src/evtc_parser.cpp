@@ -376,7 +376,7 @@ void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t n
 				std::lock_guard<std::mutex> lock(parsedLogsMutex);
 				parsedLogs.push_back(log);
 
-				while (parsedLogs.size() > 10) {
+				while (parsedLogs.size() > Settings::logHistorySize) {
 					parsedLogs.pop_back();
 				}
 				currentLogIndex = 0;
@@ -578,7 +578,7 @@ void processNewEVTCFile(const std::string& filePath)
 		std::lock_guard<std::mutex> lock(parsedLogsMutex);
 		parsedLogs.push_front(log);
 
-		while (parsedLogs.size() > 10)
+		while (parsedLogs.size() > Settings::logHistorySize)
 		{
 			parsedLogs.pop_back();
 		}

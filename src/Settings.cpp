@@ -7,9 +7,14 @@
 
 const char*  IS_ADDON_WIDGET_VISIBLE = "IsWidgetVisible";
 const char* IS_ADDON_WINDOW_VISIBLE = "IsWindowVisible";
+
+// Options
 const char* IS_WINDOW_VISIBLE_IN_COMBAT = "IsWindowVisibleInCombat";
 const char* CUSTOM_LOG_PATH = "CustomLogDirectoryPath";
 const char* TEAM_PLAYER_THRESHOLD = "TeamPlayerThreshold";
+const char*  LOG_HISTORY_SIZE = "LogHistorySize";
+
+// Display
 const char* SHOW_CLASS_NAMES = "ShowClassNames";
 const char* USE_SHORT_CLASS_NAMES = "UseShortClassNames";
 const char* SHOW_CLASS_ICONS = "ShowClassIcons";
@@ -84,6 +89,10 @@ namespace Settings
 			Settings[CUSTOM_LOG_PATH].get_to<std::string>(LogDirectoryPath);
 			strcpy_s(LogDirectoryPathC, sizeof(LogDirectoryPathC), LogDirectoryPath.c_str());
 		}
+		if (!Settings[LOG_HISTORY_SIZE].is_null())
+		{
+			Settings[LOG_HISTORY_SIZE].get_to(logHistorySize);
+		}
 		/* Team Stats */
 		if (!Settings[SHOW_TEAM_TOTAL_PLAYERS].is_null())
 		{
@@ -128,20 +137,24 @@ namespace Settings
 		Settings::Mutex.unlock();
 	}
 
-	/* Global */
+	/* Windows */
 
 	bool IsAddonWidgetEnabled = true;
-
-	/* Banner */
 	bool IsAddonWindowEnabled = true;
+	
+	/* Options */
+
 	bool showWindowInCombat = true;
 	int teamPlayerThreshold = 1;
+;
+	std::string LogDirectoryPath;
+	char LogDirectoryPathC[256] = "";
+	size_t logHistorySize = 10;
+
+	// Display
 	bool showClassNames = true;
 	bool useShortClassNames = false;
 	bool showClassIcons = true;
-	std::string LogDirectoryPath;
-	char LogDirectoryPathC[256] = "";
-
 	// Team Stats
 	bool showTeamTotalPlayers = true;
 	bool showTeamDeaths = true;

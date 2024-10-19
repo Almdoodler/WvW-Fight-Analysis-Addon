@@ -8,12 +8,19 @@ using json = nlohmann::json;
 
 extern const char* IS_ADDON_WIDGET_VISIBLE;
 extern const char* IS_ADDON_WINDOW_VISIBLE;
+
+// Options
 extern const char* IS_WINDOW_VISIBLE_IN_COMBAT;
 extern const char* CUSTOM_LOG_PATH;
 extern const char* TEAM_PLAYER_THRESHOLD;
+extern const char* LOG_HISTORY_SIZE;
+
+// Display
 extern const char* USE_SHORT_CLASS_NAMES;
 extern const char* SHOW_CLASS_NAMES;
 extern const char* SHOW_CLASS_ICONS;
+
+
 
 // Team Stats
 extern const char* SHOW_TEAM_TOTAL_PLAYERS;
@@ -36,16 +43,22 @@ namespace Settings
 	/* Saves the settings. */
 	void Save(std::filesystem::path aPath);
 
-	/* Global */
+	/* Windows */
 	extern bool IsAddonWidgetEnabled;
 	extern bool IsAddonWindowEnabled;
+	
+	//Options
 	extern bool showWindowInCombat;
 	extern int teamPlayerThreshold;
+	extern std::string LogDirectoryPath;
+	extern char LogDirectoryPathC[256];
+	extern size_t logHistorySize;
+
+	//Display
 	extern bool useShortClassNames;
 	extern bool showClassNames;
 	extern bool showClassIcons;
-	extern std::string LogDirectoryPath;
-	extern char LogDirectoryPathC[256];
+
 
 	// Team Stats
 	extern bool showTeamTotalPlayers;
