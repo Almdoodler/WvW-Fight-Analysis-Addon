@@ -363,8 +363,24 @@ void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t n
 
 		for (size_t i = 0; i < numFilesToParse; ++i)
 		{
+			
 			const std::filesystem::path& filePath = zevtcFiles[i];
-			processEVTCFile(filePath);
+			// Wait for the file to be fully written
+			waitForFile(filePath.string());
+
+			// Parse the file
+			ParsedLog log;
+			log.filename = filePath.filename().string();;
+			log.data = parseEVTCFile(filePath.string());
+			{
+				std::lock_guard<std::mutex> lock(parsedLogsMutex);
+				parsedLogs.push_back(log);
+
+				while (parsedLogs.size() > 10) {
+					parsedLogs.pop_back();
+				}
+				currentLogIndex = 0;
+			}
 			processedFiles.insert(filePath.wstring());
 		}
 

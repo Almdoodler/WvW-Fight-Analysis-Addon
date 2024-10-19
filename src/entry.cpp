@@ -269,7 +269,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 1;
-    AddonDef.Version.Revision = ;
+    AddonDef.Version.Revision = 8;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "EVTC Parser for WvW logs";
     AddonDef.Load = AddonLoad;
@@ -287,7 +287,7 @@ void AddonLoad(AddonAPI* aApi)
     ImGui::SetAllocatorFunctions((void* (*)(size_t, void*))APIDefs->ImguiMalloc, (void(*)(void*, void*))APIDefs->ImguiFree);
     NexusLink = (NexusLinkData*)APIDefs->GetResource("DL_NEXUS_LINK");
     MumbleLink = (Mumble::Data*)APIDefs->GetResource("DL_MUMBLE_LINK");
-    
+
     APIDefs->RegisterRender(ERenderType_OptionsRender, AddonOptions);
     APIDefs->RegisterRender(ERenderType_Render, AddonRender);
 
@@ -331,7 +331,7 @@ void AddonUnload()
     APIDefs->DeregisterRender(AddonRender);
     APIDefs->DeregisterRender(AddonOptions);
     APIDefs->DeregisterKeybind("KB_MI_TOGGLEVISIBLE");
-    
+
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon unloaded successfully.");
 }
 
@@ -457,20 +457,12 @@ void AddonRender()
                 return;
             }
 
-            std::regex dateTimeRegex(R"((\d{8}-\d{6})\.zevtc)");
-            std::smatch match;
-            std::string dateTimeStr;
-            if (std::regex_search(parsedLogs[currentLogIndex].filename, match, dateTimeRegex)) {
-                dateTimeStr = match[1];
-            }
-            else {
-                dateTimeStr = "Unknown";
-            }
+            std::string fnstr = parsedLogs[currentLogIndex].filename.substr(0, parsedLogs[currentLogIndex].filename.find_last_of('.'));
             uint64_t durationMs = parsedLogs[currentLogIndex].data.combatEndTime - parsedLogs[currentLogIndex].data.combatStartTime;
             auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::milliseconds(durationMs));
             int minutes = duration.count() / 60;
             int seconds = duration.count() % 60;
-            std::string displayName = dateTimeStr + " (" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s)";
+            std::string displayName = fnstr + " (" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s)";
 
             ImGui::Text("%s", displayName.c_str());
 
@@ -619,7 +611,7 @@ void AddonRender()
                                 std::string formattedDamage = formatDamage(teamData.totalDamage);
                                 if (Settings::showClassNames)
                                 {
-                                    
+
                                     ImGui::Text("Damage: %s", formattedDamage.c_str());
                                 }
                                 else
@@ -716,21 +708,12 @@ void AddonRender()
                     {
                         const auto& log = parsedLogs[i];
 
-                        std::regex dateTimeRegex(R"((\d{8}-\d{6})\.zevtc)");
-                        std::smatch match;
-                        std::string dateTimeStr;
-                        if (std::regex_search(log.filename, match, dateTimeRegex)) {
-                            dateTimeStr = match[1];
-                        }
-                        else {
-                            dateTimeStr = "Unknown";
-                        }
-
+                        std::string fnstr = log.filename.substr(0, log.filename.find_last_of('.'));
                         uint64_t durationMs = log.data.combatEndTime - log.data.combatStartTime;
                         auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::milliseconds(durationMs));
                         int minutes = duration.count() / 60;
                         int seconds = duration.count() % 60;
-                        std::string displayName = dateTimeStr + " (" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s)";
+                        std::string displayName = fnstr + " (" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s)";
 
                         if (ImGui::RadioButton(displayName.c_str(), &currentLogIndex, i))
                         {
