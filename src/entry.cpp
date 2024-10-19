@@ -269,9 +269,9 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 1;
-    AddonDef.Version.Revision = 8;
+    AddonDef.Version.Revision = 9;
     AddonDef.Author = "Unreal";
-    AddonDef.Description = "EVTC Parser for WvW logs";
+    AddonDef.Description = "Simple WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
     AddonDef.Unload = AddonUnload;
     AddonDef.Flags = EAddonFlags_None;
@@ -793,12 +793,12 @@ void AddonRender()
 void AddonOptions()
 {
     ImGui::Text("WvW Fight Analysis Settings");
-    if (ImGui::Checkbox("Enabled##WvWFightAnalysis", &Settings::IsAddonWindowEnabled))
+    if (ImGui::Checkbox("Window Enabled##WvWFightAnalysis", &Settings::IsAddonWindowEnabled))
     {
         Settings::Settings[IS_ADDON_WINDOW_VISIBLE] = Settings::IsAddonWindowEnabled;
         Settings::Save(SettingsPath);
     }
-    if (ImGui::Checkbox("WidgetEnabled##WvWFightAnalysis", &Settings::IsAddonWidgetEnabled))
+    if (ImGui::Checkbox("Widget Enabled##WvWFightAnalysis", &Settings::IsAddonWidgetEnabled))
     {
         Settings::Settings[IS_ADDON_WIDGET_VISIBLE] = Settings::IsAddonWidgetEnabled;
         Settings::Save(SettingsPath);
