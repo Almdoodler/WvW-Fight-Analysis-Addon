@@ -172,17 +172,15 @@ void RenderSimpleRatioBar(int red, int green, int blue,
 
     draw_list->AddRect(ImVec2(x, y), ImVec2(x + width, y + height), IM_COL32_WHITE);
 
-    ImGuiIO& io = ImGui::GetIO();
-    ImFont* font = io.FontDefault;
 
     char bufRed[32], bufGreen[32], bufBlue[32];
     snprintf(bufRed, sizeof(bufRed), "%d", red);
     snprintf(bufGreen, sizeof(bufGreen), "%d", green);
     snprintf(bufBlue, sizeof(bufBlue), "%d", blue);
 
-    ImVec2 textSizeRed = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f, bufRed);
-    ImVec2 textSizeGreen = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f, bufGreen);
-    ImVec2 textSizeBlue = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f, bufBlue);
+    ImVec2 textSizeRed = ImGui::CalcTextSize(bufRed);
+    ImVec2 textSizeGreen = ImGui::CalcTextSize(bufGreen);
+    ImVec2 textSizeBlue = ImGui::CalcTextSize(bufBlue);
 
     float red_center_x = x_red_start + r_width / 2.0f - textSizeRed.x / 2.0f;
     float green_center_x = x_green_start + g_width / 2.0f - textSizeGreen.x / 2.0f;
@@ -601,6 +599,54 @@ void AddonRender()
                                 {
 
                                     ImGui::Text("Damage: %s", formattedDamage.c_str());
+                                }
+                                else
+                                {
+                                    ImGui::Text("%s", formattedDamage.c_str());
+                                }
+                            }
+                            if (Settings::showTeamStrikeDamage) {
+                                if (Settings::showClassIcons)
+                                {
+                                    if (Strike && Strike->Resource)
+                                    {
+                                        ImGui::Image(Strike->Resource, ImVec2(sz, sz));
+                                        ImGui::SameLine(0, 5);
+                                    }
+                                    else
+                                    {
+                                        Strike = APIDefs->GetTextureOrCreateFromResource("STRIKE_ICON", STRIKE, hSelf);
+                                    }
+                                }
+                                std::string formattedDamage = formatDamage(teamData.totalStrikeDamage);
+                                if (Settings::showClassNames)
+                                {
+
+                                    ImGui::Text("Strike: %s", formattedDamage.c_str());
+                                }
+                                else
+                                {
+                                    ImGui::Text("%s", formattedDamage.c_str());
+                                }
+                            }
+                            if (Settings::showTeamCondiDamage) {
+                                if (Settings::showClassIcons)
+                                {
+                                    if (Condi && Condi->Resource)
+                                    {
+                                        ImGui::Image(Condi->Resource, ImVec2(sz, sz));
+                                        ImGui::SameLine(0, 5);
+                                    }
+                                    else
+                                    {
+                                        Condi = APIDefs->GetTextureOrCreateFromResource("CONDI_ICON", CONDI, hSelf);
+                                    }
+                                }
+                                std::string formattedDamage = formatDamage(teamData.totalCondiDamage);
+                                if (Settings::showClassNames)
+                                {
+
+                                    ImGui::Text("Condi: %s", formattedDamage.c_str());
                                 }
                                 else
                                 {

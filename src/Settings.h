@@ -28,6 +28,8 @@ extern const char* SHOW_TEAM_TOTAL_PLAYERS;
 extern const char* SHOW_TEAM_DEATHS;
 extern const char* SHOW_TEAM_DOWNED;
 extern const char* SHOW_TEAM_DAMAGE;
+extern const char* SHOW_TEAM_STRIKE;
+extern const char* SHOW_TEAM_CONDI;
 // Spec Stats
 extern const char* SHOW_SPEC_DAMAGE;
 extern const char* SORT_SPEC_DAMAGE;
@@ -67,6 +69,8 @@ namespace Settings
 	extern bool showTeamDeaths;
 	extern bool showTeamDowned;
 	extern bool showTeamDamage;
+	extern bool showTeamCondiDamage;
+	extern bool showTeamStrikeDamage;
 	// Spec Stats
 	extern bool showSpecDamage;
 	extern bool sortSpecDamage;

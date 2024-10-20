@@ -58,6 +58,8 @@ extern Texture* Death;
 extern Texture* Downed;
 extern Texture* Squad;
 extern Texture* Damage;
+extern Texture* Condi;
+extern Texture* Strike;
 
 
 // New declarations

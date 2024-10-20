@@ -25,6 +25,8 @@ const char* SHOW_TEAM_TOTAL_PLAYERS = "ShowTeamTotalPlayers";
 const char* SHOW_TEAM_DEATHS = "ShowTeamDeaths";
 const char* SHOW_TEAM_DOWNED = "ShowTeamDowned";
 const char* SHOW_TEAM_DAMAGE = "ShowTeamDamage";
+const char* SHOW_TEAM_CONDI = "ShowTeamCondiDamage";
+const char* SHOW_TEAM_STRIKE = "ShowTeamCondiDamage";
 //Specs
 const char* SHOW_SPEC_DAMAGE = "ShowSpecDamage";
 const char* SORT_SPEC_DAMAGE = "SortSpecDamage";
@@ -115,6 +117,14 @@ namespace Settings
 		{
 			Settings[SHOW_TEAM_DAMAGE].get_to<bool>(showTeamDamage);
 		}
+		if (!Settings[SHOW_TEAM_CONDI].is_null())
+		{
+			Settings[SHOW_TEAM_CONDI].get_to<bool>(showTeamCondiDamage);
+		}
+		if (!Settings[SHOW_TEAM_STRIKE].is_null())
+		{
+			Settings[SHOW_TEAM_STRIKE].get_to<bool>(showTeamStrikeDamage);
+		}
 		/* Spec Stats */
 		if (!Settings[SHOW_SPEC_DAMAGE].is_null())
 		{
@@ -166,6 +176,8 @@ namespace Settings
 	bool showTeamDeaths = true;
 	bool showTeamDowned = true;
 	bool showTeamDamage = true;
+	bool showTeamCondiDamage = false;
+	bool showTeamStrikeDamage = false;
 	// Spec Stats
 	bool showSpecDamage = true;
 	bool sortSpecDamage = false;

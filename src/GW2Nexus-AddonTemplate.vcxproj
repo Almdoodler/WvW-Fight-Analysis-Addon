@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -218,6 +218,7 @@
     <Image Include="assets\bladesworn_16x16.png" />
     <Image Include="assets\catalyst_16x16.png" />
     <Image Include="assets\chronomancer_16x16.png" />
+    <Image Include="assets\condition_damage_18x18.png" />
     <Image Include="assets\damage_18x18.png" />
     <Image Include="assets\daredevil_16x16.png" />
     <Image Include="assets\deadeye_16x16.png" />
@@ -246,6 +247,7 @@
     <Image Include="assets\specter_16x16.png" />
     <Image Include="assets\spellbreaker_16x16.png" />
     <Image Include="assets\squad_16x16.png" />
+    <Image Include="assets\strike_damage_30x30.png" />
     <Image Include="assets\tempest_16x16.png" />
     <Image Include="assets\thief_16x16.png" />
     <Image Include="assets\untamed_16x16.png" />

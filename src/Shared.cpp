@@ -51,6 +51,8 @@ Texture* Death = nullptr;
 Texture* Downed = nullptr;
 Texture* Squad = nullptr;
 Texture* Damage = nullptr;
+Texture* Condi = nullptr;
+Texture* Strike = nullptr;
 
 // New definitions
 std::atomic<bool> initialParsingComplete{ false };
