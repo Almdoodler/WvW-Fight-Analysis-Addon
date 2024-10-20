@@ -109,13 +109,14 @@ struct ParsedData {
     std::unordered_map<std::string, TeamStats> teamStats;
     uint64_t combatStartTime = 0;
     uint64_t combatEndTime = 0;
+    uint16_t fightId = 0;
+    size_t totalIdentifiedPlayers = 0;
 
-    // Method to calculate combat duration in seconds
     double getCombatDurationSeconds() const {
         if (combatEndTime > combatStartTime) {
             return (combatEndTime - combatStartTime) / 1000.0;
         }
-        return 0.0;  // Return 0 if end time is not after start time
+        return 0.0; 
     }
 };
 

@@ -20,7 +20,14 @@ void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentC
 	std::unordered_map<uint64_t, Agent>& agentsByAddress) {
 	APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Agent count: " + std::to_string(agentCount)).c_str());
 
+	const size_t agentBlockSize = 96; // Each agent block is 96 bytes
+
 	for (uint32_t i = 0; i < agentCount; ++i) {
+		if (offset + agentBlockSize > bytes.size()) {
+			APIDefs->Log(ELogLevel_WARNING, ADDON_NAME, "Insufficient data for agent block");
+			break;
+		}
+
 		Agent agent;
 		std::memcpy(&agent.address, bytes.data() + offset, sizeof(uint64_t));
 		std::memcpy(&agent.professionId, bytes.data() + offset + 8, sizeof(uint32_t));
@@ -29,7 +36,6 @@ void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentC
 		agent.name = std::string(bytes.data() + offset + 28, 68);
 		agent.name.erase(std::find(agent.name.begin(), agent.name.end(), '\0'), agent.name.end());
 
-		// Map profession and elite specialization
 		if (professions.find(agent.professionId) != professions.end()) {
 			agent.profession = professions[agent.professionId];
 			if (agent.eliteSpecId != -1 && eliteSpecs.find(agent.eliteSpecId) != eliteSpecs.end()) {
@@ -40,14 +46,17 @@ void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentC
 			}
 			agentsByAddress[agent.address] = agent;
 		}
-		offset += 96;  // Size of agent block
+		offset += agentBlockSize;
 	}
 }
+
+
 
 void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eventCount,
 	std::unordered_map<uint64_t, Agent>& agentsByAddress,
 	std::unordered_map<uint16_t, Agent*>& playersBySrcInstid,
 	ParsedData& result) {
+
 	uint64_t logStartTime = UINT64_MAX;
 	uint64_t logEndTime = 0;
 	result.combatStartTime = UINT64_MAX;
@@ -163,7 +172,6 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 				int32_t damageValue = 0;
 				if (event.buff == 0) {
 					damageValue = event.value;
-
 				}
 				else if (event.buff == 1) {
 					damageValue = event.buffDmg;
@@ -175,14 +183,13 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 						Agent* agent = srcIt->second;
 						const std::string& team = agent->team;
 						if (team != "Unknown") {
-
-							if (event.buff == 0) 
-							{
+							if (event.buff == 0) {
+								// Accumulate strike damage
 								result.teamStats[team].totalStrikeDamage += damageValue;
 								result.teamStats[team].eliteSpecStats[agent->eliteSpec].totalStrikeDamage += damageValue;
 							}
-							else 
-							{
+							else {
+								// Accumulate condition damage
 								result.teamStats[team].totalCondiDamage += damageValue;
 								result.teamStats[team].eliteSpecStats[agent->eliteSpec].totalCondiDamage += damageValue;
 							}
@@ -197,11 +204,12 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 		}
 	}
 
-	// Collect statistics (same as before)
+	// Collect statistics
 	for (const auto& [srcInstid, player] : playersBySrcInstid) {
 		if (player->team != "Unknown") {
 			result.teamStats[player->team].totalPlayers++;
 			result.teamStats[player->team].eliteSpecStats[player->eliteSpec].count++;
+			result.totalIdentifiedPlayers++; // Increment total identified players
 		}
 		else {
 			APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
@@ -210,7 +218,7 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 		}
 	}
 
-	// Log the totals (same as before)
+	// Log the totals
 	for (const auto& [teamName, stats] : result.teamStats) {
 		std::string message = "Team: " + teamName +
 			", Total Damage: " + std::to_string(stats.totalDamage) +
@@ -229,21 +237,61 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 	}
 
 	APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-		("Parsed EVTC file. Found " + std::to_string(playersBySrcInstid.size()) + " unique players").c_str());
+		("Parsed EVTC file. Found " + std::to_string(result.totalIdentifiedPlayers) + " identified players").c_str());
 }
+
+
+
+
+
 
 
 ParsedData parseEVTCFile(const std::string& filePath) {
 	ParsedData result;
 	std::vector<char> bytes = extractZipFile(filePath);
-	if (bytes.empty()) {
-		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Failed to extract EVTC file");
+	if (bytes.size() < 16) {
+		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "EVTC file is too small");
 		return result;
 	}
 
-	size_t offset = 16;  // Skip header (16 bytes)
+	size_t offset = 0;
 
-	// Parse agents
+	// Read header (12 bytes)
+	char header[13] = { 0 };
+	std::memcpy(header, bytes.data() + offset, 12);
+	offset += 12;
+
+	// Read revision (1 byte)
+	uint8_t revision;
+	std::memcpy(&revision, bytes.data() + offset, sizeof(uint8_t));
+	offset += sizeof(uint8_t);
+
+	// Read fight instance ID (uint16_t)
+	uint16_t fightId;
+	std::memcpy(&fightId, bytes.data() + offset, sizeof(uint16_t));
+	offset += sizeof(uint16_t);
+
+	// skip (1 byte)
+	uint8_t skipByte;
+	std::memcpy(&skipByte, bytes.data() + offset, sizeof(uint8_t));
+	offset += sizeof(uint8_t);
+
+	std::string headerStr(header);
+	APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Header: " + headerStr + ", Revision: " + std::to_string(revision) + ", Fight Instance ID: " + std::to_string(fightId)).c_str());
+
+	// Check if fightId is 1 (WvW)
+	if (fightId != 1) {
+		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping non-WvW log. FightInstanceID: " + std::to_string(fightId)).c_str());
+		return ParsedData(); // Return an empty result
+	}
+
+	result.fightId = fightId;
+
+	// Read agent count (uint32_t)
+	if (offset + sizeof(uint32_t) > bytes.size()) {
+		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Incomplete EVTC file: Missing agent count");
+		return result;
+	}
 	uint32_t agentCount;
 	std::memcpy(&agentCount, bytes.data() + offset, sizeof(uint32_t));
 	offset += sizeof(uint32_t);
@@ -251,10 +299,22 @@ ParsedData parseEVTCFile(const std::string& filePath) {
 	std::unordered_map<uint64_t, Agent> agentsByAddress;
 	parseAgents(bytes, offset, agentCount, agentsByAddress);
 
-	// Skip skills
+	// Read skill count (uint32_t)
+	if (offset + sizeof(uint32_t) > bytes.size()) {
+		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Incomplete EVTC file: Missing skill count");
+		return result;
+	}
 	uint32_t skillCount;
 	std::memcpy(&skillCount, bytes.data() + offset, sizeof(uint32_t));
-	offset += sizeof(uint32_t) + (68 * skillCount);
+	offset += sizeof(uint32_t);
+
+	// Skip skills (68 bytes per skill)
+	size_t skillsSize = 68 * skillCount;
+	if (offset + skillsSize > bytes.size()) {
+		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Incomplete EVTC file: Skills data missing");
+		return result;
+	}
+	offset += skillsSize;
 
 	// Parse combat events
 	const size_t eventSize = sizeof(CombatEvent);
@@ -266,6 +326,12 @@ ParsedData parseEVTCFile(const std::string& filePath) {
 
 	return result;
 }
+
+
+
+
+
+
 
 void processEVTCFile(const std::filesystem::path& filePath)
 {
@@ -374,15 +440,26 @@ void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t n
 
 		for (size_t i = 0; i < numFilesToParse; ++i)
 		{
-			
 			const std::filesystem::path& filePath = zevtcFiles[i];
-			// Wait for the file to be fully written
 			waitForFile(filePath.string());
 
-			// Parse the file
 			ParsedLog log;
-			log.filename = filePath.filename().string();;
+			log.filename = filePath.filename().string();
 			log.data = parseEVTCFile(filePath.string());
+
+
+			if (log.data.fightId != 1)
+			{
+				APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping non-WvW log during initial parsing: " + log.filename).c_str());
+				continue;
+			}
+
+			if (log.data.totalIdentifiedPlayers == 0)
+			{
+				APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping log with no identified players during initial parsing: " + log.filename).c_str());
+				continue;
+			}
+
 			{
 				std::lock_guard<std::mutex> lock(parsedLogsMutex);
 				parsedLogs.push_back(log);
@@ -403,6 +480,9 @@ void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t n
 			("Exception in initial parsing: " + std::string(ex.what())).c_str());
 	}
 }
+
+
+
 
 void monitorDirectory(size_t numLogsToParse)
 {
@@ -575,7 +655,6 @@ void monitorDirectory(size_t numLogsToParse)
 
 
 
-
 void processNewEVTCFile(const std::string& filePath)
 {
 	std::filesystem::path path(filePath);
@@ -584,6 +663,18 @@ void processNewEVTCFile(const std::string& filePath)
 	ParsedLog log;
 	log.filename = filename;
 	log.data = parseEVTCFile(filePath);
+
+	if (log.data.fightId != 1)
+	{
+		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping non-WvW log: " + filename).c_str());
+		return;
+	}
+
+	if (log.data.totalIdentifiedPlayers == 0)
+	{
+		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping log with no identified players: " + filename).c_str());
+		return;
+	}
 
 	{
 		std::lock_guard<std::mutex> lock(parsedLogsMutex);
@@ -597,3 +688,6 @@ void processNewEVTCFile(const std::string& filePath)
 		currentLogIndex = 0;
 	}
 }
+
+
+
