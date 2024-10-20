@@ -68,6 +68,12 @@ extern std::thread initialParsingThread;
 extern std::thread directoryMonitorThread;
 extern int currentLogIndex;
 
+
+struct TextureInfo {
+    int resourceId;
+    Texture** texture;
+};
+
 // Structures
 struct Agent {
     uint64_t address;

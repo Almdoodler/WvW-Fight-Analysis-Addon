@@ -12,6 +12,7 @@
 #include "imgui/imgui.h"
 #include "Shared.h"
 #include "Settings.h"
+#include "utils.h"
 #include <zip.h>
 #include <regex>
 #include <chrono>
@@ -34,48 +35,6 @@ HMODULE hSelf = nullptr;
 
 std::filesystem::path AddonPath;
 std::filesystem::path SettingsPath;
-
-
-
-Texture** getTextureInfo(const std::string& eliteSpec, int* outResourceId) {
-    if (eliteSpec == "Berserker") { *outResourceId = BERSERKER; return &Berserker; }
-    else if (eliteSpec == "Bladesworn") { *outResourceId = BLADESWORN; return &Bladesworn; }
-    else if (eliteSpec == "Catalyst") { *outResourceId = CATALYST; return &Catalyst; }
-    else if (eliteSpec == "Chronomancer") { *outResourceId = CHRONOMANCER; return &Chronomancer; }
-    else if (eliteSpec == "Daredevil") { *outResourceId = DAREDEVIL; return &Daredevil; }
-    else if (eliteSpec == "Deadeye") { *outResourceId = DEADEYE; return &Deadeye; }
-    else if (eliteSpec == "Dragonhunter") { *outResourceId = DRAGONHUNTER; return &Dragonhunter; }
-    else if (eliteSpec == "Druid") { *outResourceId = DRUID; return &Druid; }
-    else if (eliteSpec == "Core Elementalist") { *outResourceId = ELEMENTALIST; return &Elementalist; }
-    else if (eliteSpec == "Core Engineer") { *outResourceId = ENGINEER; return &Engineer; }
-    else if (eliteSpec == "Firebrand") { *outResourceId = FIREBRAND; return &Firebrand; }
-    else if (eliteSpec == "Core Guardian") { *outResourceId = GUARDIAN; return &Guardian; }
-    else if (eliteSpec == "Harbinger") { *outResourceId = HARBINGER; return &Harbinger; }
-    else if (eliteSpec == "Herald") { *outResourceId = HERALD; return &Herald; }
-    else if (eliteSpec == "Holosmith") { *outResourceId = HOLOSMITH; return &Holosmith; }
-    else if (eliteSpec == "Mechanist") { *outResourceId = MECHANIST; return &Mechanist; }
-    else if (eliteSpec == "Core Mesmer") { *outResourceId = MESMER; return &Mesmer; }
-    else if (eliteSpec == "Mirage") { *outResourceId = MIRAGE; return &Mirage; }
-    else if (eliteSpec == "Core Necromancer") { *outResourceId = NECROMANCER; return &Necromancer; }
-    else if (eliteSpec == "Core Ranger") { *outResourceId = RANGER; return &Ranger; }
-    else if (eliteSpec == "Reaper") { *outResourceId = REAPER; return &Reaper; }
-    else if (eliteSpec == "Renegade") { *outResourceId = RENEGADE; return &Renegade; }
-    else if (eliteSpec == "Core Revenant") { *outResourceId = REVENANT; return &Revenant; }
-    else if (eliteSpec == "Scrapper") { *outResourceId = SCRAPPER; return &Scrapper; }
-    else if (eliteSpec == "Scourge") { *outResourceId = SCOURGE; return &Scourge; }
-    else if (eliteSpec == "Soulbeast") { *outResourceId = SOULBEAST; return &Soulbeast; }
-    else if (eliteSpec == "Specter") { *outResourceId = SPECTER; return &Specter; }
-    else if (eliteSpec == "Spellbreaker") { *outResourceId = SPELLBREAKER; return &Spellbreaker; }
-    else if (eliteSpec == "Tempest") { *outResourceId = TEMPEST; return &Tempest; }
-    else if (eliteSpec == "Core Thief") { *outResourceId = THIEF; return &Thief; }
-    else if (eliteSpec == "Untamed") { *outResourceId = UNTAMED; return &Untamed; }
-    else if (eliteSpec == "Vindicator") { *outResourceId = VINDICATOR; return &Vindicator; }
-    else if (eliteSpec == "Virtuoso") { *outResourceId = VIRTUOSO; return &Virtuoso; }
-    else if (eliteSpec == "Core Warrior") { *outResourceId = WARRIOR; return &Warrior; }
-    else if (eliteSpec == "Weaver") { *outResourceId = WEAVER; return &Weaver; }
-    else if (eliteSpec == "Willbender") { *outResourceId = WILLBENDER; return &Willbender; }
-    else { *outResourceId = 0; return nullptr; }
-}
 
 
 
@@ -296,7 +255,11 @@ void AddonLoad(AddonAPI* aApi)
     std::filesystem::create_directory(AddonPath);
     Settings::Load(SettingsPath);
 
-    APIDefs->RegisterKeybindWithString("KB_MI_TOGGLEVISIBLE", ProcessKeybinds, "(null)");
+    APIDefs->RegisterKeybindWithString("KB_WINDOW_TOGGLEVISIBLE", ProcessKeybinds, "(null)");
+    APIDefs->RegisterKeybindWithString("KB_WIDGET_TOGGLEVISIBLE", ProcessKeybinds, "(null)");
+
+    APIDefs->RegisterKeybindWithString("LOG_INDEX_UP", ProcessKeybinds, "(null)");
+    APIDefs->RegisterKeybindWithString("LOG_INDEX_DOWN", ProcessKeybinds, "(null)");
 
     Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
     Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
@@ -333,6 +296,7 @@ void AddonUnload()
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon unloaded successfully.");
 }
 
+
 void ProcessKeybinds(const char* aIdentifier)
 {
     std::string str = aIdentifier;
@@ -342,6 +306,32 @@ void ProcessKeybinds(const char* aIdentifier)
         Settings::IsAddonWindowEnabled = !Settings::IsAddonWindowEnabled;
         Settings::Save(SettingsPath);
     }
+    else if (str == "KB_WIDGET_TOGGLEVISIBLE")
+    {
+        Settings::IsAddonWidgetEnabled = !Settings::IsAddonWidgetEnabled;
+        Settings::Save(SettingsPath);
+    }
+    else if (str == "LOG_INDEX_DOWN") 
+    {
+        if (!parsedLogs.empty()) {
+            currentLogIndex = (currentLogIndex - 1 + parsedLogs.size()) % static_cast<int>(parsedLogs.size());
+        }
+        else {
+            APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
+                ("Log Index: " + std::to_string(currentLogIndex)).c_str());
+        }
+
+    }
+    else if (str == "LOG_INDEX_UP")
+    {
+        if (!parsedLogs.empty()) {
+            currentLogIndex = (currentLogIndex + 1) % static_cast<int>(parsedLogs.size());
+        }
+        else {
+            APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
+                ("Log Index: " + std::to_string(currentLogIndex)).c_str());
+        }
+    } 
 }
 
 
@@ -617,71 +607,73 @@ void AddonRender()
                                     ImGui::Text("%s", formattedDamage.c_str());
                                 }
                             }
-                            ImGui::Separator();
+                            if (Settings::showSpecBars) {
+                                ImGui::Separator();
 
-                            bool sortByDamage = Settings::sortSpecDamage;
-                            bool showDamage = Settings::showSpecDamage;
+                                bool sortByDamage = Settings::sortSpecDamage;
+                                bool showDamage = Settings::showSpecDamage;
 
-                            // Sort classes by count or damage in descending order
-                            std::vector<std::pair<std::string, SpecStats>> sortedClasses;
+                                // Sort classes by count or damage in descending order
+                                std::vector<std::pair<std::string, SpecStats>> sortedClasses;
 
-                            for (const auto& [eliteSpec, stats] : teamData.eliteSpecStats) {
-                                sortedClasses.emplace_back(eliteSpec, stats);
-                            }
+                                for (const auto& [eliteSpec, stats] : teamData.eliteSpecStats) {
+                                    sortedClasses.emplace_back(eliteSpec, stats);
+                                }
 
-                            std::sort(sortedClasses.begin(), sortedClasses.end(),
-                                [sortByDamage](const std::pair<std::string, SpecStats>& a, const std::pair<std::string, SpecStats>& b) {
+                                std::sort(sortedClasses.begin(), sortedClasses.end(),
+                                    [sortByDamage](const std::pair<std::string, SpecStats>& a, const std::pair<std::string, SpecStats>& b) {
+                                        if (sortByDamage) {
+                                            return a.second.totalDamage > b.second.totalDamage;
+                                        }
+                                        else {
+                                            return a.second.count > b.second.count;
+                                        }
+                                    });
+
+                                uint64_t maxValue = 0;
+                                if (!sortedClasses.empty()) {
                                     if (sortByDamage) {
-                                        return a.second.totalDamage > b.second.totalDamage;
+                                        maxValue = sortedClasses[0].second.totalDamage;
                                     }
                                     else {
-                                        return a.second.count > b.second.count;
+                                        maxValue = sortedClasses[0].second.count;
                                     }
-                                });
-
-                            uint64_t maxValue = 0;
-                            if (!sortedClasses.empty()) {
-                                if (sortByDamage) {
-                                    maxValue = sortedClasses[0].second.totalDamage;
-                                }
-                                else {
-                                    maxValue = sortedClasses[0].second.count;
-                                }
-                            }
-
-                            for (const auto& specPair : sortedClasses)
-                            {
-                                const std::string& eliteSpec = specPair.first;
-                                const SpecStats& stats = specPair.second;
-                                int count = stats.count;
-                                uint64_t totalDamage = stats.totalDamage;
-
-                                // Determine the value and fraction based on the sorting criterion
-                                uint64_t value = sortByDamage ? totalDamage : count;
-                                float frac = (maxValue > 0) ? static_cast<float>(value) / maxValue : 0.0f;
-
-                                // Get the profession name
-                                std::string professionName;
-                                auto it = eliteSpecToProfession.find(eliteSpec);
-                                if (it != eliteSpecToProfession.end()) {
-                                    professionName = it->second;
-                                }
-                                else {
-                                    professionName = "Unknown";
                                 }
 
-                                // Get the color for the profession
-                                ImVec4 color;
-                                auto colorIt = professionColors.find(professionName);
-                                if (colorIt != professionColors.end()) {
-                                    color = colorIt->second;
-                                }
-                                else {
-                                    color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-                                }
+                                for (const auto& specPair : sortedClasses)
+                                {
+                                    const std::string& eliteSpec = specPair.first;
+                                    const SpecStats& stats = specPair.second;
+                                    int count = stats.count;
+                                    uint64_t totalDamage = stats.totalDamage;
 
-                                // Draw the bar with the updated parameters
-                                DrawBar(frac, count, totalDamage, color, eliteSpec, showDamage);
+                                    // Determine the value and fraction based on the sorting criterion
+                                    uint64_t value = sortByDamage ? totalDamage : count;
+                                    float frac = (maxValue > 0) ? static_cast<float>(value) / maxValue : 0.0f;
+
+                                    // Get the profession name
+                                    std::string professionName;
+                                    auto it = eliteSpecToProfession.find(eliteSpec);
+                                    if (it != eliteSpecToProfession.end()) {
+                                        professionName = it->second;
+                                    }
+                                    else {
+                                        professionName = "Unknown";
+                                    }
+
+                                    // Get the color for the profession
+                                    ImVec4 color;
+                                    auto colorIt = professionColors.find(professionName);
+                                    if (colorIt != professionColors.end()) {
+                                        color = colorIt->second;
+                                    }
+                                    else {
+                                        color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+                                    }
+
+                                    // Draw the bar with the updated parameters
+                                    DrawBar(frac, count, totalDamage, color, eliteSpec, showDamage);
+                                }
                             }
                         }
                     }
@@ -721,6 +713,11 @@ void AddonRender()
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Display")) {
+                    if (ImGui::Checkbox("Show Class Bars", &Settings::showSpecBars))
+                    {
+                        Settings::Settings[SHOW_SPEC_BARS] = Settings::showSpecBars;
+                        Settings::Save(SettingsPath);
+                    }
                     if (ImGui::Checkbox("Short Class Names", &Settings::useShortClassNames))
                     {
                         Settings::Settings[USE_SHORT_CLASS_NAMES] = Settings::useShortClassNames;

@@ -18,6 +18,7 @@ const char*  LOG_HISTORY_SIZE = "LogHistorySize";
 const char* SHOW_CLASS_NAMES = "ShowClassNames";
 const char* USE_SHORT_CLASS_NAMES = "UseShortClassNames";
 const char* SHOW_CLASS_ICONS = "ShowClassIcons";
+const char* SHOW_SPEC_BARS = "ShowSpecBars";
 
 // Team Stats
 const char* SHOW_TEAM_TOTAL_PLAYERS = "ShowTeamTotalPlayers";
@@ -79,6 +80,10 @@ namespace Settings
 		if (!Settings[SHOW_CLASS_ICONS].is_null())
 		{
 			Settings[SHOW_CLASS_ICONS].get_to<bool>(showClassIcons);
+		}
+		if (!Settings[SHOW_SPEC_BARS].is_null())
+		{
+			Settings[SHOW_SPEC_BARS].get_to<bool>(showSpecBars);
 		}
 		if (!Settings[TEAM_PLAYER_THRESHOLD].is_null())
 		{
@@ -155,6 +160,7 @@ namespace Settings
 	bool showClassNames = true;
 	bool useShortClassNames = false;
 	bool showClassIcons = true;
+	bool showSpecBars = true;
 	// Team Stats
 	bool showTeamTotalPlayers = true;
 	bool showTeamDeaths = true;

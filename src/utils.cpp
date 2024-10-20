@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "resource.h"
 #include "Shared.h"
 #include "Settings.h"
 #include "evtc_parser.h"
@@ -162,6 +163,57 @@ void initMaps() {
     };
 }
 
+std::unordered_map<std::string, TextureInfo> textureMap = {
+    {"Berserker", {BERSERKER, &Berserker}},
+    {"Bladesworn", {BLADESWORN, &Bladesworn}},
+    {"Catalyst", {CATALYST, &Catalyst}},
+    {"Chronomancer", {CHRONOMANCER, &Chronomancer}},
+    {"Daredevil", {DAREDEVIL, &Daredevil}},
+    {"Deadeye", {DEADEYE, &Deadeye}},
+    {"Dragonhunter", {DRAGONHUNTER, &Dragonhunter}},
+    {"Druid", {DRUID, &Druid}},
+    {"Core Elementalist", {ELEMENTALIST, &Elementalist}},
+    {"Core Engineer", {ENGINEER, &Engineer}},
+    {"Firebrand", {FIREBRAND, &Firebrand}},
+    {"Core Guardian", {GUARDIAN, &Guardian}},
+    {"Harbinger", {HARBINGER, &Harbinger}},
+    {"Herald", {HERALD, &Herald}},
+    {"Holosmith", {HOLOSMITH, &Holosmith}},
+    {"Mechanist", {MECHANIST, &Mechanist}},
+    {"Core Mesmer", {MESMER, &Mesmer}},
+    {"Mirage", {MIRAGE, &Mirage}},
+    {"Core Necromancer", {NECROMANCER, &Necromancer}},
+    {"Core Ranger", {RANGER, &Ranger}},
+    {"Reaper", {REAPER, &Reaper}},
+    {"Renegade", {RENEGADE, &Renegade}},
+    {"Core Revenant", {REVENANT, &Revenant}},
+    {"Scrapper", {SCRAPPER, &Scrapper}},
+    {"Scourge", {SCOURGE, &Scourge}},
+    {"Soulbeast", {SOULBEAST, &Soulbeast}},
+    {"Specter", {SPECTER, &Specter}},
+    {"Spellbreaker", {SPELLBREAKER, &Spellbreaker}},
+    {"Tempest", {TEMPEST, &Tempest}},
+    {"Core Thief", {THIEF, &Thief}},
+    {"Untamed", {UNTAMED, &Untamed}},
+    {"Vindicator", {VINDICATOR, &Vindicator}},
+    {"Virtuoso", {VIRTUOSO, &Virtuoso}},
+    {"Core Warrior", {WARRIOR, &Warrior}},
+    {"Weaver", {WEAVER, &Weaver}},
+    {"Willbender", {WILLBENDER, &Willbender}}
+};
+
+Texture** getTextureInfo(const std::string& eliteSpec, int* outResourceId) {
+    auto it = textureMap.find(eliteSpec);
+    if (it != textureMap.end()) {
+        *outResourceId = it->second.resourceId;
+        return it->second.texture;
+    }
+    else {
+        *outResourceId = 0;
+        return nullptr;
+    }
+}
+
 std::string formatDamage(double damage) {
     if (damage >= 1'000'000.0) {
         if (std::fmod(damage, 1'000'000.0) == 0.0) {
@@ -259,3 +311,4 @@ std::vector<char> extractZipFile(const std::string& filePath) {
 
     return buffer;
 }
+

@@ -19,6 +19,7 @@ extern const char* LOG_HISTORY_SIZE;
 extern const char* USE_SHORT_CLASS_NAMES;
 extern const char* SHOW_CLASS_NAMES;
 extern const char* SHOW_CLASS_ICONS;
+extern const char* SHOW_SPEC_BARS;
 
 
 
@@ -58,6 +59,7 @@ namespace Settings
 	extern bool useShortClassNames;
 	extern bool showClassNames;
 	extern bool showClassIcons;
+	extern bool showSpecBars;
 
 
 	// Team Stats
