@@ -130,6 +130,8 @@ SQUAD                   PNG                     "assets\\squad_16x16.png"
 
 DAMAGE                  PNG                     "assets\\damage_18x18.png"
 
+IDB_PNG1                PNG                     "assets\\condition_damage_18x18.png"
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 

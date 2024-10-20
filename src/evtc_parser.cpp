@@ -163,6 +163,7 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 				int32_t damageValue = 0;
 				if (event.buff == 0) {
 					damageValue = event.value;
+
 				}
 				else if (event.buff == 1) {
 					damageValue = event.buffDmg;
@@ -174,9 +175,19 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 						Agent* agent = srcIt->second;
 						const std::string& team = agent->team;
 						if (team != "Unknown") {
+
+							if (event.buff == 0) 
+							{
+								result.teamStats[team].totalStrikeDamage += damageValue;
+								result.teamStats[team].eliteSpecStats[agent->eliteSpec].totalStrikeDamage += damageValue;
+							}
+							else 
+							{
+								result.teamStats[team].totalCondiDamage += damageValue;
+								result.teamStats[team].eliteSpecStats[agent->eliteSpec].totalCondiDamage += damageValue;
+							}
 							// Accumulate total damage for the team
 							result.teamStats[team].totalDamage += damageValue;
-
 							// Accumulate damage per specialization
 							result.teamStats[team].eliteSpecStats[agent->eliteSpec].totalDamage += damageValue;
 						}

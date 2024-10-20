@@ -89,6 +89,8 @@ struct Agent {
 struct SpecStats {
     int count = 0;
     uint64_t totalDamage = 0;
+    uint64_t totalStrikeDamage = 0;
+    uint64_t totalCondiDamage = 0;
 };
 
 struct TeamStats {
@@ -96,6 +98,8 @@ struct TeamStats {
     uint32_t totalDeaths = 0;
     uint32_t totalDowned = 0;
     uint64_t totalDamage = 0;
+    uint64_t totalStrikeDamage = 0;
+    uint64_t totalCondiDamage = 0;
     std::unordered_map<std::string, SpecStats> eliteSpecStats;
 };
 
