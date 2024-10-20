@@ -20,6 +20,7 @@ extern const char* USE_SHORT_CLASS_NAMES;
 extern const char* SHOW_CLASS_NAMES;
 extern const char* SHOW_CLASS_ICONS;
 extern const char* SHOW_SPEC_BARS;
+extern const char* USE_TABBED_VIEW;
 
 
 
@@ -76,6 +77,7 @@ namespace Settings
 	extern bool sortSpecDamage;
 	// Window Style
 	extern bool showScrollBar;
+	extern bool useTabbedView;
 }
 
 #endif

@@ -32,6 +32,7 @@ const char* SHOW_SPEC_DAMAGE = "ShowSpecDamage";
 const char* SORT_SPEC_DAMAGE = "SortSpecDamage";
 // Window Style
 const char* SHOW_SCROLL_BAR = "ShowScrollBar";
+const char* USE_TABBED_VIEW = "UseTabbedView";
 
 
 namespace Settings
@@ -139,6 +140,10 @@ namespace Settings
 		{
 			Settings[SHOW_SCROLL_BAR].get_to<bool>(showScrollBar);
 		}
+		if (!Settings[USE_TABBED_VIEW].is_null())
+		{
+			Settings[USE_TABBED_VIEW].get_to<bool>(useTabbedView);
+		}
 
 	}
 	void Save(std::filesystem::path aPath)
@@ -183,4 +188,5 @@ namespace Settings
 	bool sortSpecDamage = false;
 	// Window Style
 	bool showScrollBar = true;
+	bool useTabbedView = true;
 }

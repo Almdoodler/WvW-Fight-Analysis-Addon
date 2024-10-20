@@ -204,6 +204,230 @@ void RenderSimpleRatioBar(int red, int green, int blue,
     ImGui::Dummy(size);
 }
 
+void RenderTeamData(int teamIndex, const TeamStats& teamData)
+{
+    ImGuiStyle& style = ImGui::GetStyle();
+    float sz = ImGui::GetFontSize();
+
+    ImGui::Spacing();
+
+    // Display team total players
+    if (Settings::showTeamTotalPlayers) {
+        if (Settings::showClassIcons)
+        {
+            if (Squad && Squad->Resource)
+            {
+                ImGui::Image(Squad->Resource, ImVec2(sz, sz));
+                ImGui::SameLine(0, 5);
+            }
+            else {
+                Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
+            }
+        }
+        if (Settings::showClassNames)
+        {
+            ImGui::Text("Total: %d", teamData.totalPlayers);
+        }
+        else
+        {
+            ImGui::Text("%d", teamData.totalPlayers);
+        }
+    }
+
+    // Display team deaths
+    if (Settings::showTeamDeaths) {
+        if (Settings::showClassIcons)
+        {
+            if (Death && Death->Resource)
+            {
+                ImGui::Image(Death->Resource, ImVec2(sz, sz));
+                ImGui::SameLine(0, 5);
+            }
+            else
+            {
+                Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
+            }
+        }
+        if (Settings::showClassNames)
+        {
+            ImGui::Text("Deaths: %d", teamData.totalDeaths);
+        }
+        else
+        {
+            ImGui::Text("%d", teamData.totalDeaths);
+        }
+    }
+
+    // Display team downed
+    if (Settings::showTeamDowned) {
+        if (Settings::showClassIcons)
+        {
+            if (Downed && Downed->Resource)
+            {
+                ImGui::Image(Downed->Resource, ImVec2(sz, sz));
+                ImGui::SameLine(0, 5);
+            }
+            else
+            {
+                Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
+            }
+        }
+        if (Settings::showClassNames)
+        {
+            ImGui::Text("Downed: %d", teamData.totalDowned);
+        }
+        else
+        {
+            ImGui::Text("%d", teamData.totalDowned);
+        }
+    }
+
+    // Display team total damage
+    if (Settings::showTeamDamage) {
+        if (Settings::showClassIcons)
+        {
+            if (Damage && Damage->Resource)
+            {
+                ImGui::Image(Damage->Resource, ImVec2(sz, sz));
+                ImGui::SameLine(0, 5);
+            }
+            else
+            {
+                Damage = APIDefs->GetTextureOrCreateFromResource("DAMAGE_ICON", DAMAGE, hSelf);
+            }
+        }
+        std::string formattedDamage = formatDamage(teamData.totalDamage);
+        if (Settings::showClassNames)
+        {
+            ImGui::Text("Damage: %s", formattedDamage.c_str());
+        }
+        else
+        {
+            ImGui::Text("%s", formattedDamage.c_str());
+        }
+    }
+
+    // Display team strike damage
+    if (Settings::showTeamStrikeDamage) {
+        if (Settings::showClassIcons)
+        {
+            if (Strike && Strike->Resource)
+            {
+                ImGui::Image(Strike->Resource, ImVec2(sz, sz));
+                ImGui::SameLine(0, 5);
+            }
+            else
+            {
+                Strike = APIDefs->GetTextureOrCreateFromResource("STRIKE_ICON", STRIKE, hSelf);
+            }
+        }
+        std::string formattedDamage = formatDamage(teamData.totalStrikeDamage);
+        if (Settings::showClassNames)
+        {
+            ImGui::Text("Strike: %s", formattedDamage.c_str());
+        }
+        else
+        {
+            ImGui::Text("%s", formattedDamage.c_str());
+        }
+    }
+
+    // Display team condi damage
+    if (Settings::showTeamCondiDamage) {
+        if (Settings::showClassIcons)
+        {
+            if (Condi && Condi->Resource)
+            {
+                ImGui::Image(Condi->Resource, ImVec2(sz, sz));
+                ImGui::SameLine(0, 5);
+            }
+            else
+            {
+                Condi = APIDefs->GetTextureOrCreateFromResource("CONDI_ICON", CONDI, hSelf);
+            }
+        }
+        std::string formattedDamage = formatDamage(teamData.totalCondiDamage);
+        if (Settings::showClassNames)
+        {
+            ImGui::Text("Condi: %s", formattedDamage.c_str());
+        }
+        else
+        {
+            ImGui::Text("%s", formattedDamage.c_str());
+        }
+    }
+
+    // Display specialization bars
+    if (Settings::showSpecBars) {
+        ImGui::Separator();
+
+        bool sortByDamage = Settings::sortSpecDamage;
+        bool showDamage = Settings::showSpecDamage;
+
+        // Sort specializations by count or damage in descending order
+        std::vector<std::pair<std::string, SpecStats>> sortedClasses;
+
+        for (const auto& [eliteSpec, stats] : teamData.eliteSpecStats) {
+            sortedClasses.emplace_back(eliteSpec, stats);
+        }
+
+        std::sort(sortedClasses.begin(), sortedClasses.end(),
+            [sortByDamage](const std::pair<std::string, SpecStats>& a, const std::pair<std::string, SpecStats>& b) {
+                if (sortByDamage) {
+                    return a.second.totalDamage > b.second.totalDamage;
+                }
+                else {
+                    return a.second.count > b.second.count;
+                }
+            });
+
+        uint64_t maxValue = 0;
+        if (!sortedClasses.empty()) {
+            if (sortByDamage) {
+                maxValue = sortedClasses[0].second.totalDamage;
+            }
+            else {
+                maxValue = sortedClasses[0].second.count;
+            }
+        }
+
+        for (const auto& specPair : sortedClasses)
+        {
+            const std::string& eliteSpec = specPair.first;
+            const SpecStats& stats = specPair.second;
+            int count = stats.count;
+            uint64_t totalDamage = stats.totalDamage;
+
+            // Determine the value and fraction based on the sorting criterion
+            uint64_t value = sortByDamage ? totalDamage : count;
+            float frac = (maxValue > 0) ? static_cast<float>(value) / maxValue : 0.0f;
+
+            // Get the profession name
+            std::string professionName;
+            auto it = eliteSpecToProfession.find(eliteSpec);
+            if (it != eliteSpecToProfession.end()) {
+                professionName = it->second;
+            }
+            else {
+                professionName = "Unknown";
+            }
+
+            // Get the color for the profession
+            ImVec4 color;
+            auto colorIt = professionColors.find(professionName);
+            if (colorIt != professionColors.end()) {
+                color = colorIt->second;
+            }
+            else {
+                color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+            }
+
+            // Draw the bar with the updated parameters
+            DrawBar(frac, count, totalDamage, color, eliteSpec, showDamage);
+        }
+    }
+}
+
 
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
@@ -226,7 +450,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 2;
-    AddonDef.Version.Revision = 0;
+    AddonDef.Version.Revision = 1;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "Simple WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
@@ -460,7 +684,7 @@ void AddonRender()
                 ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xb5, 0xe5, 0xff)), // Blue
                 ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xcc, 0x00, 0xff))  // Green
             };
-            // Count how many teams have data and meet the threshold
+            
             int teamsWithData = 0;
             bool teamHasData[3] = { false, false, false };
             for (int i = 0; i < 3; ++i) {
@@ -482,251 +706,111 @@ void AddonRender()
             if (teamsWithData == 0) {
                 ImGui::Text("No team data available meeting the player threshold.");
             }
-            else if (ImGui::BeginTable("TeamTable", teamsWithData, table_flags))
-            {
-                ImGui::TableSetupScrollFreeze(0, 1);
+            else {
+                if (Settings::useTabbedView) {
+                    // Render using tabs
+                    if (ImGui::BeginTabBar("TeamTabBar", ImGuiTabBarFlags_None))
+                    {
+                        for (int i = 0; i < 3; ++i) {
+                            if (teamHasData[i]) {
+                                // Set the tab label with team name and color
+                                ImGui::PushStyleColor(ImGuiCol_Text, team_colors[i]);
+                                if (ImGui::BeginTabItem(team_names[i])) {
+                                    ImGui::PopStyleColor(); // Pop the color after starting the tab item
 
-                // team player threshhold
-                for (int i = 0; i < 3; ++i) {
-                    if (teamHasData[i]) {
-                        ImGui::TableSetupColumn(team_names[i], ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthStretch);
-                    }
-                }
+                                    // Begin child region with optional scroll bar
+                                    ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoMove;
+                                    if (!Settings::showScrollBar) {
+                                        child_flags |= ImGuiWindowFlags_NoScrollbar;
+                                    }
+                                    // Note: Do not use ImGuiWindowFlags_AlwaysVerticalScrollbar
 
-                ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
-                int columnIndex = 0;
-                for (int i = 0; i < 3; ++i) {
-                    if (teamHasData[i]) {
-                        ImGui::TableSetColumnIndex(columnIndex++);
-                        ImGui::PushStyleColor(ImGuiCol_Text, team_colors[i]);
-                        ImGui::Text("%s Team", team_names[i]);
-                        ImGui::PopStyleColor();
-                    }
-                }
+                                    // Determine child region size
+                                    ImVec2 child_size = ImVec2(0, 0); // Use available space
 
-                ImGui::TableNextRow();
-                columnIndex = 0;
-                for (int i = 0; i < 3; ++i) {
-                    if (teamHasData[i]) {
-                        ImGui::TableSetColumnIndex(columnIndex++);
-                        const char* team_name = team_names[i];
+                                    ImGui::BeginChild(("TeamChild" + std::to_string(i)).c_str(), child_size, false, child_flags);
 
-                        auto teamIt = currentLogData.teamStats.find(team_name);
-                        if (teamIt != currentLogData.teamStats.end())
-                        {
-                            const auto& teamData = teamIt->second;
-                            ImGui::Spacing();
-                            if (Settings::showTeamTotalPlayers) {
-                                if (Settings::showClassIcons)
-                                {
-                                    if (Squad && Squad->Resource)
+                                    const char* team_name = team_names[i];
+                                    auto teamIt = currentLogData.teamStats.find(team_name);
+                                    if (teamIt != currentLogData.teamStats.end())
                                     {
-                                        ImGui::Image(Squad->Resource, ImVec2(sz, sz));
-                                        ImGui::SameLine(0, 5);
-                                    }
-                                    else {
-                                        Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
-                                    }
-                                }
-                                if (Settings::showClassNames)
-                                {
-                                    ImGui::Text("Total: %d", teamData.totalPlayers);
-                                }
-                                else
-                                {
-                                    ImGui::Text("%d", teamData.totalPlayers);
-                                }
-                            }
-                            if (Settings::showTeamDeaths) {
-                                if (Settings::showClassIcons)
-                                {
-                                    if (Death && Death->Resource)
-                                    {
-                                        ImGui::Image(Death->Resource, ImVec2(sz, sz));
-                                        ImGui::SameLine(0, 5);
-                                    }
-                                    else
-                                    {
-                                        Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
-                                    }
-                                }
-                                if (Settings::showClassNames)
-                                {
-                                    ImGui::Text("Deaths: %d", teamData.totalDeaths);
-                                }
-                                else
-                                {
-                                    ImGui::Text("%d", teamData.totalDeaths);
-                                }
-                            }
-                            if (Settings::showTeamDowned) {
-                                if (Settings::showClassIcons)
-                                {
-                                    if (Downed && Downed->Resource)
-                                    {
-                                        ImGui::Image(Downed->Resource, ImVec2(sz, sz));
-                                        ImGui::SameLine(0, 5);
-                                    }
-                                    else
-                                    {
-                                        Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
-                                    }
-                                }
-                                if (Settings::showClassNames)
-                                {
-                                    ImGui::Text("Downed: %d", teamData.totalDowned);
-                                }
-                                else
-                                {
-                                    ImGui::Text("%d", teamData.totalDowned);
-                                }
-                            }
-                            if (Settings::showTeamDamage) {
-                                if (Settings::showClassIcons)
-                                {
-                                    if (Damage && Damage->Resource)
-                                    {
-                                        ImGui::Image(Damage->Resource, ImVec2(sz, sz));
-                                        ImGui::SameLine(0, 5);
-                                    }
-                                    else
-                                    {
-                                        Damage = APIDefs->GetTextureOrCreateFromResource("DAMAGE_ICON", DAMAGE, hSelf);
-                                    }
-                                }
-                                std::string formattedDamage = formatDamage(teamData.totalDamage);
-                                if (Settings::showClassNames)
-                                {
-
-                                    ImGui::Text("Damage: %s", formattedDamage.c_str());
-                                }
-                                else
-                                {
-                                    ImGui::Text("%s", formattedDamage.c_str());
-                                }
-                            }
-                            if (Settings::showTeamStrikeDamage) {
-                                if (Settings::showClassIcons)
-                                {
-                                    if (Strike && Strike->Resource)
-                                    {
-                                        ImGui::Image(Strike->Resource, ImVec2(sz, sz));
-                                        ImGui::SameLine(0, 5);
-                                    }
-                                    else
-                                    {
-                                        Strike = APIDefs->GetTextureOrCreateFromResource("STRIKE_ICON", STRIKE, hSelf);
-                                    }
-                                }
-                                std::string formattedDamage = formatDamage(teamData.totalStrikeDamage);
-                                if (Settings::showClassNames)
-                                {
-
-                                    ImGui::Text("Strike: %s", formattedDamage.c_str());
-                                }
-                                else
-                                {
-                                    ImGui::Text("%s", formattedDamage.c_str());
-                                }
-                            }
-                            if (Settings::showTeamCondiDamage) {
-                                if (Settings::showClassIcons)
-                                {
-                                    if (Condi && Condi->Resource)
-                                    {
-                                        ImGui::Image(Condi->Resource, ImVec2(sz, sz));
-                                        ImGui::SameLine(0, 5);
-                                    }
-                                    else
-                                    {
-                                        Condi = APIDefs->GetTextureOrCreateFromResource("CONDI_ICON", CONDI, hSelf);
-                                    }
-                                }
-                                std::string formattedDamage = formatDamage(teamData.totalCondiDamage);
-                                if (Settings::showClassNames)
-                                {
-
-                                    ImGui::Text("Condi: %s", formattedDamage.c_str());
-                                }
-                                else
-                                {
-                                    ImGui::Text("%s", formattedDamage.c_str());
-                                }
-                            }
-                            if (Settings::showSpecBars) {
-                                ImGui::Separator();
-
-                                bool sortByDamage = Settings::sortSpecDamage;
-                                bool showDamage = Settings::showSpecDamage;
-
-                                // Sort classes by count or damage in descending order
-                                std::vector<std::pair<std::string, SpecStats>> sortedClasses;
-
-                                for (const auto& [eliteSpec, stats] : teamData.eliteSpecStats) {
-                                    sortedClasses.emplace_back(eliteSpec, stats);
-                                }
-
-                                std::sort(sortedClasses.begin(), sortedClasses.end(),
-                                    [sortByDamage](const std::pair<std::string, SpecStats>& a, const std::pair<std::string, SpecStats>& b) {
-                                        if (sortByDamage) {
-                                            return a.second.totalDamage > b.second.totalDamage;
-                                        }
-                                        else {
-                                            return a.second.count > b.second.count;
-                                        }
-                                    });
-
-                                uint64_t maxValue = 0;
-                                if (!sortedClasses.empty()) {
-                                    if (sortByDamage) {
-                                        maxValue = sortedClasses[0].second.totalDamage;
-                                    }
-                                    else {
-                                        maxValue = sortedClasses[0].second.count;
-                                    }
-                                }
-
-                                for (const auto& specPair : sortedClasses)
-                                {
-                                    const std::string& eliteSpec = specPair.first;
-                                    const SpecStats& stats = specPair.second;
-                                    int count = stats.count;
-                                    uint64_t totalDamage = stats.totalDamage;
-
-                                    // Determine the value and fraction based on the sorting criterion
-                                    uint64_t value = sortByDamage ? totalDamage : count;
-                                    float frac = (maxValue > 0) ? static_cast<float>(value) / maxValue : 0.0f;
-
-                                    // Get the profession name
-                                    std::string professionName;
-                                    auto it = eliteSpecToProfession.find(eliteSpec);
-                                    if (it != eliteSpecToProfession.end()) {
-                                        professionName = it->second;
-                                    }
-                                    else {
-                                        professionName = "Unknown";
+                                        const auto& teamData = teamIt->second;
+                                        // Call the rendering function
+                                        RenderTeamData(i, teamData);
                                     }
 
-                                    // Get the color for the profession
-                                    ImVec4 color;
-                                    auto colorIt = professionColors.find(professionName);
-                                    if (colorIt != professionColors.end()) {
-                                        color = colorIt->second;
-                                    }
-                                    else {
-                                        color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-                                    }
+                                    ImGui::EndChild();
 
-                                    // Draw the bar with the updated parameters
-                                    DrawBar(frac, count, totalDamage, color, eliteSpec, showDamage);
+                                    ImGui::EndTabItem();
+                                }
+                                else {
+                                    ImGui::PopStyleColor(); // Ensure color is popped even if the tab item isn't active
                                 }
                             }
                         }
+                        ImGui::EndTabBar();
                     }
                 }
 
-                ImGui::EndTable();
+                else {
+                    ImGuiTableFlags table_flags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoPadOuterX;
+
+                    if (Settings::showScrollBar)
+                    {
+                        table_flags |= ImGuiTableFlags_ScrollY;
+                    }
+                    else
+                    {
+                        table_flags |= ImGuiTableFlags_NoKeepColumnsVisible;
+                    }
+
+                    ImVec2 table_size = ImVec2(0.0f, ImGui::GetContentRegionAvail().y);
+
+                    if (ImGui::BeginTable("TeamTable", teamsWithData, table_flags, table_size))
+                    {
+                        ImGui::TableSetupScrollFreeze(0, 1);
+
+                        for (int i = 0; i < 3; ++i) {
+                            if (teamHasData[i]) {
+                                ImGui::TableSetupColumn(team_names[i], ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthStretch);
+                            }
+                        }
+
+                        ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+                        int columnIndex = 0;
+                        for (int i = 0; i < 3; ++i) {
+                            if (teamHasData[i]) {
+                                ImGui::TableSetColumnIndex(columnIndex++);
+                                ImGui::PushStyleColor(ImGuiCol_Text, team_colors[i]);
+                                ImGui::Text("%s Team", team_names[i]);
+                                ImGui::PopStyleColor();
+                            }
+                        }
+
+                        ImGui::TableNextRow();
+                        columnIndex = 0;
+                        for (int i = 0; i < 3; ++i) {
+                            if (teamHasData[i]) {
+                                ImGui::TableSetColumnIndex(columnIndex++);
+
+                                const char* team_name = team_names[i];
+                                auto teamIt = currentLogData.teamStats.find(team_name);
+                                if (teamIt != currentLogData.teamStats.end())
+                                {
+                                    const auto& teamData = teamIt->second;
+                                    RenderTeamData(i, teamData);
+                                }
+                            }
+                        }
+
+                        ImGui::EndTable();
+                    }
+                }
             }
+
+
+
+
 
             ImGui::PopStyleVar(2);
 
@@ -753,7 +837,7 @@ void AddonRender()
 
                         if (ImGui::RadioButton(displayName.c_str(), &currentLogIndex, i))
                         {
-                            // Your existing selection logic here
+
                         }
                     }
                     ImGui::EndMenu();
@@ -826,6 +910,11 @@ void AddonRender()
                     if (ImGui::Checkbox("Show Scroll Bar", &Settings::showScrollBar))
                     {
                         Settings::Settings[SHOW_SCROLL_BAR] = Settings::showScrollBar;
+                        Settings::Save(SettingsPath);
+                    }
+                    if (ImGui::Checkbox("Use Tabbed View", &Settings::useTabbedView))
+                    {
+                        Settings::Settings[USE_TABBED_VIEW] = Settings::useTabbedView;
                         Settings::Save(SettingsPath);
                     }
                     ImGui::EndMenu();
