@@ -810,6 +810,16 @@ void AddonRender()
                         Settings::Settings[SHOW_TEAM_DAMAGE] = Settings::showTeamDamage;
                         Settings::Save(SettingsPath);
                     }
+                    if (ImGui::Checkbox("Team Strike Damage", &Settings::showTeamStrikeDamage))
+                    {
+                        Settings::Settings[SHOW_TEAM_STRIKE] = Settings::showTeamStrikeDamage;
+                        Settings::Save(SettingsPath);
+                    }
+                    if (ImGui::Checkbox("Team Condi Damage", &Settings::showTeamCondiDamage))
+                    {
+                        Settings::Settings[SHOW_TEAM_CONDI] = Settings::showTeamCondiDamage;
+                        Settings::Save(SettingsPath);
+                    }
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Style")) {
