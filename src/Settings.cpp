@@ -33,6 +33,7 @@ const char* SORT_SPEC_DAMAGE = "SortSpecDamage";
 // Window Style
 const char* SHOW_SCROLL_BAR = "ShowScrollBar";
 const char* USE_TABBED_VIEW = "UseTabbedView";
+const char* SHOW_WINDOW_TITLE = "ShowWindowTitle";
 
 
 namespace Settings
@@ -144,7 +145,10 @@ namespace Settings
 		{
 			Settings[USE_TABBED_VIEW].get_to<bool>(useTabbedView);
 		}
-
+		if (!Settings[SHOW_WINDOW_TITLE].is_null())
+		{
+			Settings[SHOW_WINDOW_TITLE].get_to<bool>(showWindowTitle);
+		}
 	}
 	void Save(std::filesystem::path aPath)
 	{
@@ -189,4 +193,5 @@ namespace Settings
 	// Window Style
 	bool showScrollBar = true;
 	bool useTabbedView = true;
+	bool showWindowTitle = true;
 }

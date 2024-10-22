@@ -259,7 +259,13 @@ void AddonRender()
     if (Settings::IsAddonWindowEnabled)
     {
         ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin("WvW Fight Analysis", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse))
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
+
+        if (!Settings::showWindowTitle)
+        {
+            window_flags |= ImGuiWindowFlags_NoTitleBar;
+        }
+        if (ImGui::Begin("WvW Fight Analysis", nullptr, window_flags))
         {
 
             ImGuiStyle& style = ImGui::GetStyle();
@@ -521,16 +527,22 @@ void AddonRender()
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Style")) {
-                    if (ImGui::Checkbox("Show Scroll Bar", &Settings::showScrollBar))
-                    {
-                        Settings::Settings[SHOW_SCROLL_BAR] = Settings::showScrollBar;
-                        Settings::Save(SettingsPath);
-                    }
                     if (ImGui::Checkbox("Use Tabbed View", &Settings::useTabbedView))
                     {
                         Settings::Settings[USE_TABBED_VIEW] = Settings::useTabbedView;
                         Settings::Save(SettingsPath);
                     }
+                    if (ImGui::Checkbox("Show Scroll Bar", &Settings::showScrollBar))
+                    {
+                        Settings::Settings[SHOW_SCROLL_BAR] = Settings::showScrollBar;
+                        Settings::Save(SettingsPath);
+                    }
+                    if (ImGui::Checkbox("Show Title", &Settings::showWindowTitle))
+                    {
+                        Settings::Settings[SHOW_WINDOW_TITLE] = Settings::showWindowTitle;
+                        Settings::Save(SettingsPath);
+                    }
+
                     ImGui::EndMenu();
                 }
                 ImGui::EndPopup();

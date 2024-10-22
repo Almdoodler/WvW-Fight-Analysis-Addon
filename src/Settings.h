@@ -20,10 +20,6 @@ extern const char* USE_SHORT_CLASS_NAMES;
 extern const char* SHOW_CLASS_NAMES;
 extern const char* SHOW_CLASS_ICONS;
 extern const char* SHOW_SPEC_BARS;
-extern const char* USE_TABBED_VIEW;
-
-
-
 // Team Stats
 extern const char* SHOW_TEAM_TOTAL_PLAYERS;
 extern const char* SHOW_TEAM_DEATHS;
@@ -35,7 +31,9 @@ extern const char* SHOW_TEAM_CONDI;
 extern const char* SHOW_SPEC_DAMAGE;
 extern const char* SORT_SPEC_DAMAGE;
 // Window Style
+extern const char* USE_TABBED_VIEW;
 extern const char* SHOW_SCROLL_BAR;
+extern const char* SHOW_WINDOW_TITLE;
 
 namespace Settings
 {
@@ -78,6 +76,7 @@ namespace Settings
 	// Window Style
 	extern bool showScrollBar;
 	extern bool useTabbedView;
+	extern bool showWindowTitle;
 }
 
 #endif
