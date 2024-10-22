@@ -124,7 +124,10 @@ void AddonUnload()
 
     APIDefs->DeregisterRender(AddonRender);
     APIDefs->DeregisterRender(AddonOptions);
-    APIDefs->DeregisterKeybind("KB_MI_TOGGLEVISIBLE");
+    APIDefs->DeregisterKeybind("KB_WINDOW_TOGGLEVISIBLE");
+    APIDefs->DeregisterKeybind("KB_WIDGET_TOGGLEVISIBLE");
+    APIDefs->DeregisterKeybind("LOG_INDEX_UP");
+    APIDefs->DeregisterKeybind("LOG_INDEX_DOWN");
 
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon unloaded successfully.");
 }
