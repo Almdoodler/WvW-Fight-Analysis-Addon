@@ -21,6 +21,7 @@
     <ClCompile Include="Settings.cpp" />
     <ClCompile Include="evtc_parser.cpp" />
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="gui.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imstb_truetype.h">
@@ -48,6 +49,7 @@
     <ClInclude Include="Settings.h" />
     <ClInclude Include="evtc_parser.h" />
     <ClInclude Include="utils.h" />
+    <ClInclude Include="gui.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="imgui">
@@ -173,8 +175,13 @@
       <Filter>Assets</Filter>
     </Image>
     <Image Include="assets\downed_24x24.png" />
-    <Image Include="assets\squad_16x16.png" />
     <Image Include="assets\damage_18x18.png" />
     <Image Include="assets\condition_damage_18x18.png" />
+    <Image Include="assets\squad_16x16.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="assets\strike_damage_30x30.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
 </Project>
