@@ -13,6 +13,8 @@ const char* IS_WINDOW_VISIBLE_IN_COMBAT = "IsWindowVisibleInCombat";
 const char* CUSTOM_LOG_PATH = "CustomLogDirectoryPath";
 const char* TEAM_PLAYER_THRESHOLD = "TeamPlayerThreshold";
 const char*  LOG_HISTORY_SIZE = "LogHistorySize";
+const char* DISABLE_CLICKING_WINDOW = "DisableClickingWindow";
+const char* DISABLE_MOVING_WINDOW = "DisableMovingWindow";
 
 // Display
 const char* SHOW_CLASS_NAMES = "ShowClassNames";
@@ -149,6 +151,14 @@ namespace Settings
 		{
 			Settings[SHOW_WINDOW_TITLE].get_to<bool>(showWindowTitle);
 		}
+		if (!Settings[DISABLE_MOVING_WINDOW].is_null())
+		{
+			Settings[DISABLE_MOVING_WINDOW].get_to<bool>(disableMovingWindow);
+		}
+		if (!Settings[DISABLE_CLICKING_WINDOW].is_null())
+		{
+			Settings[DISABLE_CLICKING_WINDOW].get_to<bool>(disableClickingWindow);
+		}
 	}
 	void Save(std::filesystem::path aPath)
 	{
@@ -170,6 +180,9 @@ namespace Settings
 
 	bool showWindowInCombat = true;
 	int teamPlayerThreshold = 1;
+	bool disableMovingWindow = false;
+	bool disableClickingWindow = false;
+
 ;
 	std::string LogDirectoryPath;
 	char LogDirectoryPathC[256] = "";

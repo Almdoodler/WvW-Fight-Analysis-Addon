@@ -171,20 +171,22 @@ void ProcessKeybinds(const char* aIdentifier)
 }
 
 
+
+
 void AddonRender()
 {
     std::lock_guard<std::mutex> lock(parsedLogsMutex);
 
     if (currentLogIndex >= parsedLogs.size())
     {
-        currentLogIndex = 0; // Reset to the latest log if out of bounds
+        currentLogIndex = 0;
     }
 
     if (!NexusLink || !NexusLink->IsGameplay || !MumbleLink || MumbleLink->Context.IsMapOpen)
     {
         return;
     }
-    // If not on a WvW map then hide window
+
     if (
         MumbleLink->Context.MapType != Mumble::EMapType::WvW_EternalBattlegrounds &&
         MumbleLink->Context.MapType != Mumble::EMapType::WvW_BlueBorderlands &&
@@ -197,209 +199,133 @@ void AddonRender()
         return;
     }
 
-    // Hide if in Combat
-    if (MumbleLink->Context.IsInCombat && !Settings::showWindowInCombat) { return; }
+    if (MumbleLink->Context.IsInCombat && !Settings::showWindowInCombat)
+    {
+        return;
+    }
 
-    if (Settings::IsAddonWidgetEnabled) {
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
-            ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-
-        float barHeight = 20.0f;
-        ImVec2 barSize = ImVec2(320.0f, barHeight);
-        ImGui::SetNextWindowSize(barSize);
-
-        if (ImGui::Begin("Team Ratio Bar", nullptr, window_flags))
-        {
-            if (parsedLogs.empty())
-            {
-                ImGui::Text(initialParsingComplete ? "No logs parsed yet." : "Parsing logs...");
-                ImGui::End();
-                ImGui::PopStyleVar(4);
-                return;
-            }
-
-            const auto& currentLogData = parsedLogs[currentLogIndex].data;
-            const char* team_names[] = { "Red", "Blue", "Green" };
-            ImVec4 team_colors[] = {
-                ImGui::ColorConvertU32ToFloat4(IM_COL32(0xff, 0x44, 0x44, 0xff)), // Red
-                ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xb5, 0xe5, 0xff)), // Blue
-                ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xcc, 0x00, 0xff))  // Green
-            };
-
-            int teamCounts[3] = { 0, 0, 0 };
-            for (int i = 0; i < 3; ++i)
-            {
-                auto teamIt = currentLogData.teamStats.find(team_names[i]);
-                if (teamIt != currentLogData.teamStats.end())
-                {
-                    teamCounts[i] = teamIt->second.totalPlayers;
-                }
-            }
-
-            RenderSimpleRatioBar(
-                teamCounts[0],        // Red count
-                teamCounts[2],        // Green count
-                teamCounts[1],        // Blue count
-                team_colors[0],       // Red color
-                team_colors[2],       // Green color
-                team_colors[1],       // Blue color
-                ImVec2(barSize.x, barHeight)
-            );
-        }
-        ImGui::End();
-        ImGui::PopStyleVar(4);
-
+    if (Settings::IsAddonWidgetEnabled)
+    {
+        ratioBarSetup();
     }
 
     if (Settings::IsAddonWindowEnabled)
     {
         ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse;
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse;
+
+        if (!Settings::showScrollBar) window_flags |= ImGuiWindowFlags_NoScrollbar;
 
         if (!Settings::showWindowTitle)
         {
             window_flags |= ImGuiWindowFlags_NoTitleBar;
         }
+        if (Settings::disableMovingWindow)
+        {
+            window_flags |= ImGuiWindowFlags_NoMove;
+        }
+        if (Settings::disableClickingWindow)
+        {
+            window_flags |= ImGuiWindowFlags_NoInputs;
+        }
+
         if (ImGui::Begin("WvW Fight Analysis", nullptr, window_flags))
         {
-
             ImGuiStyle& style = ImGui::GetStyle();
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x, 5));
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(style.ItemSpacing.x, 10));
-            float sz = ImGui::GetFontSize();
+
             if (parsedLogs.empty())
             {
-                if (initialParsingComplete)
-                {
-                    ImGui::Text("No logs parsed yet.");
-                }
-                else
-                {
-                    ImGui::Text("Parsing logs...");
-                }
+                ImGui::Text(initialParsingComplete ? "No logs parsed yet." : "Parsing logs...");
                 ImGui::PopStyleVar(2);
                 ImGui::End();
                 return;
             }
 
-            std::string fnstr = parsedLogs[currentLogIndex].filename.substr(0, parsedLogs[currentLogIndex].filename.find_last_of('.'));
-            uint64_t durationMs = parsedLogs[currentLogIndex].data.combatEndTime - parsedLogs[currentLogIndex].data.combatStartTime;
-            auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::milliseconds(durationMs));
-            int minutes = duration.count() / 60;
-            int seconds = duration.count() % 60;
-            std::string displayName = fnstr + " (" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s)";
+            const auto& currentLog = parsedLogs[currentLogIndex];
+            std::string fnstr = currentLog.filename.substr(0, currentLog.filename.find_last_of('.'));
+            uint64_t durationMs = currentLog.data.combatEndTime - currentLog.data.combatStartTime;
+            auto duration = std::chrono::milliseconds(durationMs);
+            int minutes = std::chrono::duration_cast<std::chrono::minutes>(duration).count();
+            int seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count() % 60;
+            std::string displayName = fnstr + " (" + std::to_string(minutes) + "m " + std::to_string(seconds) + "s)";
 
             ImGui::Text("%s", displayName.c_str());
 
-            const auto& currentLogData = parsedLogs[currentLogIndex].data;
+            const auto& currentLogData = currentLog.data;
             const char* team_names[] = { "Red", "Blue", "Green" };
-            int teamCounts[3] = { 0, 0, 0 };
             ImVec4 team_colors[] = {
-                ImGui::ColorConvertU32ToFloat4(IM_COL32(0xff, 0x44, 0x44, 0xff)), // Red
-                ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xb5, 0xe5, 0xff)), // Blue
-                ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xcc, 0x00, 0xff))  // Green
+                ImGui::ColorConvertU32ToFloat4(IM_COL32(0xFF, 0x44, 0x44, 0xFF)),
+                ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xB5, 0xE5, 0xFF)),
+                ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xCC, 0x00, 0xFF))
             };
-            
+
             int teamsWithData = 0;
             bool teamHasData[3] = { false, false, false };
-            for (int i = 0; i < 3; ++i) {
+            for (int i = 0; i < 3; ++i)
+            {
                 auto teamIt = currentLogData.teamStats.find(team_names[i]);
-                if (teamIt != currentLogData.teamStats.end() && teamIt->second.totalPlayers >= Settings::teamPlayerThreshold) {
+                if (teamIt != currentLogData.teamStats.end() && teamIt->second.totalPlayers >= Settings::teamPlayerThreshold)
+                {
                     teamsWithData++;
                     teamHasData[i] = true;
                 }
             }
-            ImGuiTableFlags table_flags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoPadOuterX;
-            if (Settings::showScrollBar)
+
+            if (teamsWithData == 0)
             {
-                table_flags |= ImGuiTableFlags_ScrollY;
+                ImGui::Text("No team data available meeting the player threshold.");
             }
             else
             {
-                table_flags |= ImGuiTableFlags_NoKeepColumnsVisible;
-            }
-            if (teamsWithData == 0) {
-                ImGui::Text("No team data available meeting the player threshold.");
-            }
-            else {
-                if (Settings::useTabbedView) {
-                    // Render using tabs
+                if (Settings::useTabbedView)
+                {
                     if (ImGui::BeginTabBar("TeamTabBar", ImGuiTabBarFlags_None))
                     {
-                        for (int i = 0; i < 3; ++i) {
-                            if (teamHasData[i]) {
-                                // Set the tab label with team name and color
+                        for (int i = 0; i < 3; ++i)
+                        {
+                            if (teamHasData[i])
+                            {
                                 ImGui::PushStyleColor(ImGuiCol_Text, team_colors[i]);
-                                if (ImGui::BeginTabItem(team_names[i])) {
-                                    ImGui::PopStyleColor(); // Pop the color after starting the tab item
+                                if (ImGui::BeginTabItem(team_names[i]))
+                                {
+                                    ImGui::PopStyleColor();
 
-                                    // Begin child region with optional scroll bar
-                                    ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoMove;
-                                    if (!Settings::showScrollBar) {
-                                        child_flags |= ImGuiWindowFlags_NoScrollbar;
-                                    }
-                                    // Note: Do not use ImGuiWindowFlags_AlwaysVerticalScrollbar
-
-                                    // Determine child region size
-                                    ImVec2 child_size = ImVec2(0, 0); // Use available space
-
-                                    ImGui::BeginChild(("TeamChild" + std::to_string(i)).c_str(), child_size, false, child_flags);
-
-                                    const char* team_name = team_names[i];
-                                    auto teamIt = currentLogData.teamStats.find(team_name);
-                                    if (teamIt != currentLogData.teamStats.end())
-                                    {
-                                        const auto& teamData = teamIt->second;
-                                        // Call the rendering function
-                                        RenderTeamData(i, teamData);
-                                    }
-
-                                    ImGui::EndChild();
+                                    const auto& teamData = currentLogData.teamStats.at(team_names[i]);
+                                    RenderTeamData(i, teamData, hSelf);
 
                                     ImGui::EndTabItem();
                                 }
-                                else {
-                                    ImGui::PopStyleColor(); // Ensure color is popped even if the tab item isn't active
+                                else
+                                {
+                                    ImGui::PopStyleColor();
                                 }
                             }
                         }
                         ImGui::EndTabBar();
                     }
                 }
-
-                else {
-                    ImGuiTableFlags table_flags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoPadOuterX;
-
-                    if (Settings::showScrollBar)
+                else
+                {
+                    //ImVec2 table_size = ImVec2(0.0f, ImGui::GetContentRegionAvail().y);
+                    if (ImGui::BeginTable("TeamTable", teamsWithData, ImGuiTableFlags_BordersInner))
                     {
-                        table_flags |= ImGuiTableFlags_ScrollY;
-                    }
-                    else
-                    {
-                        table_flags |= ImGuiTableFlags_NoKeepColumnsVisible;
-                    }
 
-                    ImVec2 table_size = ImVec2(0.0f, ImGui::GetContentRegionAvail().y);
-
-                    if (ImGui::BeginTable("TeamTable", teamsWithData, table_flags, table_size))
-                    {
-                        ImGui::TableSetupScrollFreeze(0, 1);
-
-                        for (int i = 0; i < 3; ++i) {
-                            if (teamHasData[i]) {
-                                ImGui::TableSetupColumn(team_names[i], ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthStretch);
+                        for (int i = 0; i < 3; ++i)
+                        {
+                            if (teamHasData[i])
+                            {
+                                ImGui::TableSetupColumn(team_names[i], ImGuiTableColumnFlags_WidthStretch);
                             }
                         }
 
                         ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
                         int columnIndex = 0;
-                        for (int i = 0; i < 3; ++i) {
-                            if (teamHasData[i]) {
+                        for (int i = 0; i < 3; ++i)
+                        {
+                            if (teamHasData[i])
+                            {
                                 ImGui::TableSetColumnIndex(columnIndex++);
                                 ImGui::PushStyleColor(ImGuiCol_Text, team_colors[i]);
                                 ImGui::Text("%s Team", team_names[i]);
@@ -409,33 +335,25 @@ void AddonRender()
 
                         ImGui::TableNextRow();
                         columnIndex = 0;
-                        for (int i = 0; i < 3; ++i) {
-                            if (teamHasData[i]) {
+                        for (int i = 0; i < 3; ++i)
+                        {
+                            if (teamHasData[i])
+                            {
                                 ImGui::TableSetColumnIndex(columnIndex++);
-
-                                const char* team_name = team_names[i];
-                                auto teamIt = currentLogData.teamStats.find(team_name);
-                                if (teamIt != currentLogData.teamStats.end())
-                                {
-                                    const auto& teamData = teamIt->second;
-                                    RenderTeamData(i, teamData);
-                                }
+                                const auto& teamData = currentLogData.teamStats.at(team_names[i]);
+                                RenderTeamData(i, teamData, hSelf);
                             }
                         }
 
                         ImGui::EndTable();
                     }
+
                 }
             }
 
-
-
-
-
             ImGui::PopStyleVar(2);
 
-            // Right-click menu for log history selection
-            if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseClicked(1))  // Right mouse button
+            if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
             {
                 ImGui::OpenPopup("Log Selection");
             }
@@ -447,22 +365,22 @@ void AddonRender()
                     for (int i = 0; i < parsedLogs.size(); ++i)
                     {
                         const auto& log = parsedLogs[i];
-
                         std::string fnstr = log.filename.substr(0, log.filename.find_last_of('.'));
                         uint64_t durationMs = log.data.combatEndTime - log.data.combatStartTime;
-                        auto duration = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::milliseconds(durationMs));
-                        int minutes = duration.count() / 60;
-                        int seconds = duration.count() % 60;
-                        std::string displayName = fnstr + " (" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s)";
+                        auto duration = std::chrono::milliseconds(durationMs);
+                        int minutes = std::chrono::duration_cast<std::chrono::minutes>(duration).count();
+                        int seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count() % 60;
+                        std::string displayName = fnstr + " (" + std::to_string(minutes) + "m " + std::to_string(seconds) + "s)";
 
                         if (ImGui::RadioButton(displayName.c_str(), &currentLogIndex, i))
                         {
-
+                            // Selection handled by RadioButton
                         }
                     }
                     ImGui::EndMenu();
                 }
-                if (ImGui::BeginMenu("Display")) {
+                if (ImGui::BeginMenu("Display"))
+                {
                     if (ImGui::Checkbox("Show Class Bars", &Settings::showSpecBars))
                     {
                         Settings::Settings[SHOW_SPEC_BARS] = Settings::showSpecBars;
@@ -526,7 +444,8 @@ void AddonRender()
                     }
                     ImGui::EndMenu();
                 }
-                if (ImGui::BeginMenu("Style")) {
+                if (ImGui::BeginMenu("Style"))
+                {
                     if (ImGui::Checkbox("Use Tabbed View", &Settings::useTabbedView))
                     {
                         Settings::Settings[USE_TABBED_VIEW] = Settings::useTabbedView;
@@ -542,7 +461,6 @@ void AddonRender()
                         Settings::Settings[SHOW_WINDOW_TITLE] = Settings::showWindowTitle;
                         Settings::Save(SettingsPath);
                     }
-
                     ImGui::EndMenu();
                 }
                 ImGui::EndPopup();
@@ -550,12 +468,13 @@ void AddonRender()
 
             ImGui::End();
         }
-        else
-        {
-            ImGui::End();
-        }
     }
 }
+
+
+
+
+
 
 
 void AddonOptions()
@@ -574,6 +493,16 @@ void AddonOptions()
     if (ImGui::Checkbox("Visible In Combat##WvWFightAnalysis", &Settings::showWindowInCombat))
     {
         Settings::Settings[IS_WINDOW_VISIBLE_IN_COMBAT] = Settings::showWindowInCombat;
+        Settings::Save(SettingsPath);
+    }
+    if (ImGui::Checkbox("Enable Mouse-Through##WvWFightAnalysis", &Settings::disableClickingWindow))
+    {
+        Settings::Settings[DISABLE_CLICKING_WINDOW] = Settings::disableClickingWindow;
+        Settings::Save(SettingsPath);
+    }
+    if (ImGui::Checkbox("Disable Moving Window##WvWFightAnalysis", &Settings::disableMovingWindow))
+    {
+        Settings::Settings[DISABLE_MOVING_WINDOW] = Settings::disableMovingWindow;
         Settings::Save(SettingsPath);
     }
     if (ImGui::IsItemHovered())

@@ -14,6 +14,8 @@ extern const char* IS_WINDOW_VISIBLE_IN_COMBAT;
 extern const char* CUSTOM_LOG_PATH;
 extern const char* TEAM_PLAYER_THRESHOLD;
 extern const char* LOG_HISTORY_SIZE;
+extern const char* DISABLE_CLICKING_WINDOW;
+extern const char* DISABLE_MOVING_WINDOW;
 
 // Display
 extern const char* USE_SHORT_CLASS_NAMES;
@@ -55,6 +57,8 @@ namespace Settings
 	extern std::string LogDirectoryPath;
 	extern char LogDirectoryPathC[256];
 	extern size_t logHistorySize;
+	extern bool disableClickingWindow;
+	extern bool disableMovingWindow;
 
 	//Display
 	extern bool useShortClassNames;

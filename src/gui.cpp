@@ -5,8 +5,9 @@
 #include "resource.h"
 #include "nexus/Nexus.h"
 #include "mumble/Mumble.h"
+#include "imgui/imgui.h"
 
-void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, const std::string& eliteSpec, bool showDamage)
+void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, const std::string& eliteSpec, bool showDamage, HINSTANCE hSelf)
 {
     ImVec2 cursor_pos = ImGui::GetCursorPos();
     ImVec2 screen_pos = ImGui::GetCursorScreenPos();
@@ -38,7 +39,7 @@ void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, c
         else
         {
             if (resourceId != 0 && texturePtrPtr) {
-                *texturePtrPtr = APIDefs->GetTextureOrCreateFromResource((eliteSpec + "_ICON").c_str(), resourceId, SelfModule);
+                *texturePtrPtr = APIDefs->GetTextureOrCreateFromResource((eliteSpec + "_ICON").c_str(), resourceId, hSelf);
                 if (*texturePtrPtr && (*texturePtrPtr)->Resource)
                 {
                     ImGui::Image((*texturePtrPtr)->Resource, ImVec2(sz, sz));
@@ -172,7 +173,7 @@ void RenderSimpleRatioBar(int red, int green, int blue,
     ImGui::Dummy(size);
 }
 
-void RenderTeamData(int teamIndex, const TeamStats& teamData)
+void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
 {
     ImGuiStyle& style = ImGui::GetStyle();
     float sz = ImGui::GetFontSize();
@@ -391,7 +392,74 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData)
             }
 
             // Draw the bar with the updated parameters
-            DrawBar(frac, count, totalDamage, color, eliteSpec, showDamage);
+            DrawBar(frac, count, totalDamage, color, eliteSpec, showDamage, hSelf);
         }
     }
+}
+
+
+void ratioBarSetup() 
+{
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
+
+    if (Settings::disableMovingWindow)
+    {
+        window_flags |= ImGuiWindowFlags_NoMove;
+    }
+
+    if (Settings::disableClickingWindow)
+    {
+        window_flags |= ImGuiWindowFlags_NoInputs;
+    }
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+
+    float barHeight = 20.0f;
+    ImVec2 barSize = ImVec2(320.0f, barHeight);
+    ImGui::SetNextWindowSize(barSize);
+
+    if (ImGui::Begin("Team Ratio Bar", nullptr, window_flags))
+    {
+        if (parsedLogs.empty())
+        {
+            ImGui::Text(initialParsingComplete ? "No logs parsed yet." : "Parsing logs...");
+            ImGui::End();
+            ImGui::PopStyleVar(4);
+            return;
+        }
+
+        const auto& currentLogData = parsedLogs[currentLogIndex].data;
+        const char* team_names[] = { "Red", "Blue", "Green" };
+        ImVec4 team_colors[] = {
+            ImGui::ColorConvertU32ToFloat4(IM_COL32(0xff, 0x44, 0x44, 0xff)),
+            ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xb5, 0xe5, 0xff)),
+            ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xcc, 0x00, 0xff))
+        };
+
+        int teamCounts[3] = { 0, 0, 0 };
+        for (int i = 0; i < 3; ++i)
+        {
+            auto teamIt = currentLogData.teamStats.find(team_names[i]);
+            if (teamIt != currentLogData.teamStats.end())
+            {
+                teamCounts[i] = teamIt->second.totalPlayers;
+            }
+        }
+
+        RenderSimpleRatioBar(
+            teamCounts[0],
+            teamCounts[2],
+            teamCounts[1],
+            team_colors[0],
+            team_colors[2],
+            team_colors[1],
+            ImVec2(barSize.x, barHeight)
+        );
+    }
+    ImGui::End();
+    ImGui::PopStyleVar(4);
 }
