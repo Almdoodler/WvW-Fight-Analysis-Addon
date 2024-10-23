@@ -61,7 +61,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 2;
-    AddonDef.Version.Revision = 1;
+    AddonDef.Version.Revision = 2;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "Simple WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
