@@ -484,12 +484,12 @@ void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t n
 
 
 
+
 void monitorDirectory(size_t numLogsToParse)
 {
 	try
 	{
 		std::filesystem::path dirPath;
-
 		if (!Settings::LogDirectoryPath.empty())
 		{
 			dirPath = std::filesystem::path(Settings::LogDirectoryPath);
@@ -535,6 +535,9 @@ void monitorDirectory(size_t numLogsToParse)
 		OVERLAPPED overlapped = { 0 };
 		overlapped.hEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
 
+		std::unordered_set<std::wstring> processedFiles;
+		parseInitialLogs(processedFiles, numLogsToParse);
+
 		BOOL success = ReadDirectoryChangesW(
 			hDir,
 			buffer,
@@ -553,9 +556,6 @@ void monitorDirectory(size_t numLogsToParse)
 			CloseHandle(hDir);
 			return;
 		}
-
-		std::unordered_set<std::wstring> processedFiles;
-		parseInitialLogs(processedFiles, numLogsToParse);
 
 		while (!stopMonitoring)
 		{
@@ -604,6 +604,8 @@ void monitorDirectory(size_t numLogsToParse)
 					} while (true);
 
 					ResetEvent(overlapped.hEvent);
+
+					// Reissue the ReadDirectoryChangesW call
 					success = ReadDirectoryChangesW(
 						hDir,
 						buffer,
@@ -618,23 +620,28 @@ void monitorDirectory(size_t numLogsToParse)
 					if (!success)
 					{
 						APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-							"Failed to read directory changes.");
+							"Failed to reissue directory monitoring.");
 						break;
 					}
 				}
 				else
 				{
-					APIDefs->Log(ELogLevel_WARNING, ADDON_NAME, "Failed to get overlapped result.");
+					DWORD errorCode = GetLastError();
+					APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+						("GetOverlappedResult failed with error code: " + std::to_string(errorCode)).c_str());
 					break;
 				}
 			}
 			else if (waitStatus == WAIT_TIMEOUT)
 			{
+				// Continue waiting
 				continue;
 			}
 			else
 			{
-				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME, "Wait error.");
+				DWORD errorCode = GetLastError();
+				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+					("WaitForSingleObject failed with error code: " + std::to_string(errorCode)).c_str());
 				break;
 			}
 		}
@@ -648,8 +655,6 @@ void monitorDirectory(size_t numLogsToParse)
 			("Exception in directory monitoring thread: " + std::string(ex.what())).c_str());
 	}
 }
-
-
 
 
 
