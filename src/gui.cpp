@@ -262,7 +262,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
             }
             else
             {
-                Damage = APIDefs->GetTextureOrCreateFromResource("DAMAGE_ICON", DAMAGE, SelfModule);
+                Damage = APIDefs->GetTextureOrCreateFromResource("DAMAGE_ICON", DAMAGE, hSelf);
             }
         }
         std::string formattedDamage = formatDamage(teamData.totalDamage);
