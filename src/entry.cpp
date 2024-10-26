@@ -61,7 +61,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 2;
-    AddonDef.Version.Revision = 2;
+    AddonDef.Version.Revision = 3;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "Simple WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
@@ -222,7 +222,7 @@ void AddonRender()
         }
         if (Settings::disableMovingWindow)
         {
-            window_flags |= ImGuiWindowFlags_NoMove;
+            window_flags |= ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
         }
         if (Settings::disableClickingWindow)
         {
@@ -495,12 +495,7 @@ void AddonOptions()
         Settings::Settings[IS_WINDOW_VISIBLE_IN_COMBAT] = Settings::showWindowInCombat;
         Settings::Save(SettingsPath);
     }
-    if (ImGui::Checkbox("Enable Mouse-Through##WvWFightAnalysis", &Settings::disableClickingWindow))
-    {
-        Settings::Settings[DISABLE_CLICKING_WINDOW] = Settings::disableClickingWindow;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::Checkbox("Disable Moving Window##WvWFightAnalysis", &Settings::disableMovingWindow))
+    if (ImGui::Checkbox("Lock Window & Widget Position##WvWFightAnalysis", &Settings::disableMovingWindow))
     {
         Settings::Settings[DISABLE_MOVING_WINDOW] = Settings::disableMovingWindow;
         Settings::Save(SettingsPath);
@@ -508,7 +503,18 @@ void AddonOptions()
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
-        ImGui::Text("Untick to hide in combat.");
+        ImGui::Text("Disables moving & resizing.");
+        ImGui::EndTooltip();
+    }
+    if (ImGui::Checkbox("Enable Mouse-Through##WvWFightAnalysis", &Settings::disableClickingWindow))
+    {
+        Settings::Settings[DISABLE_CLICKING_WINDOW] = Settings::disableClickingWindow;
+        Settings::Save(SettingsPath);
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text("Window cannot be interacted with via mouse.");
         ImGui::EndTooltip();
     }
     ImGui::Text("Team Player Threshold: ");

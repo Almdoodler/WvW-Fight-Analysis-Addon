@@ -190,7 +190,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 ImGui::SameLine(0, 5);
             }
             else {
-                Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, SelfModule);
+                Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
             }
         }
         if (Settings::showClassNames)
@@ -214,7 +214,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
             }
             else
             {
-                Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, SelfModule);
+                Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
             }
         }
         if (Settings::showClassNames)
@@ -238,7 +238,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
             }
             else
             {
-                Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, SelfModule);
+                Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
             }
         }
         if (Settings::showClassNames)
@@ -287,7 +287,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
             }
             else
             {
-                Strike = APIDefs->GetTextureOrCreateFromResource("STRIKE_ICON", STRIKE, SelfModule);
+                Strike = APIDefs->GetTextureOrCreateFromResource("STRIKE_ICON", STRIKE, hSelf);
             }
         }
         std::string formattedDamage = formatDamage(teamData.totalStrikeDamage);
@@ -312,7 +312,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
             }
             else
             {
-                Condi = APIDefs->GetTextureOrCreateFromResource("CONDI_ICON", CONDI, SelfModule);
+                Condi = APIDefs->GetTextureOrCreateFromResource("CONDI_ICON", CONDI, hSelf);
             }
         }
         std::string formattedDamage = formatDamage(teamData.totalCondiDamage);
