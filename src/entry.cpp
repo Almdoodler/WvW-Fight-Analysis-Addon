@@ -517,7 +517,6 @@ void AddonOptions()
         ImGui::Text("Window cannot be interacted with via mouse.");
         ImGui::EndTooltip();
     }
-    ImGui::Text("Team Player Threshold: ");
     if (ImGui::InputInt("Team Player Threshold##WvWFightAnalysis", &Settings::teamPlayerThreshold))
     {
         Settings::teamPlayerThreshold = std::clamp(
