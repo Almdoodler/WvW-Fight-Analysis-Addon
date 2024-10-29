@@ -66,6 +66,7 @@ extern Texture* Strike;
 extern std::atomic<bool> initialParsingComplete;
 extern std::atomic<bool> stopMonitoring;
 extern std::mutex parsedLogsMutex;
+extern std::mutex processedFilesMutex;
 extern std::thread initialParsingThread;
 extern std::thread directoryMonitorThread;
 extern int currentLogIndex;

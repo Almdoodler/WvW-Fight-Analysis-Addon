@@ -41,6 +41,7 @@ std::filesystem::path SettingsPath;
 
 
 
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     switch (ul_reason_for_call)
@@ -99,7 +100,10 @@ void AddonLoad(AddonAPI* aApi)
     Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
     initMaps();
 
-    directoryMonitorThread = std::thread(monitorDirectory, Settings::logHistorySize);
+
+    size_t numLogsToParse = 10; // or any appropriate number
+    size_t pollIntervalMilliseconds = 5000; // Poll every 5 seconds
+    directoryMonitorThread = std::thread(monitorDirectory, numLogsToParse, pollIntervalMilliseconds);
 
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon loaded successfully.");
 }
@@ -515,6 +519,17 @@ void AddonOptions()
     {
         ImGui::BeginTooltip();
         ImGui::Text("Window cannot be interacted with via mouse.");
+        ImGui::EndTooltip();
+    }
+    if (ImGui::Checkbox("Enable Wine Compatibility Mode##WvWFightAnalysis", &Settings::forceLinuxCompatibilityMode))
+    {
+        Settings::Settings[FORCE_LINUX_COMPAT] = Settings::forceLinuxCompatibilityMode;
+        Settings::Save(SettingsPath);
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text("Wine / Proton doesn't support ReadDirectoryChangesW, use directory polling instead.");
         ImGui::EndTooltip();
     }
     if (ImGui::InputInt("Team Player Threshold##WvWFightAnalysis", &Settings::teamPlayerThreshold))

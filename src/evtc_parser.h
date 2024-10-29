@@ -9,7 +9,7 @@
 
 
 // Function declarations
-void monitorDirectory(size_t numLogsToParse);
+void monitorDirectory(size_t numLogsToParse, size_t pollIntervalMilliseconds);
 std::vector<char> extractZipFile(const std::string& filePath);
 void processNewEVTCFile(const std::string& filePath);
 
@@ -18,4 +18,5 @@ void processNewEVTCFile(const std::string& filePath);
 
 extern int currentLogIndex;
 extern std::mutex parsedLogsMutex;
+extern std::mutex processedFilesMutex;
 extern std::atomic<bool> initialParsingComplete;

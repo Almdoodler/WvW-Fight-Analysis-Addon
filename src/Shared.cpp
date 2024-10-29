@@ -58,6 +58,7 @@ Texture* Strike = nullptr;
 std::atomic<bool> initialParsingComplete{ false };
 std::atomic<bool> stopMonitoring{ false };
 std::mutex parsedLogsMutex;
+std::mutex processedFilesMutex;
 std::thread initialParsingThread;
 std::thread directoryMonitorThread;
 int currentLogIndex = 0;

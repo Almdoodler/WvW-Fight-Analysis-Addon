@@ -3,6 +3,7 @@
 #include "Shared.h"
 #include "Settings.h"
 #include "evtc_parser.h"
+#include "utils.h"
 #include <thread>
 #include <chrono>
 #include "utils.h"
@@ -201,6 +202,41 @@ std::unordered_map<std::string, TextureInfo> textureMap = {
     {"Weaver", {WEAVER, &Weaver}},
     {"Willbender", {WILLBENDER, &Willbender}}
 };
+
+bool isRunningUnderWine()
+{
+    if (Settings::forceLinuxCompatibilityMode) {
+        return true;
+    }
+    HKEY hKey;
+    LONG result = RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Wine", 0, KEY_READ, &hKey);
+    if (result == ERROR_SUCCESS)
+    {
+        RegCloseKey(hKey);
+        return true;
+    }
+    else
+    {
+        result = RegOpenKeyExA(HKEY_LOCAL_MACHINE, "Software\\Wine", 0, KEY_READ, &hKey);
+        if (result == ERROR_SUCCESS)
+        {
+            RegCloseKey(hKey);
+            return true;
+        }
+    }
+
+    HMODULE hNtDll = GetModuleHandleA("ntdll.dll");
+    if (hNtDll)
+    {
+        FARPROC wine_get_version = GetProcAddress(hNtDll, "wine_get_version");
+        if (wine_get_version)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 Texture** getTextureInfo(const std::string& eliteSpec, int* outResourceId) {
     auto it = textureMap.find(eliteSpec);

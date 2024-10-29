@@ -15,6 +15,7 @@ const char* TEAM_PLAYER_THRESHOLD = "TeamPlayerThreshold";
 const char*  LOG_HISTORY_SIZE = "LogHistorySize";
 const char* DISABLE_CLICKING_WINDOW = "DisableClickingWindow";
 const char* DISABLE_MOVING_WINDOW = "DisableMovingWindow";
+const char* FORCE_LINUX_COMPAT = "ForceLinuxCompat";
 
 // Display
 const char* SHOW_CLASS_NAMES = "ShowClassNames";
@@ -104,6 +105,10 @@ namespace Settings
 		{
 			Settings[LOG_HISTORY_SIZE].get_to(logHistorySize);
 		}
+		if (!Settings[FORCE_LINUX_COMPAT].is_null())
+		{
+			Settings[SHOW_SPEC_BARS].get_to<bool>(forceLinuxCompatibilityMode);
+		}
 		/* Team Stats */
 		if (!Settings[SHOW_TEAM_TOTAL_PLAYERS].is_null())
 		{
@@ -182,8 +187,8 @@ namespace Settings
 	int teamPlayerThreshold = 1;
 	bool disableMovingWindow = false;
 	bool disableClickingWindow = false;
+	bool forceLinuxCompatibilityMode = false;
 
-;
 	std::string LogDirectoryPath;
 	char LogDirectoryPathC[256] = "";
 	size_t logHistorySize = 10;

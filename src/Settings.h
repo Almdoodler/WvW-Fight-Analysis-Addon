@@ -16,6 +16,7 @@ extern const char* TEAM_PLAYER_THRESHOLD;
 extern const char* LOG_HISTORY_SIZE;
 extern const char* DISABLE_CLICKING_WINDOW;
 extern const char* DISABLE_MOVING_WINDOW;
+extern const char* FORCE_LINUX_COMPAT;
 
 // Display
 extern const char* USE_SHORT_CLASS_NAMES;
@@ -59,6 +60,7 @@ namespace Settings
 	extern size_t logHistorySize;
 	extern bool disableClickingWindow;
 	extern bool disableMovingWindow;
+	extern bool forceLinuxCompatibilityMode;
 
 	//Display
 	extern bool useShortClassNames;
