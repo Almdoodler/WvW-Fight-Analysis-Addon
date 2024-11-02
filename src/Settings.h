@@ -17,6 +17,7 @@ extern const char* LOG_HISTORY_SIZE;
 extern const char* DISABLE_CLICKING_WINDOW;
 extern const char* DISABLE_MOVING_WINDOW;
 extern const char* FORCE_LINUX_COMPAT;
+extern const char* POLL_INTERVAL_MILLISECONDS;
 
 // Display
 extern const char* USE_SHORT_CLASS_NAMES;
@@ -61,6 +62,7 @@ namespace Settings
 	extern bool disableClickingWindow;
 	extern bool disableMovingWindow;
 	extern bool forceLinuxCompatibilityMode;
+	extern size_t pollIntervalMilliseconds;
 
 	//Display
 	extern bool useShortClassNames;

@@ -16,6 +16,7 @@ const char*  LOG_HISTORY_SIZE = "LogHistorySize";
 const char* DISABLE_CLICKING_WINDOW = "DisableClickingWindow";
 const char* DISABLE_MOVING_WINDOW = "DisableMovingWindow";
 const char* FORCE_LINUX_COMPAT = "ForceLinuxCompat";
+const char* POLL_INTERVAL_MILLISECONDS = "PollIntervalMilliseconds";
 
 // Display
 const char* SHOW_CLASS_NAMES = "ShowClassNames";
@@ -107,7 +108,11 @@ namespace Settings
 		}
 		if (!Settings[FORCE_LINUX_COMPAT].is_null())
 		{
-			Settings[SHOW_SPEC_BARS].get_to<bool>(forceLinuxCompatibilityMode);
+			Settings[FORCE_LINUX_COMPAT].get_to<bool>(forceLinuxCompatibilityMode);
+		}
+		if (!Settings[POLL_INTERVAL_MILLISECONDS].is_null())
+		{
+			Settings[POLL_INTERVAL_MILLISECONDS].get_to(pollIntervalMilliseconds);
 		}
 		/* Team Stats */
 		if (!Settings[SHOW_TEAM_TOTAL_PLAYERS].is_null())
@@ -188,6 +193,7 @@ namespace Settings
 	bool disableMovingWindow = false;
 	bool disableClickingWindow = false;
 	bool forceLinuxCompatibilityMode = false;
+	size_t pollIntervalMilliseconds = 3000;
 
 	std::string LogDirectoryPath;
 	char LogDirectoryPathC[256] = "";

@@ -62,7 +62,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 2;
-    AddonDef.Version.Revision = 5;
+    AddonDef.Version.Revision = 6;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "Simple WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
@@ -100,10 +100,7 @@ void AddonLoad(AddonAPI* aApi)
     Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
     initMaps();
 
-
-    size_t numLogsToParse = 10; // or any appropriate number
-    size_t pollIntervalMilliseconds = 5000; // Poll every 5 seconds
-    directoryMonitorThread = std::thread(monitorDirectory, numLogsToParse, pollIntervalMilliseconds);
+    directoryMonitorThread = std::thread(monitorDirectory, Settings::logHistorySize, Settings::pollIntervalMilliseconds);
 
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon loaded successfully.");
 }
@@ -530,6 +527,19 @@ void AddonOptions()
     {
         ImGui::BeginTooltip();
         ImGui::Text("Wine / Proton doesn't support ReadDirectoryChangesW, use directory polling instead.");
+        ImGui::EndTooltip();
+    }
+    int tempPollIntervalMilliseconds = static_cast<int>(Settings::pollIntervalMilliseconds);
+    if (ImGui::InputInt("ms Polling Interval##WvWFightAnalysis", &tempPollIntervalMilliseconds))
+    {
+        Settings::pollIntervalMilliseconds = static_cast<size_t>(std::clamp(tempPollIntervalMilliseconds, 500, 10000));
+        Settings::Settings[POLL_INTERVAL_MILLISECONDS] = Settings::pollIntervalMilliseconds;
+        Settings::Save(SettingsPath);
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text("Polling Interval when using Wine compatibility mode.");
         ImGui::EndTooltip();
     }
     if (ImGui::InputInt("Team Player Threshold##WvWFightAnalysis", &Settings::teamPlayerThreshold))
