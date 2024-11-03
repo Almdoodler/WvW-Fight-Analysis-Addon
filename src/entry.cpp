@@ -62,7 +62,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 2;
-    AddonDef.Version.Revision = 7;
+    AddonDef.Version.Revision = 8;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "Simple WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
@@ -138,7 +138,7 @@ void ProcessKeybinds(const char* aIdentifier)
 {
     std::string str = aIdentifier;
 
-    if (str == "KB_MI_TOGGLEVISIBLE")
+    if (str == "KB_WINDOW_TOGGLEVISIBLE")
     {
         Settings::IsAddonWindowEnabled = !Settings::IsAddonWindowEnabled;
         Settings::Save(SettingsPath);
@@ -402,38 +402,38 @@ void AddonRender()
                         Settings::Settings[SHOW_CLASS_ICONS] = Settings::showClassIcons;
                         Settings::Save(SettingsPath);
                     }
-                    if (ImGui::Checkbox("Show Class Damage", &Settings::showSpecDamage))
+                    if (ImGui::Checkbox("Show Class Outgoing Damage", &Settings::showSpecDamage))
                     {
                         Settings::Settings[SHOW_SPEC_DAMAGE] = Settings::showSpecDamage;
                         Settings::Save(SettingsPath);
                     }
                     ImGui::Separator();
-                    if (ImGui::Checkbox("Team Count", &Settings::showTeamTotalPlayers))
+                    if (ImGui::Checkbox("Team Player Count", &Settings::showTeamTotalPlayers))
                     {
                         Settings::Settings[SHOW_TEAM_TOTAL_PLAYERS] = Settings::showTeamTotalPlayers;
                         Settings::Save(SettingsPath);
                     }
-                    if (ImGui::Checkbox("Team Deaths", &Settings::showTeamDeaths))
+                    if (ImGui::Checkbox("Team Incoming Deaths", &Settings::showTeamDeaths))
                     {
                         Settings::Settings[SHOW_TEAM_DEATHS] = Settings::showTeamDeaths;
                         Settings::Save(SettingsPath);
                     }
-                    if (ImGui::Checkbox("Team Downed", &Settings::showTeamDowned))
+                    if (ImGui::Checkbox("Team Incoming Downs", &Settings::showTeamDowned))
                     {
                         Settings::Settings[SHOW_TEAM_DOWNED] = Settings::showTeamDowned;
                         Settings::Save(SettingsPath);
                     }
-                    if (ImGui::Checkbox("Team Damage", &Settings::showTeamDamage))
+                    if (ImGui::Checkbox("Team Outgoing Damage", &Settings::showTeamDamage))
                     {
                         Settings::Settings[SHOW_TEAM_DAMAGE] = Settings::showTeamDamage;
                         Settings::Save(SettingsPath);
                     }
-                    if (ImGui::Checkbox("Team Strike Damage", &Settings::showTeamStrikeDamage))
+                    if (ImGui::Checkbox("Team Outgoing Strike Damage", &Settings::showTeamStrikeDamage))
                     {
                         Settings::Settings[SHOW_TEAM_STRIKE] = Settings::showTeamStrikeDamage;
                         Settings::Save(SettingsPath);
                     }
-                    if (ImGui::Checkbox("Team Condi Damage", &Settings::showTeamCondiDamage))
+                    if (ImGui::Checkbox("Team Outgoing Condi Damage", &Settings::showTeamCondiDamage))
                     {
                         Settings::Settings[SHOW_TEAM_CONDI] = Settings::showTeamCondiDamage;
                         Settings::Save(SettingsPath);

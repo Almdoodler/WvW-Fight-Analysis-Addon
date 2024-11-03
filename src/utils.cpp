@@ -289,13 +289,14 @@ void waitForFile(const std::string& filePath)
 {
     HANDLE hFile = INVALID_HANDLE_VALUE;
     DWORD previousSize = 0;
-
+    APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
+        ("Waiting for file: " + filePath).c_str());
     while (true)
     {
         hFile = CreateFile(
             filePath.c_str(),
             GENERIC_READ,
-            FILE_SHARE_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
             nullptr,
             OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL,

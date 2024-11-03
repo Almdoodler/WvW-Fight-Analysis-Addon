@@ -22,7 +22,7 @@ std::filesystem::file_time_type maxProcessedTime = std::filesystem::file_time_ty
 
 void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentCount,
 	std::unordered_map<uint64_t, Agent>& agentsByAddress) {
-	APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Agent count: " + std::to_string(agentCount)).c_str());
+	//APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Agent count: " + std::to_string(agentCount)).c_str());
 
 	const size_t agentBlockSize = 96; // Each agent block is 96 bytes
 
@@ -278,28 +278,28 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 	}
 
 	// Log the totals
-	for (const auto& [teamName, stats] : result.teamStats) {
-		std::string message = "Team: " + teamName +
-			", Total Damage: " + std::to_string(stats.totalDamage) +
-			", Damage vs Players: " + std::to_string(stats.totalDamageVsPlayers) +
-			", Total Players: " + std::to_string(stats.totalPlayers) +
-			", Total Downs: " + std::to_string(stats.totalDowned) +
-			", Total Deaths: " + std::to_string(stats.totalDeaths) +
-			", Total Kills: " + std::to_string(stats.totalKills) +
-			", Kills vs Players: " + std::to_string(stats.totalKillsVsPlayers);
-		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, message.c_str());
+	//for (const auto& [teamName, stats] : result.teamStats) {
+	//	std::string message = "Team: " + teamName +
+	//		", Total Damage: " + std::to_string(stats.totalDamage) +
+	//		", Damage vs Players: " + std::to_string(stats.totalDamageVsPlayers) +
+	//		", Total Players: " + std::to_string(stats.totalPlayers) +
+	//		", Total Downs: " + std::to_string(stats.totalDowned) +
+	//		", Total Deaths: " + std::to_string(stats.totalDeaths) +
+	//		", Total Kills: " + std::to_string(stats.totalKills) +
+	//		", Kills vs Players: " + std::to_string(stats.totalKillsVsPlayers);
+	//	APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, message.c_str());
 
-		// Log per specialization
-		for (const auto& [eliteSpec, specStats] : stats.eliteSpecStats) {
-			std::string specMessage = "  Elite Spec: " + eliteSpec +
-				", Count: " + std::to_string(specStats.count) +
-				", Total Damage: " + std::to_string(specStats.totalDamage) +
-				", Damage vs Players: " + std::to_string(specStats.totalDamageVsPlayers) +
-				", Total Kills: " + std::to_string(specStats.totalKills) +
-				", Kills vs Players: " + std::to_string(specStats.totalKillsVsPlayers);
-			APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, specMessage.c_str());
-		}
-	}
+	//	// Log per specialization
+	//	for (const auto& [eliteSpec, specStats] : stats.eliteSpecStats) {
+	//		std::string specMessage = "  Elite Spec: " + eliteSpec +
+	//			", Count: " + std::to_string(specStats.count) +
+	//			", Total Damage: " + std::to_string(specStats.totalDamage) +
+	//			", Damage vs Players: " + std::to_string(specStats.totalDamageVsPlayers) +
+	//			", Total Kills: " + std::to_string(specStats.totalKills) +
+	//			", Kills vs Players: " + std::to_string(specStats.totalKillsVsPlayers);
+	//		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, specMessage.c_str());
+	//	}
+	//}
 
 	APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
 		("Parsed EVTC file. Found " + std::to_string(result.totalIdentifiedPlayers) + " identified players").c_str());
@@ -468,7 +468,8 @@ void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t n
 		if (!Settings::LogDirectoryPath.empty())
 		{
 			dirPath = std::filesystem::path(Settings::LogDirectoryPath);
-
+			APIDefs->Log(ELogLevel_INFO, ADDON_NAME,
+				("Custom log path specified: " + dirPath.string()).c_str());
 			if (!std::filesystem::exists(dirPath) || !std::filesystem::is_directory(dirPath))
 			{
 				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,

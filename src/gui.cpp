@@ -195,7 +195,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
         }
         if (Settings::showClassNames)
         {
-            ImGui::Text("Total: %d", teamData.totalPlayers);
+            ImGui::Text("Total:  %d", teamData.totalPlayers);
         }
         else
         {
@@ -243,7 +243,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
         }
         if (Settings::showClassNames)
         {
-            ImGui::Text("Downed: %d", teamData.totalDowned);
+            ImGui::Text("Downs:  %d", teamData.totalDowned);
         }
         else
         {
@@ -338,7 +338,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
 
         if (Settings::showClassNames)
         {
-            ImGui::Text("Condi: %s", formattedDamage.c_str());
+            ImGui::Text("Condi:  %s", formattedDamage.c_str());
         }
         else
         {
