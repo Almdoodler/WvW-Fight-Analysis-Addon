@@ -69,6 +69,9 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 
 	const size_t eventSize = sizeof(CombatEvent);
 
+	// Create a mapping from instance IDs to agents
+	std::unordered_map<uint16_t, Agent*> agentsByInstid;
+
 	// First pass: Collect times, map agents to instance IDs, and process team assignments
 	for (size_t i = 0; i < eventCount; ++i) {
 		size_t eventOffset = offset + (i * eventSize);
@@ -96,10 +99,18 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 			result.combatEndTime = std::max(result.combatEndTime, event.time);
 			break;
 		case StateChange::None:
+			// Map srcInstid
 			if (agentsByAddress.find(event.srcAgent) != agentsByAddress.end()) {
 				Agent& agent = agentsByAddress[event.srcAgent];
 				agent.id = event.srcInstid;
-				playersBySrcInstid[event.srcInstid] = &agent;
+				agentsByInstid[event.srcInstid] = &agent;
+				playersBySrcInstid[event.srcInstid] = &agent; // Keep this mapping
+			}
+			// Map dstInstid
+			if (agentsByAddress.find(event.dstAgent) != agentsByAddress.end()) {
+				Agent& agent = agentsByAddress[event.dstAgent];
+				agent.id = event.dstInstid;
+				agentsByInstid[event.dstInstid] = &agent;
 			}
 			break;
 		case StateChange::TeamChange: {
@@ -138,10 +149,10 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 		StateChange stateChange = static_cast<StateChange>(event.isStateChange);
 		if (stateChange == StateChange::ChangeDead || stateChange == StateChange::ChangeDown) {
 			uint16_t srcInstid = event.srcInstid;
-			auto playerIt = playersBySrcInstid.find(srcInstid);
-			if (playerIt != playersBySrcInstid.end()) {
-				Agent* player = playerIt->second;
-				const std::string& team = player->team;
+			auto agentIt = agentsByInstid.find(srcInstid);
+			if (agentIt != agentsByInstid.end()) {
+				Agent* agent = agentIt->second;
+				const std::string& team = agent->team;
 				if (team != "Unknown") {
 					if (stateChange == StateChange::ChangeDead) {
 						result.teamStats[team].totalDeaths++;
@@ -169,6 +180,8 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 			event.isBuffRemove == static_cast<uint8_t>(BuffRemove::None)) {
 
 			ResultCode resultCode = static_cast<ResultCode>(event.result);
+
+			// Check for damage events
 			if (resultCode == ResultCode::Normal || resultCode == ResultCode::Critical ||
 				resultCode == ResultCode::Glance || resultCode == ResultCode::KillingBlow) {
 
@@ -183,23 +196,66 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 				if (damageValue > 0) {
 					auto srcIt = playersBySrcInstid.find(event.srcInstid);
 					if (srcIt != playersBySrcInstid.end()) {
-						Agent* agent = srcIt->second;
-						const std::string& team = agent->team;
+						Agent* attacker = srcIt->second;
+						const std::string& team = attacker->team;
 						if (team != "Unknown") {
+							// Accumulate total damage
 							if (event.buff == 0) {
 								// Accumulate strike damage
 								result.teamStats[team].totalStrikeDamage += damageValue;
-								result.teamStats[team].eliteSpecStats[agent->eliteSpec].totalStrikeDamage += damageValue;
+								result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalStrikeDamage += damageValue;
 							}
 							else {
 								// Accumulate condition damage
 								result.teamStats[team].totalCondiDamage += damageValue;
-								result.teamStats[team].eliteSpecStats[agent->eliteSpec].totalCondiDamage += damageValue;
+								result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalCondiDamage += damageValue;
 							}
-							// Accumulate total damage for the team
 							result.teamStats[team].totalDamage += damageValue;
-							// Accumulate damage per specialization
-							result.teamStats[team].eliteSpecStats[agent->eliteSpec].totalDamage += damageValue;
+							result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalDamage += damageValue;
+
+							// Check if target is a logged player
+							auto dstIt = agentsByInstid.find(event.dstInstid);
+							if (dstIt != agentsByInstid.end()) {
+								Agent* target = dstIt->second;
+								if (target->team != "Unknown") {
+									// Accumulate damage vs. logged players
+									if (event.buff == 0) {
+										result.teamStats[team].totalStrikeDamageVsPlayers += damageValue;
+										result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalStrikeDamageVsPlayers += damageValue;
+									}
+									else {
+										result.teamStats[team].totalCondiDamageVsPlayers += damageValue;
+										result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalCondiDamageVsPlayers += damageValue;
+									}
+									result.teamStats[team].totalDamageVsPlayers += damageValue;
+									result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalDamageVsPlayers += damageValue;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// Process KillingBlow events to collect kills per team
+			if (resultCode == ResultCode::KillingBlow) {
+				auto srcIt = playersBySrcInstid.find(event.srcInstid);
+				if (srcIt != playersBySrcInstid.end()) {
+					Agent* attacker = srcIt->second;
+					const std::string& team = attacker->team;
+					if (team != "Unknown") {
+						// Increment total kills
+						result.teamStats[team].totalKills++;
+						result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalKills++;
+
+						// Check if target is a logged player
+						auto dstIt = agentsByInstid.find(event.dstInstid);
+						if (dstIt != agentsByInstid.end()) {
+							Agent* target = dstIt->second;
+							if (target->team != "Unknown") {
+								// Increment kills vs. logged players
+								result.teamStats[team].totalKillsVsPlayers++;
+								result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalKillsVsPlayers++;
+							}
 						}
 					}
 				}
@@ -208,16 +264,16 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 	}
 
 	// Collect statistics
-	for (const auto& [srcInstid, player] : playersBySrcInstid) {
-		if (player->team != "Unknown") {
-			result.teamStats[player->team].totalPlayers++;
-			result.teamStats[player->team].eliteSpecStats[player->eliteSpec].count++;
-			result.totalIdentifiedPlayers++; // Increment total identified players
+	for (const auto& [srcInstid, agent] : playersBySrcInstid) {
+		if (agent->team != "Unknown") {
+			result.teamStats[agent->team].totalPlayers++;
+			result.teamStats[agent->team].eliteSpecStats[agent->eliteSpec].count++;
+			result.totalIdentifiedPlayers++;
 		}
 		else {
 			APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-				("Player with unknown team - srcInstid: " + std::to_string(srcInstid) +
-					", Name: " + player->name).c_str());
+				("Agent with unknown team - InstID: " + std::to_string(srcInstid) +
+					", Name: " + agent->name).c_str());
 		}
 	}
 
@@ -225,16 +281,22 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 	for (const auto& [teamName, stats] : result.teamStats) {
 		std::string message = "Team: " + teamName +
 			", Total Damage: " + std::to_string(stats.totalDamage) +
+			", Damage vs Players: " + std::to_string(stats.totalDamageVsPlayers) +
 			", Total Players: " + std::to_string(stats.totalPlayers) +
 			", Total Downs: " + std::to_string(stats.totalDowned) +
-			", Total Deaths: " + std::to_string(stats.totalDeaths);
+			", Total Deaths: " + std::to_string(stats.totalDeaths) +
+			", Total Kills: " + std::to_string(stats.totalKills) +
+			", Kills vs Players: " + std::to_string(stats.totalKillsVsPlayers);
 		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, message.c_str());
 
 		// Log per specialization
 		for (const auto& [eliteSpec, specStats] : stats.eliteSpecStats) {
 			std::string specMessage = "  Elite Spec: " + eliteSpec +
 				", Count: " + std::to_string(specStats.count) +
-				", Total Damage: " + std::to_string(specStats.totalDamage);
+				", Total Damage: " + std::to_string(specStats.totalDamage) +
+				", Damage vs Players: " + std::to_string(specStats.totalDamageVsPlayers) +
+				", Total Kills: " + std::to_string(specStats.totalKills) +
+				", Kills vs Players: " + std::to_string(specStats.totalKillsVsPlayers);
 			APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, specMessage.c_str());
 		}
 	}
@@ -242,6 +304,10 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 	APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
 		("Parsed EVTC file. Found " + std::to_string(result.totalIdentifiedPlayers) + " identified players").c_str());
 }
+
+
+
+
 
 
 ParsedData parseEVTCFile(const std::string& filePath) {
@@ -335,6 +401,7 @@ ParsedData parseEVTCFile(const std::string& filePath) {
 
 	std::unordered_map<uint16_t, Agent*> playersBySrcInstid;
 	parseCombatEvents(bytes, offset, eventCount, agentsByAddress, playersBySrcInstid, result);
+
 
 	return result;
 }

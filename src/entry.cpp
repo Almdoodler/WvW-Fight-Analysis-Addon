@@ -62,7 +62,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 2;
-    AddonDef.Version.Revision = 6;
+    AddonDef.Version.Revision = 7;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "Simple WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
@@ -407,11 +407,6 @@ void AddonRender()
                         Settings::Settings[SHOW_SPEC_DAMAGE] = Settings::showSpecDamage;
                         Settings::Save(SettingsPath);
                     }
-                    if (ImGui::Checkbox("Sort Class Damage", &Settings::sortSpecDamage))
-                    {
-                        Settings::Settings[SORT_SPEC_DAMAGE] = Settings::sortSpecDamage;
-                        Settings::Save(SettingsPath);
-                    }
                     ImGui::Separator();
                     if (ImGui::Checkbox("Team Count", &Settings::showTeamTotalPlayers))
                     {
@@ -464,6 +459,17 @@ void AddonRender()
                     }
                     ImGui::EndMenu();
                 }
+                if (ImGui::Checkbox("Sort by Class Damage", &Settings::sortSpecDamage))
+                {
+                    Settings::Settings[SORT_SPEC_DAMAGE] = Settings::sortSpecDamage;
+                    Settings::Save(SettingsPath);
+                }
+                if (ImGui::Checkbox("Damage vs Logged Players Only", &Settings::vsLoggedPlayersOnly))
+                {
+                    Settings::Settings[VS_LOGGED_PLAYERS_ONLY] = Settings::vsLoggedPlayersOnly;
+                    Settings::Save(SettingsPath);
+                }
+
                 ImGui::EndPopup();
             }
 

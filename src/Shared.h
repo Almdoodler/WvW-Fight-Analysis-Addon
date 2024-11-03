@@ -94,17 +94,31 @@ struct SpecStats {
     uint64_t totalDamage = 0;
     uint64_t totalStrikeDamage = 0;
     uint64_t totalCondiDamage = 0;
+    uint32_t totalKills = 0;
+    uint64_t totalDamageVsPlayers = 0;
+    uint64_t totalStrikeDamageVsPlayers = 0;
+    uint64_t totalCondiDamageVsPlayers = 0;
+    int totalKillsVsPlayers = 0;
+
+
 };
 
 struct TeamStats {
     uint32_t totalPlayers = 0;
     uint32_t totalDeaths = 0;
     uint32_t totalDowned = 0;
+    uint32_t totalKills = 0;
     uint64_t totalDamage = 0;
     uint64_t totalStrikeDamage = 0;
     uint64_t totalCondiDamage = 0;
+    uint64_t totalDamageVsPlayers = 0;
+    uint64_t totalStrikeDamageVsPlayers = 0;
+    uint64_t totalCondiDamageVsPlayers = 0;
+    int totalKillsVsPlayers = 0;
     std::unordered_map<std::string, SpecStats> eliteSpecStats;
 };
+
+
 
 struct ParsedData {
     std::unordered_map<std::string, TeamStats> teamStats;

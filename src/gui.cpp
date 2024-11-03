@@ -265,7 +265,13 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 Damage = APIDefs->GetTextureOrCreateFromResource("DAMAGE_ICON", DAMAGE, hSelf);
             }
         }
-        std::string formattedDamage = formatDamage(teamData.totalDamage);
+        std::string formattedDamage;
+        if (Settings::vsLoggedPlayersOnly) {
+            formattedDamage = formatDamage(teamData.totalDamageVsPlayers);
+        }
+        else {
+            formattedDamage = formatDamage(teamData.totalDamage);
+        }
         if (Settings::showClassNames)
         {
             ImGui::Text("Damage: %s", formattedDamage.c_str());
@@ -290,7 +296,14 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 Strike = APIDefs->GetTextureOrCreateFromResource("STRIKE_ICON", STRIKE, hSelf);
             }
         }
-        std::string formattedDamage = formatDamage(teamData.totalStrikeDamage);
+        std::string formattedDamage;
+        if (Settings::vsLoggedPlayersOnly) {
+            formattedDamage = formatDamage(teamData.totalStrikeDamageVsPlayers);
+        }
+        else {
+            formattedDamage = formatDamage(teamData.totalStrikeDamage);
+        }
+
         if (Settings::showClassNames)
         {
             ImGui::Text("Strike: %s", formattedDamage.c_str());
@@ -315,7 +328,14 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 Condi = APIDefs->GetTextureOrCreateFromResource("CONDI_ICON", CONDI, hSelf);
             }
         }
-        std::string formattedDamage = formatDamage(teamData.totalCondiDamage);
+        std::string formattedDamage;
+        if(Settings::vsLoggedPlayersOnly){
+            formattedDamage = formatDamage(teamData.totalCondiDamageVsPlayers);
+        }
+        else {
+            formattedDamage = formatDamage(teamData.totalCondiDamage);
+        }
+
         if (Settings::showClassNames)
         {
             ImGui::Text("Condi: %s", formattedDamage.c_str());
@@ -331,6 +351,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
         ImGui::Separator();
 
         bool sortByDamage = Settings::sortSpecDamage;
+        bool vsLogPlayers = Settings::vsLoggedPlayersOnly;
         bool showDamage = Settings::showSpecDamage;
 
         // Sort specializations by count or damage in descending order
@@ -342,8 +363,11 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
 
         std::sort(sortedClasses.begin(), sortedClasses.end(),
             [sortByDamage](const std::pair<std::string, SpecStats>& a, const std::pair<std::string, SpecStats>& b) {
-                if (sortByDamage) {
+                if (sortByDamage && !Settings::vsLoggedPlayersOnly) {
                     return a.second.totalDamage > b.second.totalDamage;
+                }
+                else if (sortByDamage && Settings::vsLoggedPlayersOnly) {
+                    return a.second.totalDamageVsPlayers > b.second.totalDamageVsPlayers;
                 }
                 else {
                     return a.second.count > b.second.count;
@@ -352,8 +376,11 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
 
         uint64_t maxValue = 0;
         if (!sortedClasses.empty()) {
-            if (sortByDamage) {
+            if (sortByDamage && !Settings::vsLoggedPlayersOnly) {
                 maxValue = sortedClasses[0].second.totalDamage;
+            }
+            else if (sortByDamage && Settings::vsLoggedPlayersOnly) {
+                maxValue = sortedClasses[0].second.totalDamageVsPlayers;
             }
             else {
                 maxValue = sortedClasses[0].second.count;
@@ -365,7 +392,15 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
             const std::string& eliteSpec = specPair.first;
             const SpecStats& stats = specPair.second;
             int count = stats.count;
-            uint64_t totalDamage = stats.totalDamage;
+
+            uint64_t totalDamage;
+            if(Settings::vsLoggedPlayersOnly)
+            {
+                totalDamage = stats.totalDamageVsPlayers;
+            }
+            else {
+                totalDamage = stats.totalDamage;
+            }
 
             // Determine the value and fraction based on the sorting criterion
             uint64_t value = sortByDamage ? totalDamage : count;
