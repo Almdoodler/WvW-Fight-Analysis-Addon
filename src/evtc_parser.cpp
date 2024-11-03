@@ -416,11 +416,11 @@ std::wstring getCanonicalPath(const std::filesystem::path& path)
 bool isValidEVTCFile(const std::filesystem::path& dirPath, const std::filesystem::path& filePath)
 {
 	std::filesystem::path relativePath = std::filesystem::relative(filePath.parent_path(), dirPath);
-
 	bool dirPathIsWvW = dirPath.filename().string().find("WvW") != std::string::npos;
+	bool dirPathIs1 = dirPath.filename().string() == "1";
 
 	std::vector<std::filesystem::path> components;
-	if (!dirPath.has_root_path() && !dirPathIsWvW)
+	if (!dirPath.has_root_path() && !dirPathIsWvW && !dirPathIs1)
 	{
 		components.push_back(dirPath.filename());
 	}
@@ -428,6 +428,7 @@ bool isValidEVTCFile(const std::filesystem::path& dirPath, const std::filesystem
 	{
 		components.push_back(part);
 	}
+
 	int wvwIndex = -1;
 	for (size_t i = 0; i < components.size(); ++i)
 	{
@@ -438,18 +439,41 @@ bool isValidEVTCFile(const std::filesystem::path& dirPath, const std::filesystem
 		}
 	}
 
+	// If use npc name in save path not set in arc
+	int dir1Index = -1;
+	if (wvwIndex == -1)
+	{
+		for (size_t i = 0; i < components.size(); ++i)
+		{
+			if (components[i].string() == "1")
+			{
+				dir1Index = static_cast<int>(i);
+				break;
+			}
+		}
+	}
+
 	if (dirPathIsWvW && wvwIndex == -1)
 	{
 		wvwIndex = -1;
 	}
-	else if (wvwIndex == -1)
+	else if (wvwIndex != -1)
 	{
-		return false;
+		size_t depthFromWvW = components.size() - (wvwIndex + 1);
+		return depthFromWvW <= 2;
 	}
 
-	size_t depthFromWvW = components.size() - (wvwIndex + 1);
+	if (dirPathIs1 && dir1Index == -1)
+	{
+		dir1Index = -1;
+	}
+	else if (dir1Index != -1)
+	{
+		size_t depthFromDir1 = components.size() - (dir1Index + 1);
+		return depthFromDir1 <= 2;
+	}
 
-	return depthFromWvW <= 2;
+	return false;
 }
 
 
