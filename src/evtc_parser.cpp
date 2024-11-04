@@ -599,62 +599,55 @@ std::wstring getCanonicalPath(const std::filesystem::path& path)
 
 bool isValidEVTCFile(const std::filesystem::path& dirPath, const std::filesystem::path& filePath)
 {
-	std::filesystem::path relativePath = std::filesystem::relative(filePath.parent_path(), dirPath);
+	std::filesystem::path relativePath;
+	try {
+		relativePath = std::filesystem::relative(filePath.parent_path(), dirPath);
+	}
+	catch (...) {
+		return false;
+	}
+
 	bool dirPathIsWvW = dirPath.filename().string().find("WvW") != std::string::npos;
 	bool dirPathIs1 = dirPath.filename().string() == "1";
 
 	std::vector<std::filesystem::path> components;
-	if (!dirPath.has_root_path() && !dirPathIsWvW && !dirPathIs1)
-	{
+	if (!dirPath.has_root_path() && !dirPathIsWvW && !dirPathIs1) {
 		components.push_back(dirPath.filename());
 	}
-	for (const auto& part : relativePath)
-	{
+	for (const auto& part : relativePath) {
 		components.push_back(part);
 	}
 
 	int wvwIndex = -1;
-	for (size_t i = 0; i < components.size(); ++i)
-	{
-		if (components[i].string().find("WvW") != std::string::npos)
-		{
+	for (size_t i = 0; i < components.size(); ++i) {
+		if (components[i].string().find("WvW") != std::string::npos) {
 			wvwIndex = static_cast<int>(i);
 			break;
 		}
 	}
 
-	// If use npc name in save path not set in arc
 	int dir1Index = -1;
-	if (wvwIndex == -1)
-	{
-		for (size_t i = 0; i < components.size(); ++i)
-		{
-			if (components[i].string() == "1")
-			{
+	if (wvwIndex == -1) {
+		for (size_t i = 0; i < components.size(); ++i) {
+			if (components[i].string() == "1") {
 				dir1Index = static_cast<int>(i);
 				break;
 			}
 		}
 	}
 
-	if (dirPathIsWvW && wvwIndex == -1)
-	{
-		wvwIndex = -1;
+	if (dirPathIsWvW) {
+		return components.size() <= 2;
 	}
-	else if (wvwIndex != -1)
-	{
-		size_t depthFromWvW = components.size() - (wvwIndex + 1);
-		return depthFromWvW <= 2;
+	if (wvwIndex != -1) {
+		return (components.size() - (wvwIndex + 1)) <= 2;
 	}
 
-	if (dirPathIs1 && dir1Index == -1)
-	{
-		dir1Index = -1;
+	if (dirPathIs1) {
+		return components.size() <= 2;
 	}
-	else if (dir1Index != -1)
-	{
-		size_t depthFromDir1 = components.size() - (dir1Index + 1);
-		return depthFromDir1 <= 2;
+	if (dir1Index != -1) {
+		return (components.size() - (dir1Index + 1)) <= 2;
 	}
 
 	return false;
