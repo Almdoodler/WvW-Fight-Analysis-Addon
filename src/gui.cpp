@@ -425,7 +425,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
 
 
 
-void ratioBarSetup() 
+void ratioBarSetup()
 {
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
         ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
@@ -473,7 +473,9 @@ void ratioBarSetup()
             auto teamIt = currentLogData.teamStats.find(team_names[i]);
             if (teamIt != currentLogData.teamStats.end())
             {
-                teamCounts[i] = teamIt->second.totalPlayers;
+                bool useSquadStats = Settings::squadPlayersOnly && teamIt->second.isPOVTeam;
+
+                teamCounts[i] = useSquadStats ? teamIt->second.squadStats.totalPlayers : teamIt->second.totalPlayers;
             }
         }
 
@@ -487,6 +489,40 @@ void ratioBarSetup()
             ImVec2(barSize.x, barHeight)
         );
     }
-    ImGui::End();
     ImGui::PopStyleVar(4);
+    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+    {
+        ImGui::OpenPopup("Widget Menu");
+    }
+
+    if (ImGui::BeginPopup("Widget Menu"))
+    {
+        if (ImGui::BeginMenu("History"))
+        {
+            for (int i = 0; i < parsedLogs.size(); ++i)
+            {
+                const auto& log = parsedLogs[i];
+                std::string fnstr = log.filename.substr(0, log.filename.find_last_of('.'));
+                uint64_t durationMs = log.data.combatEndTime - log.data.combatStartTime;
+                auto duration = std::chrono::milliseconds(durationMs);
+                int minutes = std::chrono::duration_cast<std::chrono::minutes>(duration).count();
+                int seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count() % 60;
+                std::string displayName = fnstr + " (" + std::to_string(minutes) + "m " + std::to_string(seconds) + "s)";
+
+                if (ImGui::RadioButton(displayName.c_str(), &currentLogIndex, i))
+                {
+                    // Selection handled by RadioButton
+                }
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::Checkbox("Show Squad Players Only", &Settings::squadPlayersOnly))
+        {
+            Settings::Settings[SQUAD_PLAYERS_ONLY] = Settings::squadPlayersOnly;
+            Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+        }
+    }
+    ImGui::End();
+    
+   
 }
