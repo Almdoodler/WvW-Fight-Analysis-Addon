@@ -40,6 +40,8 @@ const char* SORT_SPEC_DAMAGE = "SortSpecDamage";
 const char* SHOW_SCROLL_BAR = "ShowScrollBar";
 const char* USE_TABBED_VIEW = "UseTabbedView";
 const char* SHOW_WINDOW_TITLE = "ShowWindowTitle";
+// Widget
+const char* WIDGET_STATS = "WidgetStats";
 
 
 namespace Settings
@@ -69,6 +71,11 @@ namespace Settings
 		if (!Settings[IS_ADDON_WIDGET_VISIBLE].is_null())
 		{
 			Settings[IS_ADDON_WIDGET_VISIBLE].get_to<bool>(IsAddonWidgetEnabled);
+		}
+		if (!Settings[WIDGET_STATS].is_null())
+		{
+			Settings[WIDGET_STATS].get_to<std::string>(widgetStats);
+			strcpy_s(widgetStatsC, sizeof(widgetStatsC), widgetStats.c_str());
 		}
 		/* Window */
 		if (!Settings[IS_ADDON_WINDOW_VISIBLE].is_null())
@@ -230,4 +237,7 @@ namespace Settings
 	bool showScrollBar = true;
 	bool useTabbedView = true;
 	bool showWindowTitle = true;
+	// Widget
+	std::string widgetStats;
+	char widgetStatsC[256] = "players";
 }

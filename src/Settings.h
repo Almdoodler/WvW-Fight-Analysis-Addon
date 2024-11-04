@@ -40,6 +40,8 @@ extern const char* SORT_SPEC_DAMAGE;
 extern const char* USE_TABBED_VIEW;
 extern const char* SHOW_SCROLL_BAR;
 extern const char* SHOW_WINDOW_TITLE;
+//Widget
+extern const char* WIDGET_STATS;
 
 namespace Settings
 {
@@ -88,6 +90,9 @@ namespace Settings
 	extern bool showScrollBar;
 	extern bool useTabbedView;
 	extern bool showWindowTitle;
+	// Widget
+	extern std::string widgetStats;
+	extern char widgetStatsC[256];
 }
 
 #endif

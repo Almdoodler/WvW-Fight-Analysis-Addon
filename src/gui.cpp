@@ -94,80 +94,112 @@ void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, c
     ImGui::SetCursorPosY(cursor_pos.y + bar_height + 2);
 }
 
-void RenderSimpleRatioBar(int red, int green, int blue,
+void RenderSimpleRatioBar(
+    int red, int green, int blue,
     const ImVec4& colorRed, const ImVec4& colorGreen, const ImVec4& colorBlue,
-    const ImVec2& size)
+    const ImVec2& size,
+    const char* redText, const char* greenText, const char* blueText)
 {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     const ImVec2 p = ImGui::GetCursorScreenPos();
 
-
+    // Calculate ratios
     float total = static_cast<float>(red + green + blue);
     if (total == 0.0f) total = 1.0f;
+
     float r_frac = static_cast<float>(red) / total;
     float g_frac = static_cast<float>(green) / total;
     float b_frac = static_cast<float>(blue) / total;
 
-
+    // Convert colors to ImGui format
     ImU32 colRed = ImGui::ColorConvertFloat4ToU32(colorRed);
     ImU32 colGreen = ImGui::ColorConvertFloat4ToU32(colorGreen);
     ImU32 colBlue = ImGui::ColorConvertFloat4ToU32(colorBlue);
 
+    // Base coordinates and dimensions
+    const float x = p.x;
+    const float y = p.y;
+    const float width = size.x;
+    const float height = size.y;
 
-    float x = p.x;
-    float y = p.y;
-    float width = size.x;
-    float height = size.y;
+    // Calculate section widths
+    const float r_width = width * r_frac;
+    const float g_width = width * g_frac;
+    const float b_width = width * b_frac;
 
+    // Calculate section boundaries
+    const float x_red_start = x;
+    const float x_red_end = x + r_width;
+    const float x_green_start = x_red_end;
+    const float x_green_end = x_green_start + g_width;
+    const float x_blue_start = x_green_end;
+    const float x_blue_end = x + width;
 
-    float r_width = width * r_frac;
-    float g_width = width * g_frac;
-    float b_width = width * b_frac;
+    // Draw colored rectangles
+    draw_list->AddRectFilled(
+        ImVec2(x_red_start, y),
+        ImVec2(x_red_end, y + height),
+        colRed
+    );
 
+    draw_list->AddRectFilled(
+        ImVec2(x_green_start, y),
+        ImVec2(x_green_end, y + height),
+        colGreen
+    );
 
-    float x_red_start = x;
-    float x_red_end = x + r_width;
+    draw_list->AddRectFilled(
+        ImVec2(x_blue_start, y),
+        ImVec2(x_blue_end, y + height),
+        colBlue
+    );
 
-    float x_green_start = x_red_end;
-    float x_green_end = x_green_start + g_width;
+    // Draw white border around the entire bar
+    draw_list->AddRect(
+        ImVec2(x, y),
+        ImVec2(x + width, y + height),
+        IM_COL32_WHITE
+    );
 
-    float x_blue_start = x_green_end;
-    float x_blue_end = x + width;
+    // Calculate text dimensions and positions
+    ImVec2 textSizeRed = ImGui::CalcTextSize(redText);
+    ImVec2 textSizeGreen = ImGui::CalcTextSize(greenText);
+    ImVec2 textSizeBlue = ImGui::CalcTextSize(blueText);
 
+    // Calculate center positions for text
+    const float red_center_x = x_red_start + (r_width / 2.0f) - (textSizeRed.x / 2.0f);
+    const float green_center_x = x_green_start + (g_width / 2.0f) - (textSizeGreen.x / 2.0f);
+    const float blue_center_x = x_blue_start + (b_width / 2.0f) - (textSizeBlue.x / 2.0f);
+    const float center_y = y + (height / 2.0f) - (textSizeRed.y / 2.0f);
 
-    draw_list->AddRectFilled(ImVec2(x_red_start, y), ImVec2(x_red_end, y + height), colRed);
-    draw_list->AddRectFilled(ImVec2(x_green_start, y), ImVec2(x_green_end, y + height), colGreen);
-    draw_list->AddRectFilled(ImVec2(x_blue_start, y), ImVec2(x_blue_end, y + height), colBlue);
-
-    draw_list->AddRect(ImVec2(x, y), ImVec2(x + width, y + height), IM_COL32_WHITE);
-
-
-    char bufRed[32], bufGreen[32], bufBlue[32];
-    snprintf(bufRed, sizeof(bufRed), "%d", red);
-    snprintf(bufGreen, sizeof(bufGreen), "%d", green);
-    snprintf(bufBlue, sizeof(bufBlue), "%d", blue);
-
-    ImVec2 textSizeRed = ImGui::CalcTextSize(bufRed);
-    ImVec2 textSizeGreen = ImGui::CalcTextSize(bufGreen);
-    ImVec2 textSizeBlue = ImGui::CalcTextSize(bufBlue);
-
-    float red_center_x = x_red_start + r_width / 2.0f - textSizeRed.x / 2.0f;
-    float green_center_x = x_green_start + g_width / 2.0f - textSizeGreen.x / 2.0f;
-    float blue_center_x = x_blue_start + b_width / 2.0f - textSizeBlue.x / 2.0f;
-
-    float center_y = y + height / 2.0f - textSizeRed.y / 2.0f;
+    // Draw text only if there's enough space in each section
+    const ImU32 textColor = IM_COL32_WHITE;
 
     if (r_width >= textSizeRed.x)
     {
-        draw_list->AddText(ImVec2(red_center_x, center_y), IM_COL32_WHITE, bufRed);
+        draw_list->AddText(
+            ImVec2(red_center_x, center_y),
+            textColor,
+            redText
+        );
     }
+
     if (g_width >= textSizeGreen.x)
     {
-        draw_list->AddText(ImVec2(green_center_x, center_y), IM_COL32_WHITE, bufGreen);
+        draw_list->AddText(
+            ImVec2(green_center_x, center_y),
+            textColor,
+            greenText
+        );
     }
+
     if (b_width >= textSizeBlue.x)
     {
-        draw_list->AddText(ImVec2(blue_center_x, center_y), IM_COL32_WHITE, bufBlue);
+        draw_list->AddText(
+            ImVec2(blue_center_x, center_y),
+            textColor,
+            blueText
+        );
     }
 
     ImGui::Dummy(size);
@@ -429,26 +461,21 @@ void ratioBarSetup()
 {
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
         ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
-
     if (Settings::disableMovingWindow)
     {
         window_flags |= ImGuiWindowFlags_NoMove;
     }
-
     if (Settings::disableClickingWindow)
     {
         window_flags |= ImGuiWindowFlags_NoInputs;
     }
-
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-
     float barHeight = 20.0f;
     ImVec2 barSize = ImVec2(320.0f, barHeight);
     ImGui::SetNextWindowSize(barSize);
-
     if (ImGui::Begin("Team Ratio Bar", nullptr, window_flags))
     {
         if (parsedLogs.empty())
@@ -468,15 +495,52 @@ void ratioBarSetup()
         };
 
         int teamCounts[3] = { 0, 0, 0 };
+        char bufRed[32], bufGreen[32], bufBlue[32];
+
         for (int i = 0; i < 3; ++i)
         {
             auto teamIt = currentLogData.teamStats.find(team_names[i]);
             if (teamIt != currentLogData.teamStats.end())
             {
                 bool useSquadStats = Settings::squadPlayersOnly && teamIt->second.isPOVTeam;
+                Settings::widgetStats = Settings::widgetStatsC;
 
-                teamCounts[i] = useSquadStats ? teamIt->second.squadStats.totalPlayers : teamIt->second.totalPlayers;
+                if (Settings::widgetStats == "players") {
+                    teamCounts[i] = useSquadStats ? teamIt->second.squadStats.totalPlayers : teamIt->second.totalPlayers;
+                }
+                else if (Settings::widgetStats == "deaths") {
+                    teamCounts[i] = useSquadStats ? teamIt->second.squadStats.totalDeaths : teamIt->second.totalDeaths;
+                }
+                else if (Settings::widgetStats == "downs") {
+                    teamCounts[i] = useSquadStats ? teamIt->second.squadStats.totalDowned : teamIt->second.totalDowned;
+                }
+                else if (Settings::widgetStats == "damage") {
+                    int totalDamageToDisplay;
+                    if (Settings::vsLoggedPlayersOnly) {
+                        totalDamageToDisplay = static_cast<int>(useSquadStats ?
+                            teamIt->second.squadStats.totalDamageVsPlayers :
+                            teamIt->second.totalDamageVsPlayers);
+                    }
+                    else {
+                        totalDamageToDisplay = static_cast<int>(useSquadStats ?
+                            teamIt->second.squadStats.totalDamage :
+                            teamIt->second.totalDamage);
+                    }
+                    teamCounts[i] = totalDamageToDisplay;
+                }
             }
+        }
+
+        // Format the display text based on the widget type
+        if (Settings::widgetStats == "damage") {
+            strcpy_s(bufRed, sizeof(bufRed), formatDamage(teamCounts[0]).c_str());
+            strcpy_s(bufGreen, sizeof(bufGreen), formatDamage(teamCounts[2]).c_str());
+            strcpy_s(bufBlue, sizeof(bufBlue), formatDamage(teamCounts[1]).c_str());
+        }
+        else {
+            snprintf(bufRed, sizeof(bufRed), "%d", teamCounts[0]);
+            snprintf(bufGreen, sizeof(bufGreen), "%d", teamCounts[2]);
+            snprintf(bufBlue, sizeof(bufBlue), "%d", teamCounts[1]);
         }
 
         RenderSimpleRatioBar(
@@ -486,7 +550,10 @@ void ratioBarSetup()
             team_colors[0],
             team_colors[2],
             team_colors[1],
-            ImVec2(barSize.x, barHeight)
+            ImVec2(barSize.x, barHeight),
+            bufRed,
+            bufGreen,
+            bufBlue
         );
     }
     ImGui::PopStyleVar(4);
@@ -494,7 +561,6 @@ void ratioBarSetup()
     {
         ImGui::OpenPopup("Widget Menu");
     }
-
     if (ImGui::BeginPopup("Widget Menu"))
     {
         if (ImGui::BeginMenu("History"))
@@ -508,13 +574,56 @@ void ratioBarSetup()
                 int minutes = std::chrono::duration_cast<std::chrono::minutes>(duration).count();
                 int seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count() % 60;
                 std::string displayName = fnstr + " (" + std::to_string(minutes) + "m " + std::to_string(seconds) + "s)";
-
                 if (ImGui::RadioButton(displayName.c_str(), &currentLogIndex, i))
                 {
                     // Selection handled by RadioButton
                 }
             }
             ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Display Stats"))
+        {
+            Settings::widgetStats = Settings::widgetStatsC;
+            bool isPlayers = Settings::widgetStats == "players";
+            bool isDeaths = Settings::widgetStats == "deaths";
+            bool isDowns = Settings::widgetStats == "downs";
+            bool isDamage = Settings::widgetStats == "damage";
+
+            if (ImGui::RadioButton("Players", isPlayers))
+            {
+                strcpy_s(Settings::widgetStatsC, sizeof(Settings::widgetStatsC), "players");
+                Settings::widgetStats = "players";
+                Settings::Settings[WIDGET_STATS] = Settings::widgetStatsC;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+            if (ImGui::RadioButton("Deaths", isDeaths))
+            {
+                strcpy_s(Settings::widgetStatsC, sizeof(Settings::widgetStatsC), "deaths");
+                Settings::widgetStats = "deaths";
+                Settings::Settings[WIDGET_STATS] = Settings::widgetStatsC;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+            if (ImGui::RadioButton("Downs", isDowns))
+            {
+                strcpy_s(Settings::widgetStatsC, sizeof(Settings::widgetStatsC), "downs");
+                Settings::widgetStats = "downs";
+                Settings::Settings[WIDGET_STATS] = Settings::widgetStatsC;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+            if (ImGui::RadioButton("Damage", isDamage))
+            {
+                strcpy_s(Settings::widgetStatsC, sizeof(Settings::widgetStatsC), "damage");
+                Settings::widgetStats = "damage";
+                Settings::Settings[WIDGET_STATS] = Settings::widgetStatsC;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::Checkbox("Damage vs Logged Players Only", &Settings::vsLoggedPlayersOnly))
+        {
+            Settings::Settings[VS_LOGGED_PLAYERS_ONLY] = Settings::vsLoggedPlayersOnly;
+            Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
         }
         if (ImGui::Checkbox("Show Squad Players Only", &Settings::squadPlayersOnly))
         {
@@ -523,6 +632,4 @@ void ratioBarSetup()
         }
     }
     ImGui::End();
-    
-   
 }
