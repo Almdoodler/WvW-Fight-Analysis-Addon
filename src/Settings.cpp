@@ -24,6 +24,7 @@ const char* USE_SHORT_CLASS_NAMES = "UseShortClassNames";
 const char* SHOW_CLASS_ICONS = "ShowClassIcons";
 const char* SHOW_SPEC_BARS = "ShowSpecBars";
 const char* VS_LOGGED_PLAYERS_ONLY = "VsLoggedPlayersOnly";
+const char* SQUAD_PLAYERS_ONLY = "SquadPlayersOnly";
 
 // Team Stats
 const char* SHOW_TEAM_TOTAL_PLAYERS = "ShowTeamTotalPlayers";
@@ -97,6 +98,10 @@ namespace Settings
 		if (!Settings[VS_LOGGED_PLAYERS_ONLY].is_null())
 		{
 			Settings[VS_LOGGED_PLAYERS_ONLY].get_to<bool>(vsLoggedPlayersOnly);
+		}
+		if (!Settings[SQUAD_PLAYERS_ONLY].is_null())
+		{
+			Settings[SQUAD_PLAYERS_ONLY].get_to<bool>(squadPlayersOnly);
 		}
 		if (!Settings[TEAM_PLAYER_THRESHOLD].is_null())
 		{
@@ -209,7 +214,8 @@ namespace Settings
 	bool useShortClassNames = false;
 	bool showClassIcons = true;
 	bool showSpecBars = true;
-	bool vsLoggedPlayersOnly = true; 
+	bool vsLoggedPlayersOnly = true;
+	bool squadPlayersOnly = false;
 	// Team Stats
 	bool showTeamTotalPlayers = true;
 	bool showTeamDeaths = true;

@@ -19,10 +19,95 @@
 std::unordered_set<std::wstring> processedFiles;
 std::filesystem::file_time_type maxProcessedTime = std::filesystem::file_time_type::min();
 
+void updateStats(TeamStats& teamStats, Agent* agent, int32_t value, bool isDamage, bool isKill, bool vsPlayer, bool isStrikeDamage, bool isCondiDamage) {
+	auto& specStats = teamStats.eliteSpecStats[agent->eliteSpec];
+
+	// Update team stats
+	if (isDamage) {
+		teamStats.totalDamage += value;
+		specStats.totalDamage += value;
+
+		if (isStrikeDamage) {
+			teamStats.totalStrikeDamage += value;
+			specStats.totalStrikeDamage += value;
+		}
+		else if (isCondiDamage) {
+			teamStats.totalCondiDamage += value;
+			specStats.totalCondiDamage += value;
+		}
+
+		if (vsPlayer) {
+			teamStats.totalDamageVsPlayers += value;
+			specStats.totalDamageVsPlayers += value;
+
+			if (isStrikeDamage) {
+				teamStats.totalStrikeDamageVsPlayers += value;
+				specStats.totalStrikeDamageVsPlayers += value;
+			}
+			else if (isCondiDamage) {
+				teamStats.totalCondiDamageVsPlayers += value;
+				specStats.totalCondiDamageVsPlayers += value;
+			}
+		}
+	}
+
+	if (isKill) {
+		teamStats.totalKills++;
+		specStats.totalKills++;
+		if (vsPlayer) {
+			teamStats.totalKillsVsPlayers++;
+			specStats.totalKillsVsPlayers++;
+		}
+	}
+
+	// If the agent is in the squad
+	if (teamStats.isPOVTeam && agent->subgroupNumber > 0) {
+		auto& squadStats = teamStats.squadStats;
+		auto& squadSpecStats = squadStats.eliteSpecStats[agent->eliteSpec];
+
+		// Update squad stats
+		if (isDamage) {
+			squadStats.totalDamage += value;
+			squadSpecStats.totalDamage += value;
+
+			if (isStrikeDamage) {
+				squadStats.totalStrikeDamage += value;
+				squadSpecStats.totalStrikeDamage += value;
+			}
+			else if (isCondiDamage) {
+				squadStats.totalCondiDamage += value;
+				squadSpecStats.totalCondiDamage += value;
+			}
+
+			if (vsPlayer) {
+				squadStats.totalDamageVsPlayers += value;
+				squadSpecStats.totalDamageVsPlayers += value;
+
+				if (isStrikeDamage) {
+					squadStats.totalStrikeDamageVsPlayers += value;
+					squadSpecStats.totalStrikeDamageVsPlayers += value;
+				}
+				else if (isCondiDamage) {
+					squadStats.totalCondiDamageVsPlayers += value;
+					squadSpecStats.totalCondiDamageVsPlayers += value;
+				}
+			}
+		}
+
+		if (isKill) {
+			squadStats.totalKills++;
+			squadSpecStats.totalKills++;
+			if (vsPlayer) {
+				squadStats.totalKillsVsPlayers++;
+				squadSpecStats.totalKillsVsPlayers++;
+			}
+		}
+	}
+}
+
 
 void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentCount,
 	std::unordered_map<uint64_t, Agent>& agentsByAddress) {
-	//APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Agent count: " + std::to_string(agentCount)).c_str());
 
 	const size_t agentBlockSize = 96; // Each agent block is 96 bytes
 
@@ -37,9 +122,62 @@ void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentC
 		std::memcpy(&agent.professionId, bytes.data() + offset + 8, sizeof(uint32_t));
 		std::memcpy(&agent.eliteSpecId, bytes.data() + offset + 12, sizeof(int32_t));
 
-		agent.name = std::string(bytes.data() + offset + 28, 68);
-		agent.name.erase(std::find(agent.name.begin(), agent.name.end(), '\0'), agent.name.end());
+		// Read the full 68-byte name field
+		char nameData[68];
+		std::memcpy(nameData, bytes.data() + offset + 28, 68);
+		nameData[67] = '\0'; // Ensure null termination
 
+		// Split the nameData into substrings
+		std::vector<std::string> splitStr;
+		size_t start = 0;
+		while (start < 68) {
+			size_t end = start;
+			while (end < 68 && nameData[end] != '\0') {
+				++end;
+			}
+			if (start != end) {
+				splitStr.emplace_back(nameData + start, nameData + end);
+			}
+			start = end + 1;
+			if (end >= 67) { // Reached the end of nameData
+				break;
+			}
+		}
+
+		// Assign character name, account name, and subgroup
+		if (!splitStr.empty()) {
+			agent.name = splitStr[0]; // Character name
+		}
+		else {
+			agent.name = "";
+		}
+		if (splitStr.size() > 1) {
+			agent.accountName = splitStr[1]; // Account name
+		}
+		else {
+			agent.accountName = "";
+		}
+		if (splitStr.size() > 2) {
+			agent.subgroup = splitStr[2]; // Subgroup as string
+		}
+		else {
+			agent.subgroup = "";
+		}
+
+		// Optional: Convert subgroup to integer
+		if (!agent.subgroup.empty()) {
+			try {
+				agent.subgroupNumber = std::stoi(agent.subgroup);
+			}
+			catch (const std::exception&) {
+				agent.subgroupNumber = -1; // Invalid subgroup number
+			}
+		}
+		else {
+			agent.subgroupNumber = -1; // No subgroup information
+		}
+
+		// Continue with existing logic
 		if (professions.find(agent.professionId) != professions.end()) {
 			agent.profession = professions[agent.professionId];
 			if (agent.eliteSpecId != -1 && eliteSpecs.find(agent.eliteSpecId) != eliteSpecs.end()) {
@@ -50,6 +188,8 @@ void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentC
 			}
 			agentsByAddress[agent.address] = agent;
 		}
+		// Else, skip the agent
+
 		offset += agentBlockSize;
 	}
 }
@@ -66,6 +206,7 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 	result.combatEndTime = 0;
 	uint64_t earliestTime = UINT64_MAX;
 	uint64_t latestTime = 0;
+	uint64_t povAgentID = 0;
 
 	const size_t eventSize = sizeof(CombatEvent);
 
@@ -98,13 +239,16 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 		case StateChange::ExitCombat:
 			result.combatEndTime = std::max(result.combatEndTime, event.time);
 			break;
+		case StateChange::PointOfView:
+			povAgentID = event.srcAgent;
+			break;
 		case StateChange::None:
 			// Map srcInstid
 			if (agentsByAddress.find(event.srcAgent) != agentsByAddress.end()) {
 				Agent& agent = agentsByAddress[event.srcAgent];
 				agent.id = event.srcInstid;
 				agentsByInstid[event.srcInstid] = &agent;
-				playersBySrcInstid[event.srcInstid] = &agent; // Keep this mapping
+				playersBySrcInstid[event.srcInstid] = &agent;
 			}
 			// Map dstInstid
 			if (agentsByAddress.find(event.dstAgent) != agentsByAddress.end()) {
@@ -127,6 +271,26 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 		default:
 			break;
 		}
+	}
+
+	// After processing all events and assigning teams, set the isPOVTeam flag
+	std::string povTeam;
+	if (agentsByAddress.find(povAgentID) != agentsByAddress.end()) {
+		Agent& povAgent = agentsByAddress[povAgentID];
+		povTeam = povAgent.team;
+		if (!povTeam.empty() && povTeam != "Unknown") {
+			result.teamStats[povTeam].isPOVTeam = true;
+			APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
+				("POV Agent Team: " + povTeam).c_str());
+		}
+		else {
+			APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+				("POV Agent's team is unknown - AgentID: " + std::to_string(povAgentID)).c_str());
+		}
+	}
+	else {
+		APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+			("POV Agent not found - AgentID: " + std::to_string(povAgentID)).c_str());
 	}
 
 	if (result.combatStartTime == UINT64_MAX) {
@@ -154,18 +318,25 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 				Agent* agent = agentIt->second;
 				const std::string& team = agent->team;
 				if (team != "Unknown") {
+					auto& teamStats = result.teamStats[team];
 					if (stateChange == StateChange::ChangeDead) {
-						result.teamStats[team].totalDeaths++;
+						teamStats.totalDeaths++;
+						if (teamStats.isPOVTeam && agent->subgroupNumber > 0) {
+							teamStats.squadStats.totalDeaths++;
+						}
 					}
 					else {
-						result.teamStats[team].totalDowned++;
+						teamStats.totalDowned++;
+						if (teamStats.isPOVTeam && agent->subgroupNumber > 0) {
+							teamStats.squadStats.totalDowned++;
+						}
 					}
 				}
 			}
 		}
 	}
 
-	// Third pass: Process damage events
+	// Third pass: Process damage and kill events
 	for (size_t i = 0; i < eventCount; ++i) {
 		size_t eventOffset = offset + (i * eventSize);
 		if (eventOffset + eventSize > bytes.size()) {
@@ -186,11 +357,16 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 				resultCode == ResultCode::Glance || resultCode == ResultCode::KillingBlow) {
 
 				int32_t damageValue = 0;
+				bool isStrikeDamage = false;
+				bool isCondiDamage = false;
+
 				if (event.buff == 0) {
 					damageValue = event.value;
+					isStrikeDamage = true;
 				}
 				else if (event.buff == 1) {
 					damageValue = event.buffDmg;
+					isCondiDamage = true;
 				}
 
 				if (damageValue > 0) {
@@ -198,39 +374,21 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 					if (srcIt != playersBySrcInstid.end()) {
 						Agent* attacker = srcIt->second;
 						const std::string& team = attacker->team;
+
 						if (team != "Unknown") {
-							// Accumulate total damage
-							if (event.buff == 0) {
-								// Accumulate strike damage
-								result.teamStats[team].totalStrikeDamage += damageValue;
-								result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalStrikeDamage += damageValue;
-							}
-							else {
-								// Accumulate condition damage
-								result.teamStats[team].totalCondiDamage += damageValue;
-								result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalCondiDamage += damageValue;
-							}
-							result.teamStats[team].totalDamage += damageValue;
-							result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalDamage += damageValue;
+							bool vsPlayer = false;
 
 							// Check if target is a logged player
 							auto dstIt = agentsByInstid.find(event.dstInstid);
 							if (dstIt != agentsByInstid.end()) {
 								Agent* target = dstIt->second;
 								if (target->team != "Unknown") {
-									// Accumulate damage vs. logged players
-									if (event.buff == 0) {
-										result.teamStats[team].totalStrikeDamageVsPlayers += damageValue;
-										result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalStrikeDamageVsPlayers += damageValue;
-									}
-									else {
-										result.teamStats[team].totalCondiDamageVsPlayers += damageValue;
-										result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalCondiDamageVsPlayers += damageValue;
-									}
-									result.teamStats[team].totalDamageVsPlayers += damageValue;
-									result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalDamageVsPlayers += damageValue;
+									vsPlayer = true;
 								}
 							}
+
+							// Update stats
+							updateStats(result.teamStats[team], attacker, damageValue, true, false, vsPlayer, isStrikeDamage, isCondiDamage);
 						}
 					}
 				}
@@ -242,21 +400,21 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 				if (srcIt != playersBySrcInstid.end()) {
 					Agent* attacker = srcIt->second;
 					const std::string& team = attacker->team;
+
 					if (team != "Unknown") {
-						// Increment total kills
-						result.teamStats[team].totalKills++;
-						result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalKills++;
+						bool vsPlayer = false;
 
 						// Check if target is a logged player
 						auto dstIt = agentsByInstid.find(event.dstInstid);
 						if (dstIt != agentsByInstid.end()) {
 							Agent* target = dstIt->second;
 							if (target->team != "Unknown") {
-								// Increment kills vs. logged players
-								result.teamStats[team].totalKillsVsPlayers++;
-								result.teamStats[team].eliteSpecStats[attacker->eliteSpec].totalKillsVsPlayers++;
+								vsPlayer = true;
 							}
 						}
+
+						// Update stats
+						updateStats(result.teamStats[team], attacker, 0, false, true, vsPlayer, false, false);
 					}
 				}
 			}
@@ -266,9 +424,20 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 	// Collect statistics
 	for (const auto& [srcInstid, agent] : playersBySrcInstid) {
 		if (agent->team != "Unknown") {
-			result.teamStats[agent->team].totalPlayers++;
-			result.teamStats[agent->team].eliteSpecStats[agent->eliteSpec].count++;
+			auto& teamStats = result.teamStats[agent->team];
+			auto& specStats = teamStats.eliteSpecStats[agent->eliteSpec];
+
+			teamStats.totalPlayers++;
+			specStats.count++;
 			result.totalIdentifiedPlayers++;
+
+			if (teamStats.isPOVTeam && agent->subgroupNumber > 0) {
+				auto& squadStats = teamStats.squadStats;
+				auto& squadSpecStats = squadStats.eliteSpecStats[agent->eliteSpec];
+
+				squadStats.totalPlayers++;
+				squadSpecStats.count++;
+			}
 		}
 		else {
 			APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
@@ -277,29 +446,44 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 		}
 	}
 
-	// Log the totals
-	//for (const auto& [teamName, stats] : result.teamStats) {
-	//	std::string message = "Team: " + teamName +
-	//		", Total Damage: " + std::to_string(stats.totalDamage) +
-	//		", Damage vs Players: " + std::to_string(stats.totalDamageVsPlayers) +
-	//		", Total Players: " + std::to_string(stats.totalPlayers) +
-	//		", Total Downs: " + std::to_string(stats.totalDowned) +
-	//		", Total Deaths: " + std::to_string(stats.totalDeaths) +
-	//		", Total Kills: " + std::to_string(stats.totalKills) +
-	//		", Kills vs Players: " + std::to_string(stats.totalKillsVsPlayers);
-	//	APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, message.c_str());
+	// Log the totals (optional)
+	// for (const auto& [teamName, stats] : result.teamStats) {
+	//     std::string message = "Team: " + teamName +
+	//         ", Total Damage: " + std::to_string(stats.totalDamage) +
+	//         ", Damage vs Players: " + std::to_string(stats.totalDamageVsPlayers) +
+	//         ", Total Players: " + std::to_string(stats.totalPlayers) +
+	//         ", Total Downs: " + std::to_string(stats.totalDowned) +
+	//         ", Total Deaths: " + std::to_string(stats.totalDeaths) +
+	//         ", Total Kills: " + std::to_string(stats.totalKills) +
+	//         ", Kills vs Players: " + std::to_string(stats.totalKillsVsPlayers);
+	//     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, message.c_str());
 
-	//	// Log per specialization
-	//	for (const auto& [eliteSpec, specStats] : stats.eliteSpecStats) {
-	//		std::string specMessage = "  Elite Spec: " + eliteSpec +
-	//			", Count: " + std::to_string(specStats.count) +
-	//			", Total Damage: " + std::to_string(specStats.totalDamage) +
-	//			", Damage vs Players: " + std::to_string(specStats.totalDamageVsPlayers) +
-	//			", Total Kills: " + std::to_string(specStats.totalKills) +
-	//			", Kills vs Players: " + std::to_string(specStats.totalKillsVsPlayers);
-	//		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, specMessage.c_str());
-	//	}
-	//}
+	//     // Log per specialization
+	//     for (const auto& [eliteSpec, specStats] : stats.eliteSpecStats) {
+	//         std::string specMessage = "  Elite Spec: " + eliteSpec +
+	//             ", Count: " + std::to_string(specStats.count) +
+	//             ", Total Damage: " + std::to_string(specStats.totalDamage) +
+	//             ", Damage vs Players: " + std::to_string(specStats.totalDamageVsPlayers) +
+	//             ", Total Kills: " + std::to_string(specStats.totalKills) +
+	//             ", Kills vs Players: " + std::to_string(specStats.totalKillsVsPlayers);
+	//         APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, specMessage.c_str());
+	//     }
+
+	//     // Log squad stats if it's the POV team
+	//     if (stats.isPOVTeam) {
+	//         const auto& squadStats = stats.squadStats;
+	//         std::string squadMessage = "Squad Stats - Total Players: " + std::to_string(squadStats.totalPlayers) +
+	//             ", Total Damage: " + std::to_string(squadStats.totalDamage);
+	//         APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, squadMessage.c_str());
+
+	//         for (const auto& [eliteSpec, squadSpecStats] : squadStats.eliteSpecStats) {
+	//             std::string squadSpecMessage = "  Squad Elite Spec: " + eliteSpec +
+	//                 ", Count: " + std::to_string(squadSpecStats.count) +
+	//                 ", Total Damage: " + std::to_string(squadSpecStats.totalDamage);
+	//             APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, squadSpecMessage.c_str());
+	//         }
+	//     }
+	// }
 
 	APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
 		("Parsed EVTC file. Found " + std::to_string(result.totalIdentifiedPlayers) + " identified players").c_str());

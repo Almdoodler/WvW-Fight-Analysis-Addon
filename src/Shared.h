@@ -77,6 +77,7 @@ struct TextureInfo {
     Texture** texture;
 };
 
+
 // Structures
 struct Agent {
     uint64_t address;
@@ -84,26 +85,31 @@ struct Agent {
     int32_t eliteSpecId;
     uint16_t id = 0;
     std::string name;
+    std::string accountName;
+    std::string subgroup;
+    int subgroupNumber;
     std::string profession;
     std::string eliteSpec;
     std::string team = "Unknown";
 };
 
+
+
 struct SpecStats {
-    int count = 0;
+    uint32_t count = 0;
+    uint32_t totalKills = 0;
+    uint32_t totalKillsVsPlayers = 0;
     uint64_t totalDamage = 0;
     uint64_t totalStrikeDamage = 0;
     uint64_t totalCondiDamage = 0;
-    uint32_t totalKills = 0;
     uint64_t totalDamageVsPlayers = 0;
     uint64_t totalStrikeDamageVsPlayers = 0;
     uint64_t totalCondiDamageVsPlayers = 0;
-    int totalKillsVsPlayers = 0;
-
-
 };
 
-struct TeamStats {
+
+
+struct SquadStats {
     uint32_t totalPlayers = 0;
     uint32_t totalDeaths = 0;
     uint32_t totalDowned = 0;
@@ -118,6 +124,22 @@ struct TeamStats {
     std::unordered_map<std::string, SpecStats> eliteSpecStats;
 };
 
+struct TeamStats {
+    uint32_t totalPlayers = 0;
+    uint32_t totalDeaths = 0;
+    uint32_t totalDowned = 0;
+    uint32_t totalKills = 0;
+    uint64_t totalDamage = 0;
+    uint64_t totalStrikeDamage = 0;
+    uint64_t totalCondiDamage = 0;
+    uint64_t totalDamageVsPlayers = 0;
+    uint64_t totalStrikeDamageVsPlayers = 0;
+    uint64_t totalCondiDamageVsPlayers = 0;
+    int totalKillsVsPlayers = 0;
+    bool isPOVTeam = false;
+    std::unordered_map<std::string, SpecStats> eliteSpecStats;
+    SquadStats squadStats;
+};
 
 
 struct ParsedData {
@@ -237,6 +259,8 @@ enum class BuffRemove : uint8_t {
     Single = 2,
     Manual = 3
 };
+
+
 
 // Maps
 extern std::unordered_map<int, std::string> professions;

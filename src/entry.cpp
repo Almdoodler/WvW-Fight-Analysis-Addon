@@ -469,6 +469,11 @@ void AddonRender()
                     Settings::Settings[VS_LOGGED_PLAYERS_ONLY] = Settings::vsLoggedPlayersOnly;
                     Settings::Save(SettingsPath);
                 }
+                if (ImGui::Checkbox("Show Squad Players Only", &Settings::squadPlayersOnly))
+                {
+                    Settings::Settings[SQUAD_PLAYERS_ONLY] = Settings::squadPlayersOnly;
+                    Settings::Save(SettingsPath);
+                }
 
                 ImGui::EndPopup();
             }

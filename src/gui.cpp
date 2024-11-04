@@ -180,12 +180,15 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
 
     ImGui::Spacing();
 
-    // Display team total players
+    // Determine whether to use squad stats or team stats
+    bool useSquadStats = Settings::squadPlayersOnly && teamData.isPOVTeam;
+
+    // Total Players
+    uint32_t totalPlayersToDisplay = useSquadStats ? teamData.squadStats.totalPlayers : teamData.totalPlayers;
+
     if (Settings::showTeamTotalPlayers) {
-        if (Settings::showClassIcons)
-        {
-            if (Squad && Squad->Resource)
-            {
+        if (Settings::showClassIcons) {
+            if (Squad && Squad->Resource) {
                 ImGui::Image(Squad->Resource, ImVec2(sz, sz));
                 ImGui::SameLine(0, 5);
             }
@@ -193,155 +196,142 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
             }
         }
-        if (Settings::showClassNames)
-        {
-            ImGui::Text("Total:  %d", teamData.totalPlayers);
+        if (Settings::showClassNames) {
+            ImGui::Text("Total:  %d", totalPlayersToDisplay);
         }
-        else
-        {
-            ImGui::Text("%d", teamData.totalPlayers);
+        else {
+            ImGui::Text("%d", totalPlayersToDisplay);
         }
     }
 
-    // Display team deaths
+    // Total Deaths
+    uint32_t totalDeathsToDisplay = useSquadStats ? teamData.squadStats.totalDeaths : teamData.totalDeaths;
+
     if (Settings::showTeamDeaths) {
-        if (Settings::showClassIcons)
-        {
-            if (Death && Death->Resource)
-            {
+        if (Settings::showClassIcons) {
+            if (Death && Death->Resource) {
                 ImGui::Image(Death->Resource, ImVec2(sz, sz));
                 ImGui::SameLine(0, 5);
             }
-            else
-            {
+            else {
                 Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
             }
         }
-        if (Settings::showClassNames)
-        {
-            ImGui::Text("Deaths: %d", teamData.totalDeaths);
+        if (Settings::showClassNames) {
+            ImGui::Text("Deaths: %d", totalDeathsToDisplay);
         }
-        else
-        {
-            ImGui::Text("%d", teamData.totalDeaths);
+        else {
+            ImGui::Text("%d", totalDeathsToDisplay);
         }
     }
 
-    // Display team downed
+    // Total Downed
+    uint32_t totalDownedToDisplay = useSquadStats ? teamData.squadStats.totalDowned : teamData.totalDowned;
+
     if (Settings::showTeamDowned) {
-        if (Settings::showClassIcons)
-        {
-            if (Downed && Downed->Resource)
-            {
+        if (Settings::showClassIcons) {
+            if (Downed && Downed->Resource) {
                 ImGui::Image(Downed->Resource, ImVec2(sz, sz));
                 ImGui::SameLine(0, 5);
             }
-            else
-            {
+            else {
                 Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
             }
         }
-        if (Settings::showClassNames)
-        {
-            ImGui::Text("Downs:  %d", teamData.totalDowned);
+        if (Settings::showClassNames) {
+            ImGui::Text("Downs:  %d", totalDownedToDisplay);
         }
-        else
-        {
-            ImGui::Text("%d", teamData.totalDowned);
+        else {
+            ImGui::Text("%d", totalDownedToDisplay);
         }
     }
 
-    // Display team total damage
+    // Total Damage
+    uint64_t totalDamageToDisplay = 0;
+    if (Settings::vsLoggedPlayersOnly) {
+        totalDamageToDisplay = useSquadStats ? teamData.squadStats.totalDamageVsPlayers : teamData.totalDamageVsPlayers;
+    }
+    else {
+        totalDamageToDisplay = useSquadStats ? teamData.squadStats.totalDamage : teamData.totalDamage;
+    }
+
     if (Settings::showTeamDamage) {
-        if (Settings::showClassIcons)
-        {
-            if (Damage && Damage->Resource)
-            {
+        if (Settings::showClassIcons) {
+            if (Damage && Damage->Resource) {
                 ImGui::Image(Damage->Resource, ImVec2(sz, sz));
                 ImGui::SameLine(0, 5);
             }
-            else
-            {
+            else {
                 Damage = APIDefs->GetTextureOrCreateFromResource("DAMAGE_ICON", DAMAGE, hSelf);
             }
         }
-        std::string formattedDamage;
-        if (Settings::vsLoggedPlayersOnly) {
-            formattedDamage = formatDamage(teamData.totalDamageVsPlayers);
-        }
-        else {
-            formattedDamage = formatDamage(teamData.totalDamage);
-        }
-        if (Settings::showClassNames)
-        {
+
+        std::string formattedDamage = formatDamage(totalDamageToDisplay);
+
+        if (Settings::showClassNames) {
             ImGui::Text("Damage: %s", formattedDamage.c_str());
         }
-        else
-        {
+        else {
             ImGui::Text("%s", formattedDamage.c_str());
         }
     }
 
-    // Display team strike damage
+    // Total Strike Damage
+    uint64_t totalStrikeDamageToDisplay = 0;
+    if (Settings::vsLoggedPlayersOnly) {
+        totalStrikeDamageToDisplay = useSquadStats ? teamData.squadStats.totalStrikeDamageVsPlayers : teamData.totalStrikeDamageVsPlayers;
+    }
+    else {
+        totalStrikeDamageToDisplay = useSquadStats ? teamData.squadStats.totalStrikeDamage : teamData.totalStrikeDamage;
+    }
+
     if (Settings::showTeamStrikeDamage) {
-        if (Settings::showClassIcons)
-        {
-            if (Strike && Strike->Resource)
-            {
+        if (Settings::showClassIcons) {
+            if (Strike && Strike->Resource) {
                 ImGui::Image(Strike->Resource, ImVec2(sz, sz));
                 ImGui::SameLine(0, 5);
             }
-            else
-            {
+            else {
                 Strike = APIDefs->GetTextureOrCreateFromResource("STRIKE_ICON", STRIKE, hSelf);
             }
         }
-        std::string formattedDamage;
-        if (Settings::vsLoggedPlayersOnly) {
-            formattedDamage = formatDamage(teamData.totalStrikeDamageVsPlayers);
-        }
-        else {
-            formattedDamage = formatDamage(teamData.totalStrikeDamage);
-        }
 
-        if (Settings::showClassNames)
-        {
+        std::string formattedDamage = formatDamage(totalStrikeDamageToDisplay);
+
+        if (Settings::showClassNames) {
             ImGui::Text("Strike: %s", formattedDamage.c_str());
         }
-        else
-        {
+        else {
             ImGui::Text("%s", formattedDamage.c_str());
         }
     }
 
-    // Display team condi damage
+    // Total Condition Damage
+    uint64_t totalCondiDamageToDisplay = 0;
+    if (Settings::vsLoggedPlayersOnly) {
+        totalCondiDamageToDisplay = useSquadStats ? teamData.squadStats.totalCondiDamageVsPlayers : teamData.totalCondiDamageVsPlayers;
+    }
+    else {
+        totalCondiDamageToDisplay = useSquadStats ? teamData.squadStats.totalCondiDamage : teamData.totalCondiDamage;
+    }
+
     if (Settings::showTeamCondiDamage) {
-        if (Settings::showClassIcons)
-        {
-            if (Condi && Condi->Resource)
-            {
+        if (Settings::showClassIcons) {
+            if (Condi && Condi->Resource) {
                 ImGui::Image(Condi->Resource, ImVec2(sz, sz));
                 ImGui::SameLine(0, 5);
             }
-            else
-            {
+            else {
                 Condi = APIDefs->GetTextureOrCreateFromResource("CONDI_ICON", CONDI, hSelf);
             }
         }
-        std::string formattedDamage;
-        if(Settings::vsLoggedPlayersOnly){
-            formattedDamage = formatDamage(teamData.totalCondiDamageVsPlayers);
-        }
-        else {
-            formattedDamage = formatDamage(teamData.totalCondiDamage);
-        }
 
-        if (Settings::showClassNames)
-        {
+        std::string formattedDamage = formatDamage(totalCondiDamageToDisplay);
+
+        if (Settings::showClassNames) {
             ImGui::Text("Condi:  %s", formattedDamage.c_str());
         }
-        else
-        {
+        else {
             ImGui::Text("%s", formattedDamage.c_str());
         }
     }
@@ -354,19 +344,22 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
         bool vsLogPlayers = Settings::vsLoggedPlayersOnly;
         bool showDamage = Settings::showSpecDamage;
 
+        // Get the eliteSpecStats to display
+        const std::unordered_map<std::string, SpecStats>& eliteSpecStatsToDisplay = useSquadStats ? teamData.squadStats.eliteSpecStats : teamData.eliteSpecStats;
+
         // Sort specializations by count or damage in descending order
         std::vector<std::pair<std::string, SpecStats>> sortedClasses;
 
-        for (const auto& [eliteSpec, stats] : teamData.eliteSpecStats) {
+        for (const auto& [eliteSpec, stats] : eliteSpecStatsToDisplay) {
             sortedClasses.emplace_back(eliteSpec, stats);
         }
 
         std::sort(sortedClasses.begin(), sortedClasses.end(),
-            [sortByDamage](const std::pair<std::string, SpecStats>& a, const std::pair<std::string, SpecStats>& b) {
-                if (sortByDamage && !Settings::vsLoggedPlayersOnly) {
+            [sortByDamage, vsLogPlayers](const std::pair<std::string, SpecStats>& a, const std::pair<std::string, SpecStats>& b) {
+                if (sortByDamage && !vsLogPlayers) {
                     return a.second.totalDamage > b.second.totalDamage;
                 }
-                else if (sortByDamage && Settings::vsLoggedPlayersOnly) {
+                else if (sortByDamage && vsLogPlayers) {
                     return a.second.totalDamageVsPlayers > b.second.totalDamageVsPlayers;
                 }
                 else {
@@ -376,10 +369,10 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
 
         uint64_t maxValue = 0;
         if (!sortedClasses.empty()) {
-            if (sortByDamage && !Settings::vsLoggedPlayersOnly) {
+            if (sortByDamage && !vsLogPlayers) {
                 maxValue = sortedClasses[0].second.totalDamage;
             }
-            else if (sortByDamage && Settings::vsLoggedPlayersOnly) {
+            else if (sortByDamage && vsLogPlayers) {
                 maxValue = sortedClasses[0].second.totalDamageVsPlayers;
             }
             else {
@@ -387,15 +380,13 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
             }
         }
 
-        for (const auto& specPair : sortedClasses)
-        {
+        for (const auto& specPair : sortedClasses) {
             const std::string& eliteSpec = specPair.first;
             const SpecStats& stats = specPair.second;
             int count = stats.count;
 
             uint64_t totalDamage;
-            if(Settings::vsLoggedPlayersOnly)
-            {
+            if (vsLogPlayers) {
                 totalDamage = stats.totalDamageVsPlayers;
             }
             else {
@@ -431,6 +422,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
         }
     }
 }
+
 
 
 void ratioBarSetup() 
