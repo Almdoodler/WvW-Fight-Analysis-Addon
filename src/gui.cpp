@@ -94,116 +94,7 @@ void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, c
     ImGui::SetCursorPosY(cursor_pos.y + bar_height + 2);
 }
 
-void RenderSimpleRatioBar(
-    int red, int green, int blue,
-    const ImVec4& colorRed, const ImVec4& colorGreen, const ImVec4& colorBlue,
-    const ImVec2& size,
-    const char* redText, const char* greenText, const char* blueText)
-{
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    const ImVec2 p = ImGui::GetCursorScreenPos();
 
-    // Calculate ratios
-    float total = static_cast<float>(red + green + blue);
-    if (total == 0.0f) total = 1.0f;
-
-    float r_frac = static_cast<float>(red) / total;
-    float g_frac = static_cast<float>(green) / total;
-    float b_frac = static_cast<float>(blue) / total;
-
-    // Convert colors to ImGui format
-    ImU32 colRed = ImGui::ColorConvertFloat4ToU32(colorRed);
-    ImU32 colGreen = ImGui::ColorConvertFloat4ToU32(colorGreen);
-    ImU32 colBlue = ImGui::ColorConvertFloat4ToU32(colorBlue);
-
-    // Base coordinates and dimensions
-    const float x = p.x;
-    const float y = p.y;
-    const float width = size.x;
-    const float height = size.y;
-
-    // Calculate section widths
-    const float r_width = width * r_frac;
-    const float g_width = width * g_frac;
-    const float b_width = width * b_frac;
-
-    // Calculate section boundaries
-    const float x_red_start = x;
-    const float x_red_end = x + r_width;
-    const float x_green_start = x_red_end;
-    const float x_green_end = x_green_start + g_width;
-    const float x_blue_start = x_green_end;
-    const float x_blue_end = x + width;
-
-    // Draw colored rectangles
-    draw_list->AddRectFilled(
-        ImVec2(x_red_start, y),
-        ImVec2(x_red_end, y + height),
-        colRed
-    );
-
-    draw_list->AddRectFilled(
-        ImVec2(x_green_start, y),
-        ImVec2(x_green_end, y + height),
-        colGreen
-    );
-
-    draw_list->AddRectFilled(
-        ImVec2(x_blue_start, y),
-        ImVec2(x_blue_end, y + height),
-        colBlue
-    );
-
-    // Draw white border around the entire bar
-    draw_list->AddRect(
-        ImVec2(x, y),
-        ImVec2(x + width, y + height),
-        IM_COL32_WHITE
-    );
-
-    // Calculate text dimensions and positions
-    ImVec2 textSizeRed = ImGui::CalcTextSize(redText);
-    ImVec2 textSizeGreen = ImGui::CalcTextSize(greenText);
-    ImVec2 textSizeBlue = ImGui::CalcTextSize(blueText);
-
-    // Calculate center positions for text
-    const float red_center_x = x_red_start + (r_width / 2.0f) - (textSizeRed.x / 2.0f);
-    const float green_center_x = x_green_start + (g_width / 2.0f) - (textSizeGreen.x / 2.0f);
-    const float blue_center_x = x_blue_start + (b_width / 2.0f) - (textSizeBlue.x / 2.0f);
-    const float center_y = y + (height / 2.0f) - (textSizeRed.y / 2.0f);
-
-    // Draw text only if there's enough space in each section
-    const ImU32 textColor = IM_COL32_WHITE;
-
-    if (r_width >= textSizeRed.x)
-    {
-        draw_list->AddText(
-            ImVec2(red_center_x, center_y),
-            textColor,
-            redText
-        );
-    }
-
-    if (g_width >= textSizeGreen.x)
-    {
-        draw_list->AddText(
-            ImVec2(green_center_x, center_y),
-            textColor,
-            greenText
-        );
-    }
-
-    if (b_width >= textSizeBlue.x)
-    {
-        draw_list->AddText(
-            ImVec2(blue_center_x, center_y),
-            textColor,
-            blueText
-        );
-    }
-
-    ImGui::Dummy(size);
-}
 
 void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
 {
@@ -455,12 +346,121 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
     }
 }
 
+void RenderSimpleRatioBar(
+    int red, int green, int blue,
+    const ImVec4& colorRed, const ImVec4& colorGreen, const ImVec4& colorBlue,
+    const ImVec2& size,
+    const char* redText, const char* greenText, const char* blueText)
+{
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    const ImVec2 p = ImGui::GetCursorScreenPos();
 
+    // Calculate ratios
+    float total = static_cast<float>(red + green + blue);
+    if (total == 0.0f) total = 1.0f;
+
+    float r_frac = static_cast<float>(red) / total;
+    float g_frac = static_cast<float>(green) / total;
+    float b_frac = static_cast<float>(blue) / total;
+
+    // Convert colors to ImGui format
+    ImU32 colRed = ImGui::ColorConvertFloat4ToU32(colorRed);
+    ImU32 colGreen = ImGui::ColorConvertFloat4ToU32(colorGreen);
+    ImU32 colBlue = ImGui::ColorConvertFloat4ToU32(colorBlue);
+
+    // Base coordinates and dimensions
+    const float x = p.x;
+    const float y = p.y;
+    const float width = size.x;
+    const float height = size.y;
+
+    // Calculate section widths
+    const float r_width = width * r_frac;
+    const float g_width = width * g_frac;
+    const float b_width = width * b_frac;
+
+    // Calculate section boundaries
+    const float x_red_start = x;
+    const float x_red_end = x + r_width;
+    const float x_green_start = x_red_end;
+    const float x_green_end = x_green_start + g_width;
+    const float x_blue_start = x_green_end;
+    const float x_blue_end = x + width;
+
+    // Draw colored rectangles
+    draw_list->AddRectFilled(
+        ImVec2(x_red_start, y),
+        ImVec2(x_red_end, y + height),
+        colRed
+    );
+
+    draw_list->AddRectFilled(
+        ImVec2(x_green_start, y),
+        ImVec2(x_green_end, y + height),
+        colGreen
+    );
+
+    draw_list->AddRectFilled(
+        ImVec2(x_blue_start, y),
+        ImVec2(x_blue_end, y + height),
+        colBlue
+    );
+
+    // Draw white border around the entire bar
+    draw_list->AddRect(
+        ImVec2(x, y),
+        ImVec2(x + width, y + height),
+        IM_COL32_WHITE
+    );
+
+    // Calculate text dimensions and positions
+    ImVec2 textSizeRed = ImGui::CalcTextSize(redText);
+    ImVec2 textSizeGreen = ImGui::CalcTextSize(greenText);
+    ImVec2 textSizeBlue = ImGui::CalcTextSize(blueText);
+
+    // Calculate center positions for text
+    const float red_center_x = x_red_start + (r_width - textSizeRed.x) * 0.5f + Settings::widgetTextHorizontalAlignOffset;
+    const float green_center_x = x_green_start + (g_width - textSizeGreen.x) * 0.5f + Settings::widgetTextHorizontalAlignOffset;
+    const float blue_center_x = x_blue_start + (b_width - textSizeBlue.x) * 0.5f + Settings::widgetTextHorizontalAlignOffset;
+    const float center_y = y + (height - textSizeRed.y) * 0.5f + Settings::widgetTextVerticalAlignOffset;
+
+    // Draw text only if there's enough space in each section
+    const ImU32 textColor = IM_COL32_WHITE;
+
+    if (r_width >= textSizeRed.x)
+    {
+        draw_list->AddText(
+            ImVec2(red_center_x, center_y),
+            textColor,
+            redText
+        );
+    }
+
+    if (g_width >= textSizeGreen.x)
+    {
+        draw_list->AddText(
+            ImVec2(green_center_x, center_y),
+            textColor,
+            greenText
+        );
+    }
+
+    if (b_width >= textSizeBlue.x)
+    {
+        draw_list->AddText(
+            ImVec2(blue_center_x, center_y),
+            textColor,
+            blueText
+        );
+    }
+
+    ImGui::Dummy(size);
+}
 
 void ratioBarSetup()
 {
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
-        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize;
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
     if (Settings::disableMovingWindow)
     {
         window_flags |= ImGuiWindowFlags_NoMove;
@@ -473,8 +473,8 @@ void ratioBarSetup()
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    float barHeight = 20.0f;
-    ImVec2 barSize = ImVec2(320.0f, barHeight);
+
+    ImVec2 barSize = ImVec2(Settings::widgetWidth, Settings::widgetHeight);
     ImGui::SetNextWindowSize(barSize);
     if (ImGui::Begin("Team Ratio Bar", nullptr, window_flags))
     {
@@ -550,7 +550,7 @@ void ratioBarSetup()
             team_colors[0],
             team_colors[2],
             team_colors[1],
-            ImVec2(barSize.x, barHeight),
+            ImVec2(barSize.x, barSize.y),
             bufRed,
             bufGreen,
             bufBlue
@@ -620,6 +620,77 @@ void ratioBarSetup()
             }
             ImGui::EndMenu();
         }
+        if (ImGui::BeginMenu("Style"))
+        {
+            // Widget Height
+            ImGui::SetNextItemWidth(200.0f);
+            if (ImGui::SliderFloat("##Widget Height", &Settings::widgetHeight, 0.0f, 900.0f))
+            {
+                Settings::widgetHeight = std::clamp(Settings::widgetHeight, 0.0f, 900.0f);
+                Settings::Settings[WIDGET_HEIGHT] = Settings::widgetHeight;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(60.0f);
+            if (ImGui::InputFloat("Widget Height", &Settings::widgetHeight, 1.0f))
+            {
+                Settings::widgetHeight = std::clamp(Settings::widgetHeight, 0.0f, 900.0f);
+                Settings::Settings[WIDGET_HEIGHT] = Settings::widgetHeight;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+
+            // Widget Width
+            ImGui::SetNextItemWidth(200.0f);
+            if (ImGui::SliderFloat("##Widget Width", &Settings::widgetWidth, 0.0f, 900.0f))
+            {
+                Settings::widgetWidth = std::clamp(Settings::widgetWidth, 0.0f, 900.0f);
+                Settings::Settings[WIDGET_WIDTH] = Settings::widgetWidth;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(60.0f);
+            if (ImGui::InputFloat("Widget Width", &Settings::widgetWidth, 1.0f))
+            {
+                Settings::widgetWidth = std::clamp(Settings::widgetWidth, 0.0f, 900.0f);
+                Settings::Settings[WIDGET_WIDTH] = Settings::widgetWidth;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+
+            // Vertical Align
+            ImGui::SetNextItemWidth(200.0f);
+            if (ImGui::SliderFloat("##Widget Text Vertical Align", &Settings::widgetTextVerticalAlignOffset, -50.0f, 50.0f))
+            {
+                Settings::widgetTextVerticalAlignOffset = std::clamp(Settings::widgetTextVerticalAlignOffset, -50.0f, 50.0f);
+                Settings::Settings[WIDGET_TEXT_VERTICAL_OFFSET] = Settings::widgetTextVerticalAlignOffset;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(60.0f);
+            if (ImGui::InputFloat("Widget Text Vertical Align", &Settings::widgetTextVerticalAlignOffset, 1.0f))
+            {
+                Settings::widgetTextVerticalAlignOffset = std::clamp(Settings::widgetTextVerticalAlignOffset, -50.0f, 50.0f);
+                Settings::Settings[WIDGET_TEXT_VERTICAL_OFFSET] = Settings::widgetTextVerticalAlignOffset;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+
+            // Horizontal Align
+            ImGui::SetNextItemWidth(200.0f);
+            if (ImGui::SliderFloat("##Widget Text Horizontal Align", &Settings::widgetTextHorizontalAlignOffset, -50.0f, 50.0f))
+            {
+                Settings::widgetTextHorizontalAlignOffset = std::clamp(Settings::widgetTextHorizontalAlignOffset, -50.0f, 50.0f);
+                Settings::Settings[WIDGET_TEXT_HORIZONTAL_OFFSET] = Settings::widgetTextHorizontalAlignOffset;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(60.0f);
+            if (ImGui::InputFloat("Widget Text Horizontal Align", &Settings::widgetTextHorizontalAlignOffset, 1.0f))
+            {
+                Settings::widgetTextHorizontalAlignOffset = std::clamp(Settings::widgetTextHorizontalAlignOffset, -50.0f, 50.0f);
+                Settings::Settings[WIDGET_TEXT_HORIZONTAL_OFFSET] = Settings::widgetTextHorizontalAlignOffset;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+            ImGui::EndMenu();
+        }
         if (ImGui::Checkbox("Damage vs Logged Players Only", &Settings::vsLoggedPlayersOnly))
         {
             Settings::Settings[VS_LOGGED_PLAYERS_ONLY] = Settings::vsLoggedPlayersOnly;
@@ -630,6 +701,7 @@ void ratioBarSetup()
             Settings::Settings[SQUAD_PLAYERS_ONLY] = Settings::squadPlayersOnly;
             Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
         }
+
     }
     ImGui::End();
 }

@@ -40,6 +40,11 @@ extern const char* SORT_SPEC_DAMAGE;
 extern const char* USE_TABBED_VIEW;
 extern const char* SHOW_SCROLL_BAR;
 extern const char* SHOW_WINDOW_TITLE;
+extern const char* WIDGET_HEIGHT;
+extern const char* WIDGET_WIDTH;
+extern const char* WIDGET_TEXT_VERTICAL_OFFSET;
+extern const char* WIDGET_TEXT_HORIZONTAL_OFFSET;
+
 //Widget
 extern const char* WIDGET_STATS;
 
@@ -93,6 +98,10 @@ namespace Settings
 	// Widget
 	extern std::string widgetStats;
 	extern char widgetStatsC[256];
+	extern float widgetWidth;
+	extern float widgetHeight;
+	extern float widgetTextVerticalAlignOffset;
+	extern float widgetTextHorizontalAlignOffset;
 }
 
 #endif

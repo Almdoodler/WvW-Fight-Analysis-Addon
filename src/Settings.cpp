@@ -42,7 +42,10 @@ const char* USE_TABBED_VIEW = "UseTabbedView";
 const char* SHOW_WINDOW_TITLE = "ShowWindowTitle";
 // Widget
 const char* WIDGET_STATS = "WidgetStats";
-
+const char* WIDGET_HEIGHT = "WidgetHeight";
+const char* WIDGET_WIDTH = "WidgetWidth";
+const char* WIDGET_TEXT_VERTICAL_OFFSET = "WidgetTextVerticalAlignOffset";
+const char* WIDGET_TEXT_HORIZONTAL_OFFSET = "WidgetTextHorizontalAlignOffset";
 
 namespace Settings
 {
@@ -76,6 +79,22 @@ namespace Settings
 		{
 			Settings[WIDGET_STATS].get_to<std::string>(widgetStats);
 			strcpy_s(widgetStatsC, sizeof(widgetStatsC), widgetStats.c_str());
+		}
+		if (!Settings[WIDGET_HEIGHT].is_null())
+		{
+			Settings[WIDGET_HEIGHT].get_to(widgetHeight);
+		}
+		if (!Settings[WIDGET_WIDTH].is_null())
+		{
+			Settings[WIDGET_WIDTH].get_to(widgetWidth);
+		}
+		if (!Settings[WIDGET_TEXT_VERTICAL_OFFSET].is_null())
+		{
+			Settings[WIDGET_TEXT_VERTICAL_OFFSET].get_to(widgetTextVerticalAlignOffset);
+		}
+		if (!Settings[WIDGET_TEXT_HORIZONTAL_OFFSET].is_null())
+		{
+			Settings[WIDGET_TEXT_HORIZONTAL_OFFSET].get_to(widgetTextHorizontalAlignOffset);
 		}
 		/* Window */
 		if (!Settings[IS_ADDON_WINDOW_VISIBLE].is_null())
@@ -240,4 +259,8 @@ namespace Settings
 	// Widget
 	std::string widgetStats;
 	char widgetStatsC[256] = "players";
+	float widgetWidth = 320.0f;
+	float widgetHeight = 20.0f;
+	float widgetTextVerticalAlignOffset = 0.0f;
+	float widgetTextHorizontalAlignOffset = 0.0f;
 }
