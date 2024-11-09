@@ -7,8 +7,12 @@
 #include "imgui/imgui.h"
 
 void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, const std::string& eliteSpec, bool showDamage, HINSTANCE hSelf);
-void RenderSimpleRatioBar(int red, int green, int blue,
+void RenderSimpleRatioBar(
+    int red, int green, int blue,
     const ImVec4& colorRed, const ImVec4& colorGreen, const ImVec4& colorBlue,
-    const ImVec2& size);
+    const ImVec2& size,
+    const char* redText, const char* greenText, const char* blueText);
 void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf);
 void ratioBarSetup();
+void RenderSpecializationBars(const TeamStats& teamData, int teamIndex, HINSTANCE hSelf);
+

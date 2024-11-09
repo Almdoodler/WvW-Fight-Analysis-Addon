@@ -62,7 +62,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 3;
-    AddonDef.Version.Revision = 0;
+    AddonDef.Version.Revision = 2;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "Simple WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
@@ -172,8 +172,6 @@ void ProcessKeybinds(const char* aIdentifier)
 }
 
 
-
-
 void AddonRender()
 {
     std::lock_guard<std::mutex> lock(parsedLogsMutex);
@@ -187,7 +185,6 @@ void AddonRender()
     {
         return;
     }
-
 
     if (
         MumbleLink->Context.MapType != Mumble::EMapType::WvW_EternalBattlegrounds &&
@@ -217,19 +214,9 @@ void AddonRender()
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse;
 
         if (!Settings::showScrollBar) window_flags |= ImGuiWindowFlags_NoScrollbar;
-
-        if (!Settings::showWindowTitle)
-        {
-            window_flags |= ImGuiWindowFlags_NoTitleBar;
-        }
-        if (Settings::disableMovingWindow)
-        {
-            window_flags |= ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
-        }
-        if (Settings::disableClickingWindow)
-        {
-            window_flags |= ImGuiWindowFlags_NoInputs;
-        }
+        if (!Settings::showWindowTitle) window_flags |= ImGuiWindowFlags_NoTitleBar;
+        if (Settings::disableMovingWindow) window_flags |= ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+        if (Settings::disableClickingWindow) window_flags |= ImGuiWindowFlags_NoInputs;
 
         if (ImGui::Begin("WvW Fight Analysis", nullptr, window_flags))
         {
@@ -293,10 +280,8 @@ void AddonRender()
                                 if (ImGui::BeginTabItem(team_names[i]))
                                 {
                                     ImGui::PopStyleColor();
-
                                     const auto& teamData = currentLogData.teamStats.at(team_names[i]);
                                     RenderTeamData(i, teamData, hSelf);
-
                                     ImGui::EndTabItem();
                                 }
                                 else
@@ -310,10 +295,8 @@ void AddonRender()
                 }
                 else
                 {
-                    //ImVec2 table_size = ImVec2(0.0f, ImGui::GetContentRegionAvail().y);
                     if (ImGui::BeginTable("TeamTable", teamsWithData, ImGuiTableFlags_BordersInner))
                     {
-
                         for (int i = 0; i < 3; ++i)
                         {
                             if (teamHasData[i])
@@ -349,8 +332,169 @@ void AddonRender()
 
                         ImGui::EndTable();
                     }
-
                 }
+            }
+
+            // Render specialization bars in separate window
+            if (Settings::showSpecBars && Settings::splitStatsWindow)
+            {
+                window_flags |= ImGuiWindowFlags_NoFocusOnAppearing;
+                ImGui::SetNextWindowSize(ImVec2(800, 300), ImGuiCond_FirstUseEver);
+                ImVec2 mainWindowPos = ImGui::GetWindowPos();
+                ImVec2 mainWindowSize = ImGui::GetWindowSize();
+
+                ImGui::SetNextWindowPos(ImVec2(mainWindowPos.x + mainWindowSize.x + 10, mainWindowPos.y), ImGuiCond_FirstUseEver);
+                if (ImGui::Begin("Specializations", nullptr, window_flags))
+                {
+                    if (Settings::useTabbedView)
+                    {
+                        if (ImGui::BeginTabBar("SpecTabBar", ImGuiTabBarFlags_None))
+                        {
+                            for (int i = 0; i < 3; ++i)
+                            {
+                                if (teamHasData[i])
+                                {
+                                    ImGui::PushStyleColor(ImGuiCol_Text, team_colors[i]);
+                                    if (ImGui::BeginTabItem(team_names[i]))
+                                    {
+                                        ImGui::PopStyleColor();
+                                        const auto& teamData = currentLogData.teamStats.at(team_names[i]);
+                                        RenderSpecializationBars(teamData, i, hSelf);
+                                        ImGui::EndTabItem();
+                                    }
+                                    else
+                                    {
+                                        ImGui::PopStyleColor();
+                                    }
+                                }
+                            }
+                            ImGui::EndTabBar();
+                        }
+                    }
+                    else
+                    {
+                        if (ImGui::BeginTable("SpecTable", teamsWithData, ImGuiTableFlags_BordersInner))
+                        {
+                            for (int i = 0; i < 3; ++i)
+                            {
+                                if (teamHasData[i])
+                                {
+                                    ImGui::TableSetupColumn(team_names[i], ImGuiTableColumnFlags_WidthStretch);
+                                }
+                            }
+
+                            ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
+                            int columnIndex = 0;
+                            for (int i = 0; i < 3; ++i)
+                            {
+                                if (teamHasData[i])
+                                {
+                                    ImGui::TableSetColumnIndex(columnIndex++);
+                                    ImGui::PushStyleColor(ImGuiCol_Text, team_colors[i]);
+                                    ImGui::Text("%s Team", team_names[i]);
+                                    ImGui::PopStyleColor();
+                                }
+                            }
+
+                            ImGui::TableNextRow();
+                            columnIndex = 0;
+                            for (int i = 0; i < 3; ++i)
+                            {
+                                if (teamHasData[i])
+                                {
+                                    ImGui::TableSetColumnIndex(columnIndex++);
+                                    const auto& teamData = currentLogData.teamStats.at(team_names[i]);
+                                    RenderSpecializationBars(teamData, i, hSelf);
+                                }
+                            }
+
+                            ImGui::EndTable();
+                        }
+                    }
+
+                    // Right-click menu
+                    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                    {
+                        ImGui::OpenPopup("Specializations Settings");
+                    }
+
+                    if (ImGui::BeginPopup("Specializations Settings"))
+                    {
+                        if (ImGui::BeginMenu("Display"))
+                        {
+                            if (ImGui::Checkbox("Show Class Bars", &Settings::showSpecBars))
+                            {
+                                Settings::Settings[SHOW_SPEC_BARS] = Settings::showSpecBars;
+                                Settings::Save(SettingsPath);
+                            }
+                            if (ImGui::Checkbox("Short Class Names", &Settings::useShortClassNames))
+                            {
+                                Settings::Settings[USE_SHORT_CLASS_NAMES] = Settings::useShortClassNames;
+                                Settings::Save(SettingsPath);
+                            }
+                            if (ImGui::Checkbox("Show Class Names", &Settings::showClassNames))
+                            {
+                                Settings::Settings[SHOW_CLASS_NAMES] = Settings::showClassNames;
+                                Settings::Save(SettingsPath);
+                            }
+                            if (ImGui::Checkbox("Show Class Icons", &Settings::showClassIcons))
+                            {
+                                Settings::Settings[SHOW_CLASS_ICONS] = Settings::showClassIcons;
+                                Settings::Save(SettingsPath);
+                            }
+                            if (ImGui::Checkbox("Show Class Outgoing Damage", &Settings::showSpecDamage))
+                            {
+                                Settings::Settings[SHOW_SPEC_DAMAGE] = Settings::showSpecDamage;
+                                Settings::Save(SettingsPath);
+                            }
+                            ImGui::EndMenu(); // End Display menu
+                        }
+
+                        if (ImGui::BeginMenu("Style"))
+                        {
+                            if (ImGui::Checkbox("Use Tabbed View", &Settings::useTabbedView))
+                            {
+                                Settings::Settings[USE_TABBED_VIEW] = Settings::useTabbedView;
+                                Settings::Save(SettingsPath);
+                            }
+                            if (ImGui::Checkbox("Split Stats Window", &Settings::splitStatsWindow))
+                            {
+                                Settings::Settings[SPLIT_STATS_WINDOW] = Settings::splitStatsWindow;
+                                Settings::Save(SettingsPath);
+                            }
+                            if (ImGui::Checkbox("Show Scroll Bar", &Settings::showScrollBar))
+                            {
+                                Settings::Settings[SHOW_SCROLL_BAR] = Settings::showScrollBar;
+                                Settings::Save(SettingsPath);
+                            }
+                            if (ImGui::Checkbox("Show Title", &Settings::showWindowTitle))
+                            {
+                                Settings::Settings[SHOW_WINDOW_TITLE] = Settings::showWindowTitle;
+                                Settings::Save(SettingsPath);
+                            }
+                            ImGui::EndMenu();
+                        }
+
+                        if (ImGui::Checkbox("Sort by Class Damage", &Settings::sortSpecDamage))
+                        {
+                            Settings::Settings[SORT_SPEC_DAMAGE] = Settings::sortSpecDamage;
+                            Settings::Save(SettingsPath);
+                        }
+                        if (ImGui::Checkbox("Damage vs Logged Players Only", &Settings::vsLoggedPlayersOnly))
+                        {
+                            Settings::Settings[VS_LOGGED_PLAYERS_ONLY] = Settings::vsLoggedPlayersOnly;
+                            Settings::Save(SettingsPath);
+                        }
+                        if (ImGui::Checkbox("Show Squad Players Only", &Settings::squadPlayersOnly))
+                        {
+                            Settings::Settings[SQUAD_PLAYERS_ONLY] = Settings::squadPlayersOnly;
+                            Settings::Save(SettingsPath);
+                        }
+
+                        ImGui::EndPopup();
+                    }
+                }
+                ImGui::End();
             }
 
             ImGui::PopStyleVar(2);
@@ -383,32 +527,34 @@ void AddonRender()
                 }
                 if (ImGui::BeginMenu("Display"))
                 {
-                    if (ImGui::Checkbox("Show Class Bars", &Settings::showSpecBars))
-                    {
-                        Settings::Settings[SHOW_SPEC_BARS] = Settings::showSpecBars;
-                        Settings::Save(SettingsPath);
+                    if (!Settings::splitStatsWindow) {
+                        if (ImGui::Checkbox("Show Class Bars", &Settings::showSpecBars))
+                        {
+                            Settings::Settings[SHOW_SPEC_BARS] = Settings::showSpecBars;
+                            Settings::Save(SettingsPath);
+                        }
+                        if (ImGui::Checkbox("Short Class Names", &Settings::useShortClassNames))
+                        {
+                            Settings::Settings[USE_SHORT_CLASS_NAMES] = Settings::useShortClassNames;
+                            Settings::Save(SettingsPath);
+                        }
+                        if (ImGui::Checkbox("Show Class Names", &Settings::showClassNames))
+                        {
+                            Settings::Settings[SHOW_CLASS_NAMES] = Settings::showClassNames;
+                            Settings::Save(SettingsPath);
+                        }
+                        if (ImGui::Checkbox("Show Class Icons", &Settings::showClassIcons))
+                        {
+                            Settings::Settings[SHOW_CLASS_ICONS] = Settings::showClassIcons;
+                            Settings::Save(SettingsPath);
+                        }
+                        if (ImGui::Checkbox("Show Class Outgoing Damage", &Settings::showSpecDamage))
+                        {
+                            Settings::Settings[SHOW_SPEC_DAMAGE] = Settings::showSpecDamage;
+                            Settings::Save(SettingsPath);
+                        }
+                        ImGui::Separator();
                     }
-                    if (ImGui::Checkbox("Short Class Names", &Settings::useShortClassNames))
-                    {
-                        Settings::Settings[USE_SHORT_CLASS_NAMES] = Settings::useShortClassNames;
-                        Settings::Save(SettingsPath);
-                    }
-                    if (ImGui::Checkbox("Show Class Names", &Settings::showClassNames))
-                    {
-                        Settings::Settings[SHOW_CLASS_NAMES] = Settings::showClassNames;
-                        Settings::Save(SettingsPath);
-                    }
-                    if (ImGui::Checkbox("Show Class Icons", &Settings::showClassIcons))
-                    {
-                        Settings::Settings[SHOW_CLASS_ICONS] = Settings::showClassIcons;
-                        Settings::Save(SettingsPath);
-                    }
-                    if (ImGui::Checkbox("Show Class Outgoing Damage", &Settings::showSpecDamage))
-                    {
-                        Settings::Settings[SHOW_SPEC_DAMAGE] = Settings::showSpecDamage;
-                        Settings::Save(SettingsPath);
-                    }
-                    ImGui::Separator();
                     if (ImGui::Checkbox("Team Player Count", &Settings::showTeamTotalPlayers))
                     {
                         Settings::Settings[SHOW_TEAM_TOTAL_PLAYERS] = Settings::showTeamTotalPlayers;
@@ -446,6 +592,11 @@ void AddonRender()
                     if (ImGui::Checkbox("Use Tabbed View", &Settings::useTabbedView))
                     {
                         Settings::Settings[USE_TABBED_VIEW] = Settings::useTabbedView;
+                        Settings::Save(SettingsPath);
+                    }
+                    if (ImGui::Checkbox("Split Stats Window", &Settings::splitStatsWindow))
+                    {
+                        Settings::Settings[SPLIT_STATS_WINDOW] = Settings::splitStatsWindow;
                         Settings::Save(SettingsPath);
                     }
                     if (ImGui::Checkbox("Show Scroll Bar", &Settings::showScrollBar))

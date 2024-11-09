@@ -40,6 +40,7 @@ const char* SORT_SPEC_DAMAGE = "SortSpecDamage";
 const char* SHOW_SCROLL_BAR = "ShowScrollBar";
 const char* USE_TABBED_VIEW = "UseTabbedView";
 const char* SHOW_WINDOW_TITLE = "ShowWindowTitle";
+const char* SPLIT_STATS_WINDOW = "SplitStatsWindow";
 // Widget
 const char* WIDGET_STATS = "WidgetStats";
 const char* WIDGET_HEIGHT = "WidgetHeight";
@@ -205,6 +206,10 @@ namespace Settings
 		{
 			Settings[DISABLE_CLICKING_WINDOW].get_to<bool>(disableClickingWindow);
 		}
+		if (!Settings[SPLIT_STATS_WINDOW].is_null())
+		{
+			Settings[SPLIT_STATS_WINDOW].get_to<bool>(splitStatsWindow);
+		}
 	}
 	void Save(std::filesystem::path aPath)
 	{
@@ -256,6 +261,7 @@ namespace Settings
 	bool showScrollBar = true;
 	bool useTabbedView = true;
 	bool showWindowTitle = true;
+	bool splitStatsWindow = false;
 	// Widget
 	std::string widgetStats;
 	char widgetStatsC[256] = "players";

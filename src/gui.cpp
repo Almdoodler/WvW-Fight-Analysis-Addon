@@ -94,6 +94,91 @@ void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, c
     ImGui::SetCursorPosY(cursor_pos.y + bar_height + 2);
 }
 
+void RenderSpecializationBars(const TeamStats& teamData, int teamIndex, HINSTANCE hSelf)
+{
+    bool useSquadStats = Settings::squadPlayersOnly && teamData.isPOVTeam;
+    bool sortByDamage = Settings::sortSpecDamage;
+    bool vsLogPlayers = Settings::vsLoggedPlayersOnly;
+    bool showDamage = Settings::showSpecDamage;
+
+    // Get the eliteSpecStats to display
+    const std::unordered_map<std::string, SpecStats>& eliteSpecStatsToDisplay = useSquadStats ?
+        teamData.squadStats.eliteSpecStats : teamData.eliteSpecStats;
+
+    // Sort specializations by count or damage in descending order
+    std::vector<std::pair<std::string, SpecStats>> sortedClasses;
+
+    for (const auto& [eliteSpec, stats] : eliteSpecStatsToDisplay) {
+        sortedClasses.emplace_back(eliteSpec, stats);
+    }
+
+    std::sort(sortedClasses.begin(), sortedClasses.end(),
+        [sortByDamage, vsLogPlayers](const std::pair<std::string, SpecStats>& a, const std::pair<std::string, SpecStats>& b) {
+            if (sortByDamage && !vsLogPlayers) {
+                return a.second.totalDamage > b.second.totalDamage;
+            }
+            else if (sortByDamage && vsLogPlayers) {
+                return a.second.totalDamageVsPlayers > b.second.totalDamageVsPlayers;
+            }
+            else {
+                return a.second.count > b.second.count;
+            }
+        });
+
+    uint64_t maxValue = 0;
+    if (!sortedClasses.empty()) {
+        if (sortByDamage && !vsLogPlayers) {
+            maxValue = sortedClasses[0].second.totalDamage;
+        }
+        else if (sortByDamage && vsLogPlayers) {
+            maxValue = sortedClasses[0].second.totalDamageVsPlayers;
+        }
+        else {
+            maxValue = sortedClasses[0].second.count;
+        }
+    }
+
+    for (const auto& specPair : sortedClasses) {
+        const std::string& eliteSpec = specPair.first;
+        const SpecStats& stats = specPair.second;
+        int count = stats.count;
+
+        uint64_t totalDamage;
+        if (vsLogPlayers) {
+            totalDamage = stats.totalDamageVsPlayers;
+        }
+        else {
+            totalDamage = stats.totalDamage;
+        }
+
+        // Determine the value and fraction based on the sorting criterion
+        uint64_t value = sortByDamage ? totalDamage : count;
+        float frac = (maxValue > 0) ? static_cast<float>(value) / maxValue : 0.0f;
+
+        // Get the profession name
+        std::string professionName;
+        auto it = eliteSpecToProfession.find(eliteSpec);
+        if (it != eliteSpecToProfession.end()) {
+            professionName = it->second;
+        }
+        else {
+            professionName = "Unknown";
+        }
+
+        // Get the color for the profession
+        ImVec4 color;
+        auto colorIt = professionColors.find(professionName);
+        if (colorIt != professionColors.end()) {
+            color = colorIt->second;
+        }
+        else {
+            color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+
+        // Draw the bar with the updated parameters
+        DrawBar(frac, count, totalDamage, color, eliteSpec, showDamage, hSelf);
+    }
+}
 
 
 void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
@@ -259,8 +344,8 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
         }
     }
 
-    // Display specialization bars
-    if (Settings::showSpecBars) {
+    // Display specialization bars only if not in split window mode
+    if (Settings::showSpecBars && !Settings::splitStatsWindow) {
         ImGui::Separator();
 
         bool sortByDamage = Settings::sortSpecDamage;
@@ -268,7 +353,8 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
         bool showDamage = Settings::showSpecDamage;
 
         // Get the eliteSpecStats to display
-        const std::unordered_map<std::string, SpecStats>& eliteSpecStatsToDisplay = useSquadStats ? teamData.squadStats.eliteSpecStats : teamData.eliteSpecStats;
+        const std::unordered_map<std::string, SpecStats>& eliteSpecStatsToDisplay = useSquadStats ?
+            teamData.squadStats.eliteSpecStats : teamData.eliteSpecStats;
 
         // Sort specializations by count or damage in descending order
         std::vector<std::pair<std::string, SpecStats>> sortedClasses;

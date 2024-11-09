@@ -44,6 +44,7 @@ extern const char* WIDGET_HEIGHT;
 extern const char* WIDGET_WIDTH;
 extern const char* WIDGET_TEXT_VERTICAL_OFFSET;
 extern const char* WIDGET_TEXT_HORIZONTAL_OFFSET;
+extern const char* SPLIT_STATS_WINDOW;
 
 //Widget
 extern const char* WIDGET_STATS;
@@ -95,6 +96,7 @@ namespace Settings
 	extern bool showScrollBar;
 	extern bool useTabbedView;
 	extern bool showWindowTitle;
+	extern bool splitStatsWindow;
 	// Widget
 	extern std::string widgetStats;
 	extern char widgetStatsC[256];
