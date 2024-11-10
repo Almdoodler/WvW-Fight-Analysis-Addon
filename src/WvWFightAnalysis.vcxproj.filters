@@ -189,5 +189,8 @@
     <Image Include="assets\downed_24x24.png">
       <Filter>Assets</Filter>
     </Image>
+    <Image Include="assets\Arena_Proprietor_16x16.png">
+      <Filter>Assets</Filter>
+    </Image>
   </ItemGroup>
 </Project>

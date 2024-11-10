@@ -60,6 +60,7 @@ extern Texture* Squad;
 extern Texture* Damage;
 extern Texture* Condi;
 extern Texture* Strike;
+extern Texture* Kdr;
 
 
 // New declarations
@@ -114,6 +115,7 @@ struct SquadStats {
     uint32_t totalDeaths = 0;
     uint32_t totalDowned = 0;
     uint32_t totalKills = 0;
+    uint32_t totalDeathsFromKillingBlows = 0;
     uint64_t totalDamage = 0;
     uint64_t totalStrikeDamage = 0;
     uint64_t totalCondiDamage = 0;
@@ -121,6 +123,12 @@ struct SquadStats {
     uint64_t totalStrikeDamageVsPlayers = 0;
     uint64_t totalCondiDamageVsPlayers = 0;
     int totalKillsVsPlayers = 0;
+    double getKillDeathRatio() const {
+        if (totalDeathsFromKillingBlows == 0) {
+            return static_cast<double>(totalKills);
+        }
+        return static_cast<double>(totalKills) / totalDeathsFromKillingBlows;
+    }
     std::unordered_map<std::string, SpecStats> eliteSpecStats;
 };
 
@@ -129,6 +137,7 @@ struct TeamStats {
     uint32_t totalDeaths = 0;
     uint32_t totalDowned = 0;
     uint32_t totalKills = 0;
+    uint32_t totalDeathsFromKillingBlows = 0;
     uint64_t totalDamage = 0;
     uint64_t totalStrikeDamage = 0;
     uint64_t totalCondiDamage = 0;
@@ -137,6 +146,12 @@ struct TeamStats {
     uint64_t totalCondiDamageVsPlayers = 0;
     int totalKillsVsPlayers = 0;
     bool isPOVTeam = false;
+    double getKillDeathRatio() const {
+        if (totalDeathsFromKillingBlows == 0) {
+            return static_cast<double>(totalKills);
+        }
+        return static_cast<double>(totalKills) / totalDeathsFromKillingBlows;
+    }
     std::unordered_map<std::string, SpecStats> eliteSpecStats;
     SquadStats squadStats;
 };

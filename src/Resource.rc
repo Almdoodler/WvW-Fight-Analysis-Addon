@@ -134,6 +134,8 @@ CONDI                   PNG                     "assets\\condition_damage_18x18.
 
 STRIKE                  PNG                     "assets\\strike_damage_30x30.png"
 
+KDR                     PNG                     "assets\\Arena_Proprietor_16x16.png"
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 

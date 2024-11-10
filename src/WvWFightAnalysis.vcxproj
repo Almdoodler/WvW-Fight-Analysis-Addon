@@ -216,6 +216,7 @@
     <ResourceCompile Include="Resource.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="assets\Arena_Proprietor_16x16.png" />
     <Image Include="assets\berserker_16x16.png" />
     <Image Include="assets\bladesworn_16x16.png" />
     <Image Include="assets\catalyst_16x16.png" />
