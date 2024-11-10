@@ -422,7 +422,7 @@ void AddonRender()
                     {
                         if (ImGui::BeginMenu("Display"))
                         {
-                            if (ImGui::Checkbox("Show Class Bars", &Settings::showSpecBars))
+                            if (ImGui::Checkbox("Show Spec Window", &Settings::showSpecBars))
                             {
                                 Settings::Settings[SHOW_SPEC_BARS] = Settings::showSpecBars;
                                 Settings::Save(SettingsPath);
@@ -527,8 +527,9 @@ void AddonRender()
                 }
                 if (ImGui::BeginMenu("Display"))
                 {
+
                     if (!Settings::splitStatsWindow) {
-                        if (ImGui::Checkbox("Show Class Bars", &Settings::showSpecBars))
+                        if (ImGui::Checkbox("Show Spec Bars", &Settings::showSpecBars))
                         {
                             Settings::Settings[SHOW_SPEC_BARS] = Settings::showSpecBars;
                             Settings::Save(SettingsPath);
@@ -554,6 +555,13 @@ void AddonRender()
                             Settings::Save(SettingsPath);
                         }
                         ImGui::Separator();
+                    }
+                    else {
+                        if (ImGui::Checkbox("Show Spec Window", &Settings::showSpecBars))
+                        {
+                            Settings::Settings[SHOW_SPEC_BARS] = Settings::showSpecBars;
+                            Settings::Save(SettingsPath);
+                        }
                     }
                     if (ImGui::Checkbox("Team Player Count", &Settings::showTeamTotalPlayers))
                     {
