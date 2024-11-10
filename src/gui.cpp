@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "gui.h"
 #include "Settings.h"
 #include "Shared.h"
@@ -6,6 +7,11 @@
 #include "nexus/Nexus.h"
 #include "mumble/Mumble.h"
 #include "imgui/imgui.h"
+#include <sstream>
+#include <iomanip>
+#include <algorithm>
+
+
 
 void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, const std::string& eliteSpec, bool showDamage, HINSTANCE hSelf)
 {
@@ -209,6 +215,30 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
         }
         else {
             ImGui::Text("%d", totalPlayersToDisplay);
+        }
+    }
+
+    uint32_t totalKillsToDisplay = useSquadStats ? teamData.squadStats.totalKills : teamData.totalKills;
+    uint32_t totalDeathsfromKillingBlowsToDisplay = useSquadStats ? teamData.squadStats.totalDeathsFromKillingBlows : teamData.totalDeathsFromKillingBlows;
+    double kdRatioToDisplay = useSquadStats ? teamData.squadStats.getKillDeathRatio() : teamData.getKillDeathRatio();
+    std::string kdString = (std::ostringstream() << totalKillsToDisplay << "/" << totalDeathsfromKillingBlowsToDisplay << " (" << std::fixed << std::setprecision(2) << kdRatioToDisplay << ")").str();
+
+
+    if (Settings::showTeamKDR) {
+        if (Settings::showClassIcons) {
+            if (Kdr && Kdr->Resource) {
+                ImGui::Image(Kdr->Resource, ImVec2(sz, sz));
+                ImGui::SameLine(0, 5);
+            }
+            else {
+                Kdr = APIDefs->GetTextureOrCreateFromResource("KDR_ICON", KDR, hSelf);
+            }
+        }
+        if (Settings::showClassNames) {
+            ImGui::Text("K/D: %s", kdString.c_str());
+        }
+        else {
+            ImGui::Text("%s", kdString.c_str());
         }
     }
 
@@ -432,27 +462,43 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
     }
 }
 
+
+// Updated RenderSimpleRatioBar to accept dynamic data
 void RenderSimpleRatioBar(
-    int red, int green, int blue,
-    const ImVec4& colorRed, const ImVec4& colorGreen, const ImVec4& colorBlue,
+    const std::vector<float>& counts,
+    const std::vector<ImVec4>& colors,
     const ImVec2& size,
-    const char* redText, const char* greenText, const char* blueText)
+    const std::vector<const char*>& texts)
 {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     const ImVec2 p = ImGui::GetCursorScreenPos();
 
-    // Calculate ratios
-    float total = static_cast<float>(red + green + blue);
-    if (total == 0.0f) total = 1.0f;
+    size_t numTeams = counts.size();
 
-    float r_frac = static_cast<float>(red) / total;
-    float g_frac = static_cast<float>(green) / total;
-    float b_frac = static_cast<float>(blue) / total;
+    // Calculate total count
+    float total = 0.0f;
+    for (float count : counts)
+        total += count;
 
-    // Convert colors to ImGui format
-    ImU32 colRed = ImGui::ColorConvertFloat4ToU32(colorRed);
-    ImU32 colGreen = ImGui::ColorConvertFloat4ToU32(colorGreen);
-    ImU32 colBlue = ImGui::ColorConvertFloat4ToU32(colorBlue);
+    // Calculate fractions
+    std::vector<float> fractions(numTeams);
+    if (total == 0.0f)
+    {
+        // All counts are zero, distribute the bar equally among present teams
+        float equalFrac = 1.0f / numTeams;
+        for (size_t i = 0; i < numTeams; ++i)
+            fractions[i] = equalFrac;
+    }
+    else
+    {
+        for (size_t i = 0; i < numTeams; ++i)
+            fractions[i] = counts[i] / total;
+    }
+
+    // Convert colors to ImU32
+    std::vector<ImU32> colorsU32(numTeams);
+    for (size_t i = 0; i < numTeams; ++i)
+        colorsU32[i] = ImGui::ColorConvertFloat4ToU32(colors[i]);
 
     // Base coordinates and dimensions
     const float x = p.x;
@@ -460,37 +506,37 @@ void RenderSimpleRatioBar(
     const float width = size.x;
     const float height = size.y;
 
-    // Calculate section widths
-    const float r_width = width * r_frac;
-    const float g_width = width * g_frac;
-    const float b_width = width * b_frac;
+    // Draw rectangles and texts
+    float x_start = x;
+    for (size_t i = 0; i < numTeams; ++i)
+    {
+        float section_width = width * fractions[i];
+        float x_end = x_start + section_width;
 
-    // Calculate section boundaries
-    const float x_red_start = x;
-    const float x_red_end = x + r_width;
-    const float x_green_start = x_red_end;
-    const float x_green_end = x_green_start + g_width;
-    const float x_blue_start = x_green_end;
-    const float x_blue_end = x + width;
+        // Draw rectangle
+        draw_list->AddRectFilled(
+            ImVec2(x_start, y),
+            ImVec2(x_end, y + height),
+            colorsU32[i]
+        );
 
-    // Draw colored rectangles
-    draw_list->AddRectFilled(
-        ImVec2(x_red_start, y),
-        ImVec2(x_red_end, y + height),
-        colRed
-    );
+        // Calculate text dimensions and positions
+        ImVec2 textSize = ImGui::CalcTextSize(texts[i]);
+        float text_center_x = x_start + (section_width - textSize.x) * 0.5f + Settings::widgetTextHorizontalAlignOffset;
+        float center_y = y + (height - textSize.y) * 0.5f + Settings::widgetTextVerticalAlignOffset;
 
-    draw_list->AddRectFilled(
-        ImVec2(x_green_start, y),
-        ImVec2(x_green_end, y + height),
-        colGreen
-    );
+        // Draw text if there's enough space
+        if (section_width >= textSize.x)
+        {
+            draw_list->AddText(
+                ImVec2(text_center_x, center_y),
+                IM_COL32_WHITE,
+                texts[i]
+            );
+        }
 
-    draw_list->AddRectFilled(
-        ImVec2(x_blue_start, y),
-        ImVec2(x_blue_end, y + height),
-        colBlue
-    );
+        x_start = x_end;
+    }
 
     // Draw white border around the entire bar
     draw_list->AddRect(
@@ -499,50 +545,10 @@ void RenderSimpleRatioBar(
         IM_COL32_WHITE
     );
 
-    // Calculate text dimensions and positions
-    ImVec2 textSizeRed = ImGui::CalcTextSize(redText);
-    ImVec2 textSizeGreen = ImGui::CalcTextSize(greenText);
-    ImVec2 textSizeBlue = ImGui::CalcTextSize(blueText);
-
-    // Calculate center positions for text
-    const float red_center_x = x_red_start + (r_width - textSizeRed.x) * 0.5f + Settings::widgetTextHorizontalAlignOffset;
-    const float green_center_x = x_green_start + (g_width - textSizeGreen.x) * 0.5f + Settings::widgetTextHorizontalAlignOffset;
-    const float blue_center_x = x_blue_start + (b_width - textSizeBlue.x) * 0.5f + Settings::widgetTextHorizontalAlignOffset;
-    const float center_y = y + (height - textSizeRed.y) * 0.5f + Settings::widgetTextVerticalAlignOffset;
-
-    // Draw text only if there's enough space in each section
-    const ImU32 textColor = IM_COL32_WHITE;
-
-    if (r_width >= textSizeRed.x)
-    {
-        draw_list->AddText(
-            ImVec2(red_center_x, center_y),
-            textColor,
-            redText
-        );
-    }
-
-    if (g_width >= textSizeGreen.x)
-    {
-        draw_list->AddText(
-            ImVec2(green_center_x, center_y),
-            textColor,
-            greenText
-        );
-    }
-
-    if (b_width >= textSizeBlue.x)
-    {
-        draw_list->AddText(
-            ImVec2(blue_center_x, center_y),
-            textColor,
-            blueText
-        );
-    }
-
     ImGui::Dummy(size);
 }
 
+// Full updated ratioBarSetup function
 void ratioBarSetup()
 {
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
@@ -573,17 +579,26 @@ void ratioBarSetup()
         }
 
         const auto& currentLogData = parsedLogs[currentLogIndex].data;
-        const char* team_names[] = { "Red", "Blue", "Green" };
-        ImVec4 team_colors[] = {
-            ImGui::ColorConvertU32ToFloat4(IM_COL32(0xff, 0x44, 0x44, 0xff)),
-            ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xb5, 0xe5, 0xff)),
-            ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xcc, 0x00, 0xff))
+
+        // Define team names and colors
+        const std::vector<std::string> team_names = { "Red", "Blue", "Green" };
+        const std::vector<ImVec4> team_colors = {
+            ImGui::ColorConvertU32ToFloat4(IM_COL32(0xff, 0x44, 0x44, 0xff)), // Red
+            ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xb5, 0xe5, 0xff)), // Blue
+            ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xcc, 0x00, 0xff))  // Green
         };
 
-        int teamCounts[3] = { 0, 0, 0 };
-        char bufRed[32], bufGreen[32], bufBlue[32];
+        // Structure to hold data for teams to display
+        struct TeamDisplayData
+        {
+            float count;
+            ImVec4 color;
+            std::string text;
+        };
 
-        for (int i = 0; i < 3; ++i)
+        std::vector<TeamDisplayData> teamsToDisplay;
+
+        for (size_t i = 0; i < team_names.size(); ++i)
         {
             auto teamIt = currentLogData.teamStats.find(team_names[i]);
             if (teamIt != currentLogData.teamStats.end())
@@ -591,58 +606,82 @@ void ratioBarSetup()
                 bool useSquadStats = Settings::squadPlayersOnly && teamIt->second.isPOVTeam;
                 Settings::widgetStats = Settings::widgetStatsC;
 
+                float teamCountValue = 0.0f;
                 if (Settings::widgetStats == "players") {
-                    teamCounts[i] = useSquadStats ? teamIt->second.squadStats.totalPlayers : teamIt->second.totalPlayers;
+                    teamCountValue = static_cast<float>(useSquadStats ? teamIt->second.squadStats.totalPlayers : teamIt->second.totalPlayers);
                 }
                 else if (Settings::widgetStats == "deaths") {
-                    teamCounts[i] = useSquadStats ? teamIt->second.squadStats.totalDeaths : teamIt->second.totalDeaths;
+                    teamCountValue = static_cast<float>(useSquadStats ? teamIt->second.squadStats.totalDeaths : teamIt->second.totalDeaths);
                 }
                 else if (Settings::widgetStats == "downs") {
-                    teamCounts[i] = useSquadStats ? teamIt->second.squadStats.totalDowned : teamIt->second.totalDowned;
+                    teamCountValue = static_cast<float>(useSquadStats ? teamIt->second.squadStats.totalDowned : teamIt->second.totalDowned);
                 }
                 else if (Settings::widgetStats == "damage") {
-                    int totalDamageToDisplay;
+                    float totalDamageToDisplay;
                     if (Settings::vsLoggedPlayersOnly) {
-                        totalDamageToDisplay = static_cast<int>(useSquadStats ?
+                        totalDamageToDisplay = static_cast<float>(useSquadStats ?
                             teamIt->second.squadStats.totalDamageVsPlayers :
                             teamIt->second.totalDamageVsPlayers);
                     }
                     else {
-                        totalDamageToDisplay = static_cast<int>(useSquadStats ?
+                        totalDamageToDisplay = static_cast<float>(useSquadStats ?
                             teamIt->second.squadStats.totalDamage :
                             teamIt->second.totalDamage);
                     }
-                    teamCounts[i] = totalDamageToDisplay;
+                    teamCountValue = totalDamageToDisplay;
                 }
+                else if (Settings::widgetStats == "kdr") {
+                    float kdRatioToDisplay = useSquadStats ? teamIt->second.squadStats.getKillDeathRatio() : teamIt->second.getKillDeathRatio();
+                    teamCountValue = kdRatioToDisplay;
+                }
+
+                char buf[32];
+                if (Settings::widgetStats == "damage") {
+                    strcpy_s(buf, sizeof(buf), formatDamage(static_cast<uint64_t>(teamCountValue)).c_str());
+                }
+                else if (Settings::widgetStats == "kdr") {
+                    snprintf(buf, sizeof(buf), "%.2f", teamCountValue);
+                }
+                else {
+                    snprintf(buf, sizeof(buf), "%.0f", teamCountValue);
+                }
+
+                teamsToDisplay.push_back(TeamDisplayData{
+                    teamCountValue,
+                    team_colors[i],
+                    buf
+                    });
             }
         }
 
-        // Format the display text based on the widget type
-        if (Settings::widgetStats == "damage") {
-            strcpy_s(bufRed, sizeof(bufRed), formatDamage(teamCounts[0]).c_str());
-            strcpy_s(bufGreen, sizeof(bufGreen), formatDamage(teamCounts[2]).c_str());
-            strcpy_s(bufBlue, sizeof(bufBlue), formatDamage(teamCounts[1]).c_str());
+        if (teamsToDisplay.empty())
+        {
+            ImGui::Text("No team data available.");
+            ImGui::End();
+            ImGui::PopStyleVar(4);
+            return;
         }
-        else {
-            snprintf(bufRed, sizeof(bufRed), "%d", teamCounts[0]);
-            snprintf(bufGreen, sizeof(bufGreen), "%d", teamCounts[2]);
-            snprintf(bufBlue, sizeof(bufBlue), "%d", teamCounts[1]);
+
+        std::vector<float> counts;
+        std::vector<ImVec4> colors;
+        std::vector<const char*> texts;
+
+        for (const auto& teamData : teamsToDisplay)
+        {
+            counts.push_back(teamData.count);
+            colors.push_back(teamData.color);
+            texts.push_back(teamData.text.c_str());
         }
 
         RenderSimpleRatioBar(
-            teamCounts[0],
-            teamCounts[2],
-            teamCounts[1],
-            team_colors[0],
-            team_colors[2],
-            team_colors[1],
+            counts,
+            colors,
             ImVec2(barSize.x, barSize.y),
-            bufRed,
-            bufGreen,
-            bufBlue
+            texts
         );
     }
     ImGui::PopStyleVar(4);
+
     if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
     {
         ImGui::OpenPopup("Widget Menu");
@@ -675,11 +714,19 @@ void ratioBarSetup()
             bool isDeaths = Settings::widgetStats == "deaths";
             bool isDowns = Settings::widgetStats == "downs";
             bool isDamage = Settings::widgetStats == "damage";
+            bool isKDR = Settings::widgetStats == "kdr";
 
             if (ImGui::RadioButton("Players", isPlayers))
             {
                 strcpy_s(Settings::widgetStatsC, sizeof(Settings::widgetStatsC), "players");
                 Settings::widgetStats = "players";
+                Settings::Settings[WIDGET_STATS] = Settings::widgetStatsC;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
+            if (ImGui::RadioButton("K/D Ratio", isKDR))
+            {
+                strcpy_s(Settings::widgetStatsC, sizeof(Settings::widgetStatsC), "kdr");
+                Settings::widgetStats = "kdr";
                 Settings::Settings[WIDGET_STATS] = Settings::widgetStatsC;
                 Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
@@ -791,3 +838,5 @@ void ratioBarSetup()
     }
     ImGui::End();
 }
+
+

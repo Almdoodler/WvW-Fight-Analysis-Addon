@@ -568,6 +568,11 @@ void AddonRender()
                         Settings::Settings[SHOW_TEAM_TOTAL_PLAYERS] = Settings::showTeamTotalPlayers;
                         Settings::Save(SettingsPath);
                     }
+                    if (ImGui::Checkbox("Team K/D Ratio", &Settings::showTeamKDR))
+                    {
+                        Settings::Settings[SHOW_TEAM_KDR] = Settings::showTeamKDR;
+                        Settings::Save(SettingsPath);
+                    }
                     if (ImGui::Checkbox("Team Incoming Deaths", &Settings::showTeamDeaths))
                     {
                         Settings::Settings[SHOW_TEAM_DEATHS] = Settings::showTeamDeaths;

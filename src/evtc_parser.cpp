@@ -21,7 +21,7 @@ std::filesystem::file_time_type maxProcessedTime = std::filesystem::file_time_ty
 
 void updateStats(TeamStats& teamStats, Agent* agent, int32_t value, bool isDamage, bool isKill, bool vsPlayer, bool isStrikeDamage, bool isCondiDamage) {
 	auto& specStats = teamStats.eliteSpecStats[agent->eliteSpec];
-
+	
 	// Update team stats
 	if (isDamage) {
 		teamStats.totalDamage += value;
@@ -139,7 +139,7 @@ void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentC
 				splitStr.emplace_back(nameData + start, nameData + end);
 			}
 			start = end + 1;
-			if (end >= 67) { // Reached the end of nameData
+			if (end >= 67) {
 				break;
 			}
 		}
@@ -164,7 +164,6 @@ void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentC
 			agent.subgroup = "";
 		}
 
-		// Optional: Convert subgroup to integer
 		if (!agent.subgroup.empty()) {
 			try {
 				agent.subgroupNumber = std::stoi(agent.subgroup);
@@ -177,7 +176,6 @@ void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentC
 			agent.subgroupNumber = -1; // No subgroup information
 		}
 
-		// Continue with existing logic
 		if (professions.find(agent.professionId) != professions.end()) {
 			agent.profession = professions[agent.professionId];
 			if (agent.eliteSpecId != -1 && eliteSpecs.find(agent.eliteSpecId) != eliteSpecs.end()) {
@@ -188,7 +186,6 @@ void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentC
 			}
 			agentsByAddress[agent.address] = agent;
 		}
-		// Else, skip the agent
 
 		offset += agentBlockSize;
 	}
@@ -352,7 +349,6 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 
 			ResultCode resultCode = static_cast<ResultCode>(event.result);
 
-			// Check for damage events
 			if (resultCode == ResultCode::Normal || resultCode == ResultCode::Critical ||
 				resultCode == ResultCode::Glance || resultCode == ResultCode::KillingBlow) {
 
@@ -373,12 +369,12 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 					auto srcIt = playersBySrcInstid.find(event.srcInstid);
 					if (srcIt != playersBySrcInstid.end()) {
 						Agent* attacker = srcIt->second;
-						const std::string& team = attacker->team;
+						const std::string& attackerTeam = attacker->team;
 
-						if (team != "Unknown") {
+						if (attackerTeam != "Unknown") {
 							bool vsPlayer = false;
 
-							// Check if target is a logged player
+							
 							auto dstIt = agentsByInstid.find(event.dstInstid);
 							if (dstIt != agentsByInstid.end()) {
 								Agent* target = dstIt->second;
@@ -387,8 +383,8 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 								}
 							}
 
-							// Update stats
-							updateStats(result.teamStats[team], attacker, damageValue, true, false, vsPlayer, isStrikeDamage, isCondiDamage);
+							
+							updateStats(result.teamStats[attackerTeam], attacker, damageValue, true, false, vsPlayer, isStrikeDamage, isCondiDamage);
 						}
 					}
 				}
@@ -396,30 +392,39 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 
 			// Process KillingBlow events to collect kills per team
 			if (resultCode == ResultCode::KillingBlow) {
+				
 				auto srcIt = playersBySrcInstid.find(event.srcInstid);
 				if (srcIt != playersBySrcInstid.end()) {
 					Agent* attacker = srcIt->second;
-					const std::string& team = attacker->team;
+					const std::string& attackerTeam = attacker->team;
 
-					if (team != "Unknown") {
-						bool vsPlayer = false;
-
-						// Check if target is a logged player
+					if (attackerTeam != "Unknown") {
+						
 						auto dstIt = agentsByInstid.find(event.dstInstid);
 						if (dstIt != agentsByInstid.end()) {
 							Agent* target = dstIt->second;
-							if (target->team != "Unknown") {
-								vsPlayer = true;
+							const std::string& targetTeam = target->team;
+
+							if (targetTeam != "Unknown") {
+
+								result.teamStats[targetTeam].totalDeathsFromKillingBlows++;
+
+								if (result.teamStats[targetTeam].isPOVTeam && target->subgroupNumber > 0) {
+									result.teamStats[targetTeam].squadStats.totalDeathsFromKillingBlows++;
+								}
+								updateStats(result.teamStats[attackerTeam], attacker, 0, false, true, true, false, false);
 							}
 						}
-
-						// Update stats
-						updateStats(result.teamStats[team], attacker, 0, false, true, vsPlayer, false, false);
 					}
 				}
 			}
 		}
 	}
+
+
+
+
+
 
 	// Collect statistics
 	for (const auto& [srcInstid, agent] : playersBySrcInstid) {

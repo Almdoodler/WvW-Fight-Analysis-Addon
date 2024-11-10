@@ -33,6 +33,7 @@ extern const char* SHOW_TEAM_DOWNED;
 extern const char* SHOW_TEAM_DAMAGE;
 extern const char* SHOW_TEAM_STRIKE;
 extern const char* SHOW_TEAM_CONDI;
+extern const char* SHOW_TEAM_KDR;
 // Spec Stats
 extern const char* SHOW_SPEC_DAMAGE;
 extern const char* SORT_SPEC_DAMAGE;
@@ -89,6 +90,7 @@ namespace Settings
 	extern bool showTeamDamage;
 	extern bool showTeamCondiDamage;
 	extern bool showTeamStrikeDamage;
+	extern bool showTeamKDR;
 	// Spec Stats
 	extern bool showSpecDamage;
 	extern bool sortSpecDamage;
