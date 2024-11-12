@@ -48,6 +48,7 @@ const char* WIDGET_HEIGHT = "WidgetHeight";
 const char* WIDGET_WIDTH = "WidgetWidth";
 const char* WIDGET_TEXT_VERTICAL_OFFSET = "WidgetTextVerticalAlignOffset";
 const char* WIDGET_TEXT_HORIZONTAL_OFFSET = "WidgetTextHorizontalAlignOffset";
+const char* SHOW_WIDGET_ICON = "ShowWidgetIcon";
 
 namespace Settings
 {
@@ -97,6 +98,10 @@ namespace Settings
 		if (!Settings[WIDGET_TEXT_HORIZONTAL_OFFSET].is_null())
 		{
 			Settings[WIDGET_TEXT_HORIZONTAL_OFFSET].get_to(widgetTextHorizontalAlignOffset);
+		}
+		if (!Settings[SHOW_WIDGET_ICON].is_null())
+		{
+			Settings[SHOW_WIDGET_ICON].get_to<bool>(showWidgetIcon);
 		}
 		/* Window */
 		if (!Settings[IS_ADDON_WINDOW_VISIBLE].is_null())
@@ -275,4 +280,5 @@ namespace Settings
 	float widgetHeight = 20.0f;
 	float widgetTextVerticalAlignOffset = 0.0f;
 	float widgetTextHorizontalAlignOffset = 0.0f;
+	bool showWidgetIcon = true;
 }

@@ -8,11 +8,12 @@
 
 void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, const std::string& eliteSpec, bool showDamage, HINSTANCE hSelf);
 void RenderSimpleRatioBar(
-    int red, int green, int blue,
-    const ImVec4& colorRed, const ImVec4& colorGreen, const ImVec4& colorBlue,
+    const std::vector<float>& counts,
+    const std::vector<ImVec4>& colors,
     const ImVec2& size,
-    const char* redText, const char* greenText, const char* blueText);
+    const std::vector<const char*>& texts,
+    ImTextureID statIcon);
 void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf);
-void ratioBarSetup();
+void ratioBarSetup(HINSTANCE hSelf);
 void RenderSpecializationBars(const TeamStats& teamData, int teamIndex, HINSTANCE hSelf);
 

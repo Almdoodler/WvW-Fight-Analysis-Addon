@@ -49,6 +49,7 @@ extern const char* SPLIT_STATS_WINDOW;
 
 //Widget
 extern const char* WIDGET_STATS;
+extern const char* SHOW_WIDGET_ICON;
 
 namespace Settings
 {
@@ -106,6 +107,7 @@ namespace Settings
 	extern float widgetHeight;
 	extern float widgetTextVerticalAlignOffset;
 	extern float widgetTextHorizontalAlignOffset;
+	extern bool showWidgetIcon;
 }
 
 #endif

@@ -463,28 +463,25 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
 }
 
 
-// Updated RenderSimpleRatioBar to accept dynamic data
 void RenderSimpleRatioBar(
     const std::vector<float>& counts,
     const std::vector<ImVec4>& colors,
     const ImVec2& size,
-    const std::vector<const char*>& texts)
+    const std::vector<const char*>& texts,
+    ImTextureID statIcon)
 {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     const ImVec2 p = ImGui::GetCursorScreenPos();
 
     size_t numTeams = counts.size();
 
-    // Calculate total count
     float total = 0.0f;
     for (float count : counts)
         total += count;
 
-    // Calculate fractions
     std::vector<float> fractions(numTeams);
     if (total == 0.0f)
     {
-        // All counts are zero, distribute the bar equally among present teams
         float equalFrac = 1.0f / numTeams;
         for (size_t i = 0; i < numTeams; ++i)
             fractions[i] = equalFrac;
@@ -495,37 +492,60 @@ void RenderSimpleRatioBar(
             fractions[i] = counts[i] / total;
     }
 
-    // Convert colors to ImU32
     std::vector<ImU32> colorsU32(numTeams);
     for (size_t i = 0; i < numTeams; ++i)
         colorsU32[i] = ImGui::ColorConvertFloat4ToU32(colors[i]);
 
-    // Base coordinates and dimensions
-    const float x = p.x;
-    const float y = p.y;
-    const float width = size.x;
-    const float height = size.y;
+    float sz = ImGui::GetFontSize();
+    float iconWidth = sz;
+    float iconHeight = sz;
 
-    // Draw rectangles and texts
-    float x_start = x;
+    float x = p.x;
+    float y = p.y;
+    float width = size.x;
+    float height = size.y;
+
+    float leftPadding = 10.0f;
+    float rightPadding = 5.0f;
+    float interPadding = 5.0f;
+
+    float iconAreaWidth = 0.0f;
+    float barX = x;
+
+    // Only calculate icon area and render icon if showWidgetIcon is true
+    if (Settings::showWidgetIcon && statIcon)
+    {
+        iconAreaWidth = leftPadding + iconWidth + rightPadding;
+        float iconX = x + leftPadding;
+        float iconY = y + (height - iconHeight) * 0.5f;
+
+        draw_list->AddImage(
+            statIcon,
+            ImVec2(iconX, iconY),
+            ImVec2(iconX + iconWidth, iconY + iconHeight)
+        );
+
+        barX = x + iconAreaWidth + interPadding;
+    }
+
+    float barWidth = width - (iconAreaWidth + (Settings::showWidgetIcon ? interPadding : 0));
+
+    float x_start = barX;
     for (size_t i = 0; i < numTeams; ++i)
     {
-        float section_width = width * fractions[i];
+        float section_width = barWidth * fractions[i];
         float x_end = x_start + section_width;
 
-        // Draw rectangle
         draw_list->AddRectFilled(
             ImVec2(x_start, y),
             ImVec2(x_end, y + height),
             colorsU32[i]
         );
 
-        // Calculate text dimensions and positions
         ImVec2 textSize = ImGui::CalcTextSize(texts[i]);
         float text_center_x = x_start + (section_width - textSize.x) * 0.5f + Settings::widgetTextHorizontalAlignOffset;
         float center_y = y + (height - textSize.y) * 0.5f + Settings::widgetTextVerticalAlignOffset;
 
-        // Draw text if there's enough space
         if (section_width >= textSize.x)
         {
             draw_list->AddText(
@@ -538,7 +558,6 @@ void RenderSimpleRatioBar(
         x_start = x_end;
     }
 
-    // Draw white border around the entire bar
     draw_list->AddRect(
         ImVec2(x, y),
         ImVec2(x + width, y + height),
@@ -548,8 +567,10 @@ void RenderSimpleRatioBar(
     ImGui::Dummy(size);
 }
 
-// Full updated ratioBarSetup function
-void ratioBarSetup()
+
+void ratioBarSetup(
+HINSTANCE hSelf
+)
 {
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
         ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
@@ -566,6 +587,14 @@ void ratioBarSetup()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 
+    float sz = ImGui::GetFontSize();
+    float padding = 5.0f;
+    float minBarWidth = 50.0f;
+    if (Settings::widgetWidth < sz + minBarWidth + padding)
+    {
+        Settings::widgetWidth = sz + minBarWidth + padding;
+    }
+
     ImVec2 barSize = ImVec2(Settings::widgetWidth, Settings::widgetHeight);
     ImGui::SetNextWindowSize(barSize);
     if (ImGui::Begin("Team Ratio Bar", nullptr, window_flags))
@@ -580,15 +609,13 @@ void ratioBarSetup()
 
         const auto& currentLogData = parsedLogs[currentLogIndex].data;
 
-        // Define team names and colors
         const std::vector<std::string> team_names = { "Red", "Blue", "Green" };
         const std::vector<ImVec4> team_colors = {
-            ImGui::ColorConvertU32ToFloat4(IM_COL32(0xff, 0x44, 0x44, 0xff)), // Red
-            ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xb5, 0xe5, 0xff)), // Blue
-            ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xcc, 0x00, 0xff))  // Green
+            ImGui::ColorConvertU32ToFloat4(IM_COL32(0xff, 0x44, 0x44, 0xff)),
+            ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xb5, 0xe5, 0xff)),
+            ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xcc, 0x00, 0xff))
         };
 
-        // Structure to hold data for teams to display
         struct TeamDisplayData
         {
             float count;
@@ -607,6 +634,7 @@ void ratioBarSetup()
                 Settings::widgetStats = Settings::widgetStatsC;
 
                 float teamCountValue = 0.0f;
+
                 if (Settings::widgetStats == "players") {
                     teamCountValue = static_cast<float>(useSquadStats ? teamIt->second.squadStats.totalPlayers : teamIt->second.totalPlayers);
                 }
@@ -635,9 +663,10 @@ void ratioBarSetup()
                     teamCountValue = kdRatioToDisplay;
                 }
 
-                char buf[32];
+                char buf[64];
                 if (Settings::widgetStats == "damage") {
-                    strcpy_s(buf, sizeof(buf), formatDamage(static_cast<uint64_t>(teamCountValue)).c_str());
+                    std::string formattedDamage = formatDamage(static_cast<uint64_t>(teamCountValue));
+                    snprintf(buf, sizeof(buf), "%s", formattedDamage.c_str());
                 }
                 else if (Settings::widgetStats == "kdr") {
                     snprintf(buf, sizeof(buf), "%.2f", teamCountValue);
@@ -662,6 +691,73 @@ void ratioBarSetup()
             return;
         }
 
+        std::string statType = Settings::widgetStats;
+        ImTextureID currentStatIcon = nullptr;
+
+        if (Settings::showClassIcons)
+        {
+            if (statType == "players")
+            {
+                if (Squad && Squad->Resource)
+                {
+                    currentStatIcon = Squad->Resource;
+                }
+                else
+                {
+                    Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
+                    currentStatIcon = Squad ? Squad->Resource : nullptr;
+                }
+            }
+            else if (statType == "deaths")
+            {
+                if (Death && Death->Resource)
+                {
+                    currentStatIcon = Death->Resource;
+                }
+                else
+                {
+                    Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
+                    currentStatIcon = Death ? Death->Resource : nullptr;
+                }
+            }
+            else if (statType == "downs")
+            {
+                if (Downed && Downed->Resource)
+                {
+                    currentStatIcon = Downed->Resource;
+                }
+                else
+                {
+                    Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
+                    currentStatIcon = Downed ? Downed->Resource : nullptr;
+                }
+            }
+            else if (statType == "damage")
+            {
+                if (Damage && Damage->Resource)
+                {
+                    currentStatIcon = Damage->Resource;
+                }
+                else
+                {
+                    Damage = APIDefs->GetTextureOrCreateFromResource("DAMAGE_ICON", DAMAGE, hSelf);
+                    currentStatIcon = Damage ? Damage->Resource : nullptr;
+                }
+            }
+            else if (statType == "kdr")
+            {
+                if (Kdr && Kdr->Resource)
+                {
+                    currentStatIcon = Kdr->Resource;
+                }
+                else
+                {
+                    Kdr = APIDefs->GetTextureOrCreateFromResource("KDR_ICON", KDR, hSelf);
+                    currentStatIcon = Kdr ? Kdr->Resource : nullptr;
+                }
+            }
+        }
+
         std::vector<float> counts;
         std::vector<ImVec4> colors;
         std::vector<const char*> texts;
@@ -677,7 +773,8 @@ void ratioBarSetup()
             counts,
             colors,
             ImVec2(barSize.x, barSize.y),
-            texts
+            texts,
+            currentStatIcon
         );
     }
     ImGui::PopStyleVar(4);
@@ -701,7 +798,6 @@ void ratioBarSetup()
                 std::string displayName = fnstr + " (" + std::to_string(minutes) + "m " + std::to_string(seconds) + "s)";
                 if (ImGui::RadioButton(displayName.c_str(), &currentLogIndex, i))
                 {
-                    // Selection handled by RadioButton
                 }
             }
             ImGui::EndMenu();
@@ -755,7 +851,11 @@ void ratioBarSetup()
         }
         if (ImGui::BeginMenu("Style"))
         {
-            // Widget Height
+            if (ImGui::Checkbox("Show Widget Icon", &Settings::showWidgetIcon))
+            {
+                Settings::Settings[SHOW_WIDGET_ICON] = Settings::showWidgetIcon;
+                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            }
             ImGui::SetNextItemWidth(200.0f);
             if (ImGui::SliderFloat("##Widget Height", &Settings::widgetHeight, 0.0f, 900.0f))
             {
@@ -772,7 +872,6 @@ void ratioBarSetup()
                 Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
 
-            // Widget Width
             ImGui::SetNextItemWidth(200.0f);
             if (ImGui::SliderFloat("##Widget Width", &Settings::widgetWidth, 0.0f, 900.0f))
             {
@@ -789,7 +888,6 @@ void ratioBarSetup()
                 Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
 
-            // Vertical Align
             ImGui::SetNextItemWidth(200.0f);
             if (ImGui::SliderFloat("##Widget Text Vertical Align", &Settings::widgetTextVerticalAlignOffset, -50.0f, 50.0f))
             {
@@ -806,7 +904,6 @@ void ratioBarSetup()
                 Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
 
-            // Horizontal Align
             ImGui::SetNextItemWidth(200.0f);
             if (ImGui::SliderFloat("##Widget Text Horizontal Align", &Settings::widgetTextHorizontalAlignOffset, -50.0f, 50.0f))
             {
@@ -838,5 +935,6 @@ void ratioBarSetup()
     }
     ImGui::End();
 }
+
 
 

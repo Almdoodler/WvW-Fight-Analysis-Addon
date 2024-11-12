@@ -62,7 +62,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 3;
-    AddonDef.Version.Revision = 2;
+    AddonDef.Version.Revision = 3;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "Simple WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
@@ -205,7 +205,7 @@ void AddonRender()
 
     if (Settings::IsAddonWidgetEnabled)
     {
-        ratioBarSetup();
+        ratioBarSetup(hSelf);
     }
 
     if (Settings::IsAddonWindowEnabled)
