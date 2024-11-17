@@ -3,8 +3,6 @@ Inspired by Know Thy Enemy, an addon to parse team player numbers from evtc logs
 
 ![Example](./AddonExampleImage.png)
 
-Widget 
-![Example1](./AddonExampleImage1.png)
 
 ## Installation
 Requires the [Nexus](https://raidcore.gg/Nexus) Addon Host.
