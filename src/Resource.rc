@@ -122,19 +122,19 @@ WEAVER                  PNG                     "assets\\weaver_16x16.png"
 
 WILLBENDER              PNG                     "assets\\willbender_16x16.png"
 
-DEATH                   PNG                     "assets\\death_16x16.png"
+DEATH                   PNG                     "assets\\death_icon.png"
 
-DOWNED                  PNG                     "assets\\downed_24x24.png"
+DOWNED                  PNG                     "assets\\downed_icon.png"
 
-SQUAD                   PNG                     "assets\\squad_16x16.png"
+SQUAD                   PNG                     "assets\\squad_icon.png"
 
-DAMAGE                  PNG                     "assets\\damage_18x18.png"
+DAMAGE                  PNG                     "assets\\damage_icon.png"
 
-CONDI                   PNG                     "assets\\condition_damage_18x18.png"
+CONDI                   PNG                     "assets\\condition_damage_icon.png"
 
-STRIKE                  PNG                     "assets\\strike_damage_30x30.png"
+STRIKE                  PNG                     "assets\\strike_damage_icon.png"
 
-KDR                     PNG                     "assets\\Arena_Proprietor_16x16.png"
+KDR                     PNG                     "assets\\Arena_Proprietor_icon.png"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

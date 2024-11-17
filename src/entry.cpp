@@ -453,7 +453,7 @@ void AddonRender()
                                 Settings::Settings[SHOW_SPEC_DAMAGE] = Settings::showSpecDamage;
                                 Settings::Save(SettingsPath);
                             }
-                            ImGui::EndMenu(); // End Display menu
+                            ImGui::EndMenu();
                         }
 
                         if (ImGui::BeginMenu("Style"))
