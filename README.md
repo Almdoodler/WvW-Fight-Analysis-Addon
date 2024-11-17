@@ -1,4 +1,8 @@
 # WvW Fight Analysis Addon
+Inspired by Know Thy Enemy, an addon to parse team player numbers from evtc logs in WvW.
+
+![Example](./AddonExampleImage.png)
+
 
 ## Installation
 Requires the [Nexus](https://raidcore.gg/Nexus) Addon Host.
@@ -6,7 +10,9 @@ Download the latest `WvWFightAnalysis.dll` from [Releases](https://github.com/ja
 
 ## Setup
 Turn on WvW logging in ArcDPS.
+
 If you've set a custom path for your logs,
+
 Nexus Menu > Addons > WvW Fight Anaylsis Addon > Configure > Set Custom Log Path
 
 ## Recommended Settings
