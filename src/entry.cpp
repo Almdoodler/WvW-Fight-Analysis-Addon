@@ -64,7 +64,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Build = 3;
     AddonDef.Version.Revision = 3;
     AddonDef.Author = "Unreal";
-    AddonDef.Description = "Simple WvW log analysis tool.";
+    AddonDef.Description = "WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
     AddonDef.Unload = AddonUnload;
     AddonDef.Flags = EAddonFlags_None;
@@ -93,7 +93,8 @@ void AddonLoad(AddonAPI* aApi)
     APIDefs->RegisterKeybindWithString("KB_WIDGET_TOGGLEVISIBLE", ProcessKeybinds, "(null)");
 
     APIDefs->RegisterKeybindWithString("LOG_INDEX_UP", ProcessKeybinds, "(null)");
-    APIDefs->RegisterKeybindWithString("LOG_INDEX_DOWN", ProcessKeybinds, "(null)");
+    APIDefs->RegisterKeybindWithString("LOG_INDEX_DOWN", ProcessKeybinds, "(null)"); 
+    APIDefs->RegisterKeybindWithString("SHOW_SQUAD_PLAYERS_ONLY", ProcessKeybinds, "(null)");
 
     Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
     Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
@@ -111,13 +112,12 @@ void AddonUnload()
 {
     stopMonitoring = true;
 
-    // Signal the monitoring thread to stop and wait for it
+
     if (directoryMonitorThread.joinable())
     {
         directoryMonitorThread.join();
     }
 
-    // Wait for the initial parsing thread to finish
     if (initialParsingThread.joinable())
     {
         initialParsingThread.join();
@@ -129,6 +129,7 @@ void AddonUnload()
     APIDefs->DeregisterKeybind("KB_WIDGET_TOGGLEVISIBLE");
     APIDefs->DeregisterKeybind("LOG_INDEX_UP");
     APIDefs->DeregisterKeybind("LOG_INDEX_DOWN");
+    APIDefs->DeregisterKeybind("SHOW_SQUAD_PLAYERS_ONLY");
 
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon unloaded successfully.");
 }
@@ -168,7 +169,12 @@ void ProcessKeybinds(const char* aIdentifier)
             APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
                 ("Log Index: " + std::to_string(currentLogIndex)).c_str());
         }
-    } 
+    }
+    else if (str == "SHOW_SQUAD_PLAYERS_ONLY")
+    {
+        Settings::squadPlayersOnly = !Settings::squadPlayersOnly;
+        Settings::Save(SettingsPath);
+    }
 }
 
 
