@@ -11,7 +11,6 @@
 #include "imgui/imgui.h"
 #include <deque>
 
-// Existing declarations
 extern HMODULE SelfModule;
 extern AddonAPI* APIDefs;
 extern HWND GameHandle;
@@ -63,7 +62,6 @@ extern Texture* Strike;
 extern Texture* Kdr;
 
 
-// New declarations
 extern std::atomic<bool> initialParsingComplete;
 extern std::atomic<bool> stopMonitoring;
 extern std::mutex parsedLogsMutex;
@@ -284,6 +282,8 @@ extern std::unordered_map<int, std::string> teamIDs;
 extern std::unordered_map<std::string, std::string> eliteSpecToProfession;
 extern std::unordered_map<std::string, std::string> eliteSpecShortNames;
 extern std::unordered_map<std::string, ImVec4> professionColors;
+extern std::unordered_map<std::string, TeamStats> aggregateTeamStats;
+extern std::mutex aggregateStatsMutex;
+
 // Constants
 extern const char* const ADDON_NAME;
-extern const char* KB_TOGGLE_SHOW_WINDOW_LOG_PROOFS;

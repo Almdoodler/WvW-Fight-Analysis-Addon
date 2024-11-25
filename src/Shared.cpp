@@ -73,7 +73,8 @@ std::unordered_map<int, std::string> teamIDs;
 std::unordered_map<std::string, std::string> eliteSpecToProfession;
 std::unordered_map<std::string, std::string> eliteSpecShortNames;
 std::unordered_map<std::string, ImVec4> professionColors;
+std::unordered_map<std::string, TeamStats> aggregateTeamStats;
+std::mutex aggregateStatsMutex;
 
 // Constants
 const char* const ADDON_NAME = "WvW Fight Analysis Addon";
-const char* KB_TOGGLE_SHOW_WINDOW_LOG_PROOFS = "KB_TOGGLE_SHOW_WINDOW_LOG_PROOFS";
