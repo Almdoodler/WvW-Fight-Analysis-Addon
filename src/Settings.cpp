@@ -7,6 +7,7 @@
 
 const char*  IS_ADDON_WIDGET_VISIBLE = "IsWidgetVisible";
 const char* IS_ADDON_WINDOW_VISIBLE = "IsWindowVisible";
+const char* IS_ADDON_AGG_WINDOW_VISIBLE = "isAggWindowVisible";
 
 // Options
 const char* IS_WINDOW_VISIBLE_IN_COMBAT = "IsWindowVisibleInCombat";
@@ -107,6 +108,10 @@ namespace Settings
 		if (!Settings[IS_ADDON_WINDOW_VISIBLE].is_null())
 		{
 			Settings[IS_ADDON_WINDOW_VISIBLE].get_to<bool>(IsAddonWindowEnabled);
+		}
+		if (!Settings[IS_ADDON_AGG_WINDOW_VISIBLE].is_null())
+		{
+			Settings[IS_ADDON_AGG_WINDOW_VISIBLE].get_to<bool>(IsAddonAggWindowEnabled);
 		}
 		if (!Settings[IS_WINDOW_VISIBLE_IN_COMBAT].is_null())
 		{
@@ -236,6 +241,7 @@ namespace Settings
 
 	bool IsAddonWidgetEnabled = true;
 	bool IsAddonWindowEnabled = true;
+	bool IsAddonAggWindowEnabled = true;
 	
 	/* Options */
 

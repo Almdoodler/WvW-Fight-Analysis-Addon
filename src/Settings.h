@@ -8,6 +8,7 @@ using json = nlohmann::json;
 
 extern const char* IS_ADDON_WIDGET_VISIBLE;
 extern const char* IS_ADDON_WINDOW_VISIBLE;
+extern const char* IS_ADDON_AGG_WINDOW_VISIBLE;
 
 // Options
 extern const char* IS_WINDOW_VISIBLE_IN_COMBAT;
@@ -64,6 +65,7 @@ namespace Settings
 	/* Windows */
 	extern bool IsAddonWidgetEnabled;
 	extern bool IsAddonWindowEnabled;
+	extern bool IsAddonAggWindowEnabled;
 	
 	//Options
 	extern bool showWindowInCombat;
