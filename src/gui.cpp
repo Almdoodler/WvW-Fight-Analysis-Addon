@@ -935,6 +935,7 @@ void DrawAggregateStatsWindow(HINSTANCE hSelf)
     }
 
     if (!hasData)
+        return;
 
     ImGui::SetNextWindowPos(ImVec2(750, 350), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(200, 300), ImGuiCond_FirstUseEver);
