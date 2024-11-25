@@ -451,7 +451,7 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 		}
 	}
 
-	// Log the totals (optional)
+	// Log the totals
 	// for (const auto& [teamName, stats] : result.teamStats) {
 	//     std::string message = "Team: " + teamName +
 	//         ", Total Damage: " + std::to_string(stats.totalDamage) +
@@ -1105,7 +1105,54 @@ void processNewEVTCFile(const std::string& filePath)
 
 		currentLogIndex = 0;
 	}
+
+	{
+		std::lock_guard<std::mutex> lock(aggregateStatsMutex);
+		for (const auto& [teamName, stats] : log.data.teamStats)
+		{
+			auto& aggregateStats = aggregateTeamStats[teamName];
+
+			aggregateStats.totalDeaths += stats.totalDeaths;
+			aggregateStats.totalDowned += stats.totalDowned;
+
+			aggregateStats.totalDeathsFromKillingBlows += stats.totalDeathsFromKillingBlows;
+
+			if (stats.isPOVTeam)
+			{
+				aggregateStats.isPOVTeam = true;
+				auto& aggregateSquadStats = aggregateStats.squadStats;
+
+				aggregateSquadStats.totalDeaths += stats.squadStats.totalDeaths;
+				aggregateSquadStats.totalDowned += stats.squadStats.totalDowned;
+
+				aggregateSquadStats.totalDeathsFromKillingBlows += stats.squadStats.totalDeathsFromKillingBlows;
+				aggregateSquadStats.totalPlayers += stats.squadStats.totalPlayers;
+
+				for (const auto& [eliteSpec, squadSpecStats] : stats.squadStats.eliteSpecStats)
+				{
+					auto& aggregateSquadSpecStats = aggregateSquadStats.eliteSpecStats[eliteSpec];
+					aggregateSquadSpecStats.count += squadSpecStats.count;
+					aggregateSquadSpecStats.totalDamage += squadSpecStats.totalDamage;
+					aggregateSquadSpecStats.totalDamageVsPlayers += squadSpecStats.totalDamageVsPlayers;
+					aggregateSquadSpecStats.totalKills += squadSpecStats.totalKills;
+					aggregateSquadSpecStats.totalKillsVsPlayers += squadSpecStats.totalKillsVsPlayers;
+				}
+			}
+
+			for (const auto& [eliteSpec, specStats] : stats.eliteSpecStats)
+			{
+				auto& aggregateSpecStats = aggregateStats.eliteSpecStats[eliteSpec];
+				aggregateSpecStats.count += specStats.count;
+				aggregateSpecStats.totalDamage += specStats.totalDamage;
+				aggregateSpecStats.totalDamageVsPlayers += specStats.totalDamageVsPlayers;
+				aggregateSpecStats.totalKills += specStats.totalKills;
+				aggregateSpecStats.totalKillsVsPlayers += specStats.totalKillsVsPlayers;
+			}
+		}
+	}
 }
+
+
 
 
 

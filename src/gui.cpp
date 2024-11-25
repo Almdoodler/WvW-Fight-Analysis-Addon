@@ -107,11 +107,9 @@ void RenderSpecializationBars(const TeamStats& teamData, int teamIndex, HINSTANC
     bool vsLogPlayers = Settings::vsLoggedPlayersOnly;
     bool showDamage = Settings::showSpecDamage;
 
-    // Get the eliteSpecStats to display
     const std::unordered_map<std::string, SpecStats>& eliteSpecStatsToDisplay = useSquadStats ?
         teamData.squadStats.eliteSpecStats : teamData.eliteSpecStats;
 
-    // Sort specializations by count or damage in descending order
     std::vector<std::pair<std::string, SpecStats>> sortedClasses;
 
     for (const auto& [eliteSpec, stats] : eliteSpecStatsToDisplay) {
@@ -157,11 +155,9 @@ void RenderSpecializationBars(const TeamStats& teamData, int teamIndex, HINSTANC
             totalDamage = stats.totalDamage;
         }
 
-        // Determine the value and fraction based on the sorting criterion
         uint64_t value = sortByDamage ? totalDamage : count;
         float frac = (maxValue > 0) ? static_cast<float>(value) / maxValue : 0.0f;
 
-        // Get the profession name
         std::string professionName;
         auto it = eliteSpecToProfession.find(eliteSpec);
         if (it != eliteSpecToProfession.end()) {
@@ -171,7 +167,6 @@ void RenderSpecializationBars(const TeamStats& teamData, int teamIndex, HINSTANC
             professionName = "Unknown";
         }
 
-        // Get the color for the profession
         ImVec4 color;
         auto colorIt = professionColors.find(professionName);
         if (colorIt != professionColors.end()) {
@@ -181,7 +176,6 @@ void RenderSpecializationBars(const TeamStats& teamData, int teamIndex, HINSTANC
             color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
         }
 
-        // Draw the bar with the updated parameters
         DrawBar(frac, count, totalDamage, color, eliteSpec, showDamage, hSelf);
     }
 }
@@ -194,10 +188,8 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
 
     ImGui::Spacing();
 
-    // Determine whether to use squad stats or team stats
     bool useSquadStats = Settings::squadPlayersOnly && teamData.isPOVTeam;
 
-    // Total Players
     uint32_t totalPlayersToDisplay = useSquadStats ? teamData.squadStats.totalPlayers : teamData.totalPlayers;
 
     if (Settings::showTeamTotalPlayers) {
@@ -374,7 +366,6 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
         }
     }
 
-    // Display specialization bars only if not in split window mode
     if (Settings::showSpecBars && !Settings::splitStatsWindow) {
         ImGui::Separator();
 
@@ -382,11 +373,9 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
         bool vsLogPlayers = Settings::vsLoggedPlayersOnly;
         bool showDamage = Settings::showSpecDamage;
 
-        // Get the eliteSpecStats to display
         const std::unordered_map<std::string, SpecStats>& eliteSpecStatsToDisplay = useSquadStats ?
             teamData.squadStats.eliteSpecStats : teamData.eliteSpecStats;
 
-        // Sort specializations by count or damage in descending order
         std::vector<std::pair<std::string, SpecStats>> sortedClasses;
 
         for (const auto& [eliteSpec, stats] : eliteSpecStatsToDisplay) {
@@ -432,11 +421,9 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 totalDamage = stats.totalDamage;
             }
 
-            // Determine the value and fraction based on the sorting criterion
             uint64_t value = sortByDamage ? totalDamage : count;
             float frac = (maxValue > 0) ? static_cast<float>(value) / maxValue : 0.0f;
 
-            // Get the profession name
             std::string professionName;
             auto it = eliteSpecToProfession.find(eliteSpec);
             if (it != eliteSpecToProfession.end()) {
@@ -446,7 +433,6 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 professionName = "Unknown";
             }
 
-            // Get the color for the profession
             ImVec4 color;
             auto colorIt = professionColors.find(professionName);
             if (colorIt != professionColors.end()) {
@@ -456,7 +442,6 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
             }
 
-            // Draw the bar with the updated parameters
             DrawBar(frac, count, totalDamage, color, eliteSpec, showDamage, hSelf);
         }
     }
@@ -512,7 +497,6 @@ void RenderSimpleRatioBar(
     float iconAreaWidth = 0.0f;
     float barX = x;
 
-    // Only calculate icon area and render icon if showWidgetIcon is true
     if (Settings::showWidgetIcon && statIcon)
     {
         iconAreaWidth = leftPadding + iconWidth + rightPadding;
@@ -937,4 +921,109 @@ HINSTANCE hSelf
 }
 
 
+
+
+void DrawAggregateStatsWindow(HINSTANCE hSelf)
+{
+    if (!Settings::IsAddonAggWindowEnabled)
+        return;
+
+    bool hasData = false;
+    {
+        std::lock_guard<std::mutex> lock(aggregateStatsMutex);
+        hasData = !aggregateTeamStats.empty();
+    }
+
+    if (!hasData)
+
+    ImGui::SetNextWindowPos(ImVec2(750, 350), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(200, 300), ImGuiCond_FirstUseEver);
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse;
+
+    if (!Settings::showScrollBar) window_flags |= ImGuiWindowFlags_NoScrollbar;
+    if (!Settings::showWindowTitle) window_flags |= ImGuiWindowFlags_NoTitleBar;
+    if (Settings::disableMovingWindow) window_flags |= ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+    if (Settings::disableClickingWindow) window_flags |= ImGuiWindowFlags_NoInputs;
+
+    if (ImGui::Begin("Aggregate Stats", &Settings::IsAddonAggWindowEnabled, window_flags))
+    {
+        ImGuiStyle& style = ImGui::GetStyle();
+        float sz = ImGui::GetFontSize();
+
+        if (ImGui::Button("Reset"))
+        {
+            std::lock_guard<std::mutex> lock(aggregateStatsMutex);
+            aggregateTeamStats.clear();
+        }
+
+        ImGui::Separator();
+
+        std::lock_guard<std::mutex> lock(aggregateStatsMutex);
+        for (const auto& [teamName, teamData] : aggregateTeamStats)
+        {
+            ImGui::Spacing();
+
+            ImVec4 teamColor = GetTeamColor(teamName);
+            ImGui::PushStyleColor(ImGuiCol_Text, teamColor);
+            ImGui::Text("%s", teamName.c_str());
+            ImGui::PopStyleColor();
+
+            bool useSquadStats = Settings::squadPlayersOnly && teamData.isPOVTeam;
+            uint32_t totalDeathsToDisplay = useSquadStats ? teamData.squadStats.totalDeaths : teamData.totalDeaths;
+
+            if (Settings::showTeamDeaths)
+            {
+                if (Settings::showClassIcons)
+                {
+                    if (Death && Death->Resource)
+                    {
+                        ImGui::Image(Death->Resource, ImVec2(sz, sz));
+                        ImGui::SameLine(0, 5);
+                    }
+                    else
+                    {
+                        Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
+                    }
+                }
+                if (Settings::showClassNames)
+                {
+                    ImGui::Text("Deaths: %d", totalDeathsToDisplay);
+                }
+                else
+                {
+                    ImGui::Text("%d", totalDeathsToDisplay);
+                }
+            }
+
+            uint32_t totalDownedToDisplay = useSquadStats ? teamData.squadStats.totalDowned : teamData.totalDowned;
+
+            if (Settings::showTeamDowned)
+            {
+                if (Settings::showClassIcons)
+                {
+                    if (Downed && Downed->Resource)
+                    {
+                        ImGui::Image(Downed->Resource, ImVec2(sz, sz));
+                        ImGui::SameLine(0, 5);
+                    }
+                    else
+                    {
+                        Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
+                    }
+                }
+                if (Settings::showClassNames)
+                {
+                    ImGui::Text("Downs:  %d", totalDownedToDisplay);
+                }
+                else
+                {
+                    ImGui::Text("%d", totalDownedToDisplay);
+                }
+            }
+
+            ImGui::Separator();
+        }
+    }
+    ImGui::End();
+}
 
