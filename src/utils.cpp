@@ -203,6 +203,18 @@ std::unordered_map<std::string, TextureInfo> textureMap = {
     {"Willbender", {WILLBENDER, &Willbender}}
 };
 
+ImVec4 GetTeamColor(const std::string& teamName)
+{
+    if (teamName == "Red")
+        return ImGui::ColorConvertU32ToFloat4(IM_COL32(0xff, 0x44, 0x44, 0xff)); // Red
+    else if (teamName == "Blue")
+        return ImGui::ColorConvertU32ToFloat4(IM_COL32(0x33, 0xb5, 0xe5, 0xff)); // Blue
+    else if (teamName == "Green")
+        return ImGui::ColorConvertU32ToFloat4(IM_COL32(0x99, 0xcc, 0x00, 0xff)); // Green
+    else
+        return ImGui::GetStyleColorVec4(ImGuiCol_Text); // Default text color
+}
+
 bool isRunningUnderWine()
 {
     if (Settings::forceLinuxCompatibilityMode) {
