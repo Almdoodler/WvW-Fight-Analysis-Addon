@@ -212,11 +212,16 @@ void AddonRender()
     if (Settings::IsAddonWidgetEnabled)
     {
         ratioBarSetup(hSelf);
+        
     }
+
+    DrawAggregateStatsWindow(hSelf);
 
     if (Settings::IsAddonWindowEnabled)
     {
-        ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+    // Set the window position with ImGuiCond_FirstUseEver
+        ImGui::SetNextWindowPos(ImVec2(1030, 300), ImGuiCond_FirstUseEver);
+        ImGui::SetNextWindowSize(ImVec2(300, 500), ImGuiCond_FirstUseEver);
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse;
 
         if (!Settings::showScrollBar) window_flags |= ImGuiWindowFlags_NoScrollbar;
@@ -671,6 +676,11 @@ void AddonOptions()
     if (ImGui::Checkbox("Widget Enabled##WvWFightAnalysis", &Settings::IsAddonWidgetEnabled))
     {
         Settings::Settings[IS_ADDON_WIDGET_VISIBLE] = Settings::IsAddonWidgetEnabled;
+        Settings::Save(SettingsPath);
+    }
+    if (ImGui::Checkbox("Aggregate Stats Enabled##WvWFightAnalysis", &Settings::IsAddonAggWindowEnabled))
+    {
+        Settings::Settings[IS_ADDON_AGG_WINDOW_VISIBLE] = Settings::IsAddonAggWindowEnabled;
         Settings::Save(SettingsPath);
     }
     if (ImGui::Checkbox("Visible In Combat##WvWFightAnalysis", &Settings::showWindowInCombat))
