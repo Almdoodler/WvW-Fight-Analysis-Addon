@@ -683,6 +683,11 @@ void AddonOptions()
         Settings::Settings[IS_ADDON_AGG_WINDOW_VISIBLE] = Settings::IsAddonAggWindowEnabled;
         Settings::Save(SettingsPath);
     }
+    if (ImGui::Checkbox("Hide Aggregate Stats Window When Empty##WvWFightAnalysis", &Settings::hideAggWhenEmpty))
+    {
+        Settings::Settings[HIDE_AGG_WINDOW_WHEN_EMPTY] = Settings::IsAddonAggWindowEnabled;
+        Settings::Save(SettingsPath);
+    }
     if (ImGui::Checkbox("Visible In Combat##WvWFightAnalysis", &Settings::showWindowInCombat))
     {
         Settings::Settings[IS_WINDOW_VISIBLE_IN_COMBAT] = Settings::showWindowInCombat;

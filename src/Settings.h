@@ -10,6 +10,8 @@ extern const char* IS_ADDON_WIDGET_VISIBLE;
 extern const char* IS_ADDON_WINDOW_VISIBLE;
 extern const char* IS_ADDON_AGG_WINDOW_VISIBLE;
 
+extern const char* HIDE_AGG_WINDOW_WHEN_EMPTY;
+
 // Options
 extern const char* IS_WINDOW_VISIBLE_IN_COMBAT;
 extern const char* CUSTOM_LOG_PATH;
@@ -66,6 +68,8 @@ namespace Settings
 	extern bool IsAddonWidgetEnabled;
 	extern bool IsAddonWindowEnabled;
 	extern bool IsAddonAggWindowEnabled;
+
+	extern bool hideAggWhenEmpty;
 	
 	//Options
 	extern bool showWindowInCombat;

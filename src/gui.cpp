@@ -934,7 +934,7 @@ void DrawAggregateStatsWindow(HINSTANCE hSelf)
         hasData = !aggregateTeamStats.empty();
     }
 
-    if (!hasData)
+    if (!hasData && Settings::hideAggWhenEmpty)
         return;
 
     ImGui::SetNextWindowPos(ImVec2(750, 350), ImGuiCond_FirstUseEver);
