@@ -18,6 +18,7 @@ const char* TEAM_PLAYER_THRESHOLD = "TeamPlayerThreshold";
 const char*  LOG_HISTORY_SIZE = "LogHistorySize";
 const char* DISABLE_CLICKING_WINDOW = "DisableClickingWindow";
 const char* DISABLE_MOVING_WINDOW = "DisableMovingWindow";
+const char* SHOW_NEW_PARSE_ALERT = "ShowNewParseAlert";
 const char* FORCE_LINUX_COMPAT = "ForceLinuxCompat";
 const char* POLL_INTERVAL_MILLISECONDS = "PollIntervalMilliseconds";
 
@@ -85,6 +86,10 @@ namespace Settings
 		{
 			Settings[WIDGET_STATS].get_to<std::string>(widgetStats);
 			strcpy_s(widgetStatsC, sizeof(widgetStatsC), widgetStats.c_str());
+		}
+		if (!Settings[SHOW_NEW_PARSE_ALERT].is_null())
+		{
+			Settings[SHOW_NEW_PARSE_ALERT].get_to(showNewParseAlert);
 		}
 		if (!Settings[WIDGET_HEIGHT].is_null())
 		{
@@ -257,6 +262,7 @@ namespace Settings
 	int teamPlayerThreshold = 1;
 	bool disableMovingWindow = false;
 	bool disableClickingWindow = false;
+	bool showNewParseAlert = true;
 	bool forceLinuxCompatibilityMode = false;
 	size_t pollIntervalMilliseconds = 3000;
 

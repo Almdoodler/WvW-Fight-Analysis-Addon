@@ -1150,6 +1150,11 @@ void processNewEVTCFile(const std::string& filePath)
 			}
 		}
 	}
+
+	if (Settings::showNewParseAlert) {
+		std::string displayName = generateLogDisplayName(log.filename, log.data.combatStartTime, log.data.combatEndTime);
+		APIDefs->UI.SendAlert(("Parsed New Log: " + displayName).c_str());
+	}
 }
 
 

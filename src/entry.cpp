@@ -697,6 +697,11 @@ void AddonOptions()
         Settings::Settings[IS_WINDOW_VISIBLE_IN_COMBAT] = Settings::showWindowInCombat;
         Settings::Save(SettingsPath);
     }
+    if (ImGui::Checkbox("Show Alert On Log Parse##WvWFightAnalysis", &Settings::showNewParseAlert))
+    {
+        Settings::Settings[SHOW_NEW_PARSE_ALERT] = Settings::showNewParseAlert;
+        Settings::Save(SettingsPath);
+    }
     if (ImGui::Checkbox("Lock Window & Widget Position##WvWFightAnalysis", &Settings::disableMovingWindow))
     {
         Settings::Settings[DISABLE_MOVING_WINDOW] = Settings::disableMovingWindow;

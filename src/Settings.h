@@ -19,6 +19,7 @@ extern const char* TEAM_PLAYER_THRESHOLD;
 extern const char* LOG_HISTORY_SIZE;
 extern const char* DISABLE_CLICKING_WINDOW;
 extern const char* DISABLE_MOVING_WINDOW;
+extern const char* SHOW_NEW_PARSE_ALERT;
 extern const char* FORCE_LINUX_COMPAT;
 extern const char* POLL_INTERVAL_MILLISECONDS;
 
@@ -79,6 +80,7 @@ namespace Settings
 	extern size_t logHistorySize;
 	extern bool disableClickingWindow;
 	extern bool disableMovingWindow;
+	extern bool showNewParseAlert;
 	extern bool forceLinuxCompatibilityMode;
 	extern size_t pollIntervalMilliseconds;
 
