@@ -45,7 +45,7 @@ void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, c
         else
         {
             if (resourceId != 0 && texturePtrPtr) {
-                *texturePtrPtr = APIDefs->GetTextureOrCreateFromResource((eliteSpec + "_ICON").c_str(), resourceId, hSelf);
+                *texturePtrPtr = APIDefs->Textures.GetOrCreateFromResource((eliteSpec + "_ICON").c_str(), resourceId, hSelf);
                 if (*texturePtrPtr && (*texturePtrPtr)->Resource)
                 {
                     ImGui::Image((*texturePtrPtr)->Resource, ImVec2(sz, sz));
@@ -199,7 +199,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 ImGui::SameLine(0, 5);
             }
             else {
-                Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
+                Squad = APIDefs->Textures.GetOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
             }
         }
         if (Settings::showClassNames) {
@@ -223,7 +223,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 ImGui::SameLine(0, 5);
             }
             else {
-                Kdr = APIDefs->GetTextureOrCreateFromResource("KDR_ICON", KDR, hSelf);
+                Kdr = APIDefs->Textures.GetOrCreateFromResource("KDR_ICON", KDR, hSelf);
             }
         }
         if (Settings::showClassNames) {
@@ -244,7 +244,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 ImGui::SameLine(0, 5);
             }
             else {
-                Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
+                Death = APIDefs->Textures.GetOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
             }
         }
         if (Settings::showClassNames) {
@@ -265,7 +265,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 ImGui::SameLine(0, 5);
             }
             else {
-                Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
+                Downed = APIDefs->Textures.GetOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
             }
         }
         if (Settings::showClassNames) {
@@ -292,7 +292,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 ImGui::SameLine(0, 5);
             }
             else {
-                Damage = APIDefs->GetTextureOrCreateFromResource("DAMAGE_ICON", DAMAGE, hSelf);
+                Damage = APIDefs->Textures.GetOrCreateFromResource("DAMAGE_ICON", DAMAGE, hSelf);
             }
         }
 
@@ -322,7 +322,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 ImGui::SameLine(0, 5);
             }
             else {
-                Strike = APIDefs->GetTextureOrCreateFromResource("STRIKE_ICON", STRIKE, hSelf);
+                Strike = APIDefs->Textures.GetOrCreateFromResource("STRIKE_ICON", STRIKE, hSelf);
             }
         }
 
@@ -352,7 +352,7 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
                 ImGui::SameLine(0, 5);
             }
             else {
-                Condi = APIDefs->GetTextureOrCreateFromResource("CONDI_ICON", CONDI, hSelf);
+                Condi = APIDefs->Textures.GetOrCreateFromResource("CONDI_ICON", CONDI, hSelf);
             }
         }
 
@@ -688,7 +688,7 @@ HINSTANCE hSelf
                 }
                 else
                 {
-                    Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
+                    Squad = APIDefs->Textures.GetOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
                     currentStatIcon = Squad ? Squad->Resource : nullptr;
                 }
             }
@@ -700,7 +700,7 @@ HINSTANCE hSelf
                 }
                 else
                 {
-                    Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
+                    Death = APIDefs->Textures.GetOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
                     currentStatIcon = Death ? Death->Resource : nullptr;
                 }
             }
@@ -712,7 +712,7 @@ HINSTANCE hSelf
                 }
                 else
                 {
-                    Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
+                    Downed = APIDefs->Textures.GetOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
                     currentStatIcon = Downed ? Downed->Resource : nullptr;
                 }
             }
@@ -724,7 +724,7 @@ HINSTANCE hSelf
                 }
                 else
                 {
-                    Damage = APIDefs->GetTextureOrCreateFromResource("DAMAGE_ICON", DAMAGE, hSelf);
+                    Damage = APIDefs->Textures.GetOrCreateFromResource("DAMAGE_ICON", DAMAGE, hSelf);
                     currentStatIcon = Damage ? Damage->Resource : nullptr;
                 }
             }
@@ -736,7 +736,7 @@ HINSTANCE hSelf
                 }
                 else
                 {
-                    Kdr = APIDefs->GetTextureOrCreateFromResource("KDR_ICON", KDR, hSelf);
+                    Kdr = APIDefs->Textures.GetOrCreateFromResource("KDR_ICON", KDR, hSelf);
                     currentStatIcon = Kdr ? Kdr->Resource : nullptr;
                 }
             }
@@ -801,35 +801,35 @@ HINSTANCE hSelf
                 strcpy_s(Settings::widgetStatsC, sizeof(Settings::widgetStatsC), "players");
                 Settings::widgetStats = "players";
                 Settings::Settings[WIDGET_STATS] = Settings::widgetStatsC;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
             if (ImGui::RadioButton("K/D Ratio", isKDR))
             {
                 strcpy_s(Settings::widgetStatsC, sizeof(Settings::widgetStatsC), "kdr");
                 Settings::widgetStats = "kdr";
                 Settings::Settings[WIDGET_STATS] = Settings::widgetStatsC;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
             if (ImGui::RadioButton("Deaths", isDeaths))
             {
                 strcpy_s(Settings::widgetStatsC, sizeof(Settings::widgetStatsC), "deaths");
                 Settings::widgetStats = "deaths";
                 Settings::Settings[WIDGET_STATS] = Settings::widgetStatsC;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
             if (ImGui::RadioButton("Downs", isDowns))
             {
                 strcpy_s(Settings::widgetStatsC, sizeof(Settings::widgetStatsC), "downs");
                 Settings::widgetStats = "downs";
                 Settings::Settings[WIDGET_STATS] = Settings::widgetStatsC;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
             if (ImGui::RadioButton("Damage", isDamage))
             {
                 strcpy_s(Settings::widgetStatsC, sizeof(Settings::widgetStatsC), "damage");
                 Settings::widgetStats = "damage";
                 Settings::Settings[WIDGET_STATS] = Settings::widgetStatsC;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
             ImGui::EndMenu();
         }
@@ -838,14 +838,14 @@ HINSTANCE hSelf
             if (ImGui::Checkbox("Show Widget Icon", &Settings::showWidgetIcon))
             {
                 Settings::Settings[SHOW_WIDGET_ICON] = Settings::showWidgetIcon;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
             ImGui::SetNextItemWidth(200.0f);
             if (ImGui::SliderFloat("##Widget Height", &Settings::widgetHeight, 0.0f, 900.0f))
             {
                 Settings::widgetHeight = std::clamp(Settings::widgetHeight, 0.0f, 900.0f);
                 Settings::Settings[WIDGET_HEIGHT] = Settings::widgetHeight;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
             ImGui::SameLine();
             ImGui::SetNextItemWidth(60.0f);
@@ -853,7 +853,7 @@ HINSTANCE hSelf
             {
                 Settings::widgetHeight = std::clamp(Settings::widgetHeight, 0.0f, 900.0f);
                 Settings::Settings[WIDGET_HEIGHT] = Settings::widgetHeight;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
 
             ImGui::SetNextItemWidth(200.0f);
@@ -861,7 +861,7 @@ HINSTANCE hSelf
             {
                 Settings::widgetWidth = std::clamp(Settings::widgetWidth, 0.0f, 900.0f);
                 Settings::Settings[WIDGET_WIDTH] = Settings::widgetWidth;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
             ImGui::SameLine();
             ImGui::SetNextItemWidth(60.0f);
@@ -869,7 +869,7 @@ HINSTANCE hSelf
             {
                 Settings::widgetWidth = std::clamp(Settings::widgetWidth, 0.0f, 900.0f);
                 Settings::Settings[WIDGET_WIDTH] = Settings::widgetWidth;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
 
             ImGui::SetNextItemWidth(200.0f);
@@ -877,7 +877,7 @@ HINSTANCE hSelf
             {
                 Settings::widgetTextVerticalAlignOffset = std::clamp(Settings::widgetTextVerticalAlignOffset, -50.0f, 50.0f);
                 Settings::Settings[WIDGET_TEXT_VERTICAL_OFFSET] = Settings::widgetTextVerticalAlignOffset;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
             ImGui::SameLine();
             ImGui::SetNextItemWidth(60.0f);
@@ -885,7 +885,7 @@ HINSTANCE hSelf
             {
                 Settings::widgetTextVerticalAlignOffset = std::clamp(Settings::widgetTextVerticalAlignOffset, -50.0f, 50.0f);
                 Settings::Settings[WIDGET_TEXT_VERTICAL_OFFSET] = Settings::widgetTextVerticalAlignOffset;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
 
             ImGui::SetNextItemWidth(200.0f);
@@ -893,7 +893,7 @@ HINSTANCE hSelf
             {
                 Settings::widgetTextHorizontalAlignOffset = std::clamp(Settings::widgetTextHorizontalAlignOffset, -50.0f, 50.0f);
                 Settings::Settings[WIDGET_TEXT_HORIZONTAL_OFFSET] = Settings::widgetTextHorizontalAlignOffset;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
             ImGui::SameLine();
             ImGui::SetNextItemWidth(60.0f);
@@ -901,19 +901,19 @@ HINSTANCE hSelf
             {
                 Settings::widgetTextHorizontalAlignOffset = std::clamp(Settings::widgetTextHorizontalAlignOffset, -50.0f, 50.0f);
                 Settings::Settings[WIDGET_TEXT_HORIZONTAL_OFFSET] = Settings::widgetTextHorizontalAlignOffset;
-                Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+                Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
             }
             ImGui::EndMenu();
         }
         if (ImGui::Checkbox("Damage vs Logged Players Only", &Settings::vsLoggedPlayersOnly))
         {
             Settings::Settings[VS_LOGGED_PLAYERS_ONLY] = Settings::vsLoggedPlayersOnly;
-            Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
         }
         if (ImGui::Checkbox("Show Squad Players Only", &Settings::squadPlayersOnly))
         {
             Settings::Settings[SQUAD_PLAYERS_ONLY] = Settings::squadPlayersOnly;
-            Settings::Save(APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json"));
+            Settings::Save(APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json"));
         }
 
     }
@@ -983,7 +983,7 @@ void DrawAggregateStatsWindow(HINSTANCE hSelf)
                     }
                     else
                     {
-                        Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
+                        Death = APIDefs->Textures.GetOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
                     }
                 }
                 if (Settings::showClassNames)
@@ -1009,7 +1009,7 @@ void DrawAggregateStatsWindow(HINSTANCE hSelf)
                     }
                     else
                     {
-                        Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
+                        Downed = APIDefs->Textures.GetOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
                     }
                 }
                 if (Settings::showClassNames)
@@ -1027,4 +1027,3 @@ void DrawAggregateStatsWindow(HINSTANCE hSelf)
     }
     ImGui::End();
 }
-

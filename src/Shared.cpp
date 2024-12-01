@@ -78,3 +78,4 @@ std::mutex aggregateStatsMutex;
 
 // Constants
 const char* const ADDON_NAME = "WvW Fight Analysis Addon";
+const char* KB_WINDOW_TOGGLEVISIBLE = "KB_WINDOW_TOGGLEVISIBLE";

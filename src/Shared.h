@@ -287,3 +287,4 @@ extern std::mutex aggregateStatsMutex;
 
 // Constants
 extern const char* const ADDON_NAME;
+extern const char* KB_WINDOW_TOGGLEVISIBLE;

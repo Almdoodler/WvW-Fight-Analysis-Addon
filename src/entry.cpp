@@ -28,7 +28,7 @@ void AddonLoad(AddonAPI* aApi);
 void AddonUnload();
 void AddonRender();
 void AddonOptions();
-void ProcessKeybinds(const char* aIdentifier);
+void ProcessKeybinds(const char* aIdentifier, bool aIsRelease);
 
 /* globals */
 AddonDefinition AddonDef = {};
@@ -36,6 +36,7 @@ HMODULE hSelf = nullptr;
 
 std::filesystem::path AddonPath;
 std::filesystem::path SettingsPath;
+std::filesystem::path GW2Root;
 
 
 
@@ -62,7 +63,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 0;
     AddonDef.Version.Build = 3;
-    AddonDef.Version.Revision = 5;
+    AddonDef.Version.Revision = 6;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
@@ -78,27 +79,35 @@ void AddonLoad(AddonAPI* aApi)
     APIDefs = aApi;
     ImGui::SetCurrentContext((ImGuiContext*)APIDefs->ImguiContext);
     ImGui::SetAllocatorFunctions((void* (*)(size_t, void*))APIDefs->ImguiMalloc, (void(*)(void*, void*))APIDefs->ImguiFree);
-    NexusLink = (NexusLinkData*)APIDefs->GetResource("DL_NEXUS_LINK");
-    MumbleLink = (Mumble::Data*)APIDefs->GetResource("DL_MUMBLE_LINK");
+    MumbleLink = (Mumble::Data*)APIDefs->DataLink.Get("DL_MUMBLE_LINK");
+    NexusLink = (NexusLinkData*)APIDefs->DataLink.Get("DL_NEXUS_LINK");
 
-    APIDefs->RegisterRender(ERenderType_OptionsRender, AddonOptions);
-    APIDefs->RegisterRender(ERenderType_Render, AddonRender);
 
-    AddonPath = APIDefs->GetAddonDirectory("WvWFightAnalysis");
-    SettingsPath = APIDefs->GetAddonDirectory("WvWFightAnalysis/settings.json");
+    APIDefs->Renderer.Register(ERenderType_OptionsRender, AddonOptions);
+    APIDefs->Renderer.Register(ERenderType_Render, AddonRender);
+
+    GW2Root = APIDefs->Paths.GetGameDirectory();
+    AddonPath = APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis");
+    SettingsPath = APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json");
+   
+    bool firstInstall = false;
+    if (!std::filesystem::exists(AddonPath))
+    {
+        firstInstall = true;
+    }
     std::filesystem::create_directory(AddonPath);
     Settings::Load(SettingsPath);
 
-    APIDefs->RegisterKeybindWithString("KB_WINDOW_TOGGLEVISIBLE", ProcessKeybinds, "(null)");
-    APIDefs->RegisterKeybindWithString("KB_WIDGET_TOGGLEVISIBLE", ProcessKeybinds, "(null)");
+    APIDefs->InputBinds.RegisterWithString(KB_WINDOW_TOGGLEVISIBLE, ProcessKeybinds, "(null)");
+    APIDefs->InputBinds.RegisterWithString("KB_WIDGET_TOGGLEVISIBLE", ProcessKeybinds, "(null)");
 
-    APIDefs->RegisterKeybindWithString("LOG_INDEX_UP", ProcessKeybinds, "(null)");
-    APIDefs->RegisterKeybindWithString("LOG_INDEX_DOWN", ProcessKeybinds, "(null)"); 
-    APIDefs->RegisterKeybindWithString("SHOW_SQUAD_PLAYERS_ONLY", ProcessKeybinds, "(null)");
+    APIDefs->InputBinds.RegisterWithString("LOG_INDEX_UP", ProcessKeybinds, "(null)");
+    APIDefs->InputBinds.RegisterWithString("LOG_INDEX_DOWN", ProcessKeybinds, "(null)");
+    APIDefs->InputBinds.RegisterWithString("SHOW_SQUAD_PLAYERS_ONLY", ProcessKeybinds, "(null)");
 
-    Downed = APIDefs->GetTextureOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
-    Death = APIDefs->GetTextureOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
-    Squad = APIDefs->GetTextureOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
+    Downed = APIDefs->Textures.GetOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
+    Death = APIDefs->Textures.GetOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
+    Squad = APIDefs->Textures.GetOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
     initMaps();
 
     directoryMonitorThread = std::thread(monitorDirectory, Settings::logHistorySize, Settings::pollIntervalMilliseconds);
@@ -123,21 +132,22 @@ void AddonUnload()
         initialParsingThread.join();
     }
 
-    APIDefs->DeregisterRender(AddonRender);
-    APIDefs->DeregisterRender(AddonOptions);
-    APIDefs->DeregisterKeybind("KB_WINDOW_TOGGLEVISIBLE");
-    APIDefs->DeregisterKeybind("KB_WIDGET_TOGGLEVISIBLE");
-    APIDefs->DeregisterKeybind("LOG_INDEX_UP");
-    APIDefs->DeregisterKeybind("LOG_INDEX_DOWN");
-    APIDefs->DeregisterKeybind("SHOW_SQUAD_PLAYERS_ONLY");
+    APIDefs->Renderer.Deregister(AddonRender);
+    APIDefs->Renderer.Deregister(AddonOptions);
+    APIDefs->InputBinds.Deregister("KB_WINDOW_TOGGLEVISIBLE");
+    APIDefs->InputBinds.Deregister("KB_WIDGET_TOGGLEVISIBLE");
+    APIDefs->InputBinds.Deregister("LOG_INDEX_UP");
+    APIDefs->InputBinds.Deregister("LOG_INDEX_DOWN");
+    APIDefs->InputBinds.Deregister("SHOW_SQUAD_PLAYERS_ONLY");
 
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon unloaded successfully.");
 }
 
 
-void ProcessKeybinds(const char* aIdentifier)
+void ProcessKeybinds(const char* aIdentifier, bool aIsRelease)
 {
     std::string str = aIdentifier;
+    if (aIsRelease) return;
 
     if (str == "KB_WINDOW_TOGGLEVISIBLE")
     {
