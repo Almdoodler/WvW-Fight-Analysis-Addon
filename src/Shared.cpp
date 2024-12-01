@@ -1,13 +1,17 @@
 #include "Shared.h"
 #include <deque>
+#include <filesystem>
 
 
 // Existing definitions
-HMODULE SelfModule = nullptr;
+HMODULE hSelf = nullptr;
 AddonAPI* APIDefs = nullptr;
 HWND GameHandle = nullptr;
 Mumble::Data* MumbleLink = nullptr;
 NexusLinkData* NexusLink = nullptr;
+std::filesystem::path SettingsPath;
+std::filesystem::path AddonPath;
+std::filesystem::path GW2Root;
 
 
 // Texture definitions

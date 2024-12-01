@@ -17,3 +17,4 @@ void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf);
 void ratioBarSetup(HINSTANCE hSelf);
 void RenderSpecializationBars(const TeamStats& teamData, int teamIndex, HINSTANCE hSelf);
 void DrawAggregateStatsWindow(HINSTANCE hSelf);
+void RenderMainWindow(HINSTANCE hSelf);

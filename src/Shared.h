@@ -1,5 +1,6 @@
 #pragma once
 #include <Windows.h>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -11,11 +12,14 @@
 #include "imgui/imgui.h"
 #include <deque>
 
-extern HMODULE SelfModule;
+extern HMODULE hSelf;
 extern AddonAPI* APIDefs;
 extern HWND GameHandle;
 extern Mumble::Data* MumbleLink;
 extern NexusLinkData* NexusLink;
+extern std::filesystem::path SettingsPath;
+extern std::filesystem::path AddonPath;
+extern std::filesystem::path GW2Root;
 
 extern Texture* Berserker;
 extern Texture* Bladesworn;
