@@ -215,6 +215,26 @@ ImVec4 GetTeamColor(const std::string& teamName)
         return ImGui::GetStyleColorVec4(ImGuiCol_Text); // Default text color
 }
 
+std::string generateLogDisplayName(const std::string& filename, uint64_t combatStartMs, uint64_t combatEndMs) 
+{
+
+    size_t lastDotPosition = filename.find_last_of('.');
+    std::string filenameWithoutExt = (lastDotPosition != std::string::npos)
+        ? filename.substr(0, lastDotPosition)
+        : filename;
+
+    uint64_t durationMs = (combatEndMs >= combatStartMs) ? (combatEndMs - combatStartMs) : 0;
+    std::chrono::milliseconds duration(durationMs);
+    int minutes = std::chrono::duration_cast<std::chrono::minutes>(duration).count();
+    int seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count() % 60;
+
+    std::string displayName = filenameWithoutExt + " ("
+        + std::to_string(minutes) + "m "
+        + std::to_string(seconds) + "s)";
+
+    return displayName;
+}
+
 bool isRunningUnderWine()
 {
     if (Settings::forceLinuxCompatibilityMode) {

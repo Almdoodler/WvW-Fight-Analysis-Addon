@@ -254,13 +254,7 @@ void AddonRender()
             }
 
             const auto& currentLog = parsedLogs[currentLogIndex];
-            std::string fnstr = currentLog.filename.substr(0, currentLog.filename.find_last_of('.'));
-            uint64_t durationMs = currentLog.data.combatEndTime - currentLog.data.combatStartTime;
-            auto duration = std::chrono::milliseconds(durationMs);
-            int minutes = std::chrono::duration_cast<std::chrono::minutes>(duration).count();
-            int seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count() % 60;
-            std::string displayName = fnstr + " (" + std::to_string(minutes) + "m " + std::to_string(seconds) + "s)";
-
+            std::string displayName = generateLogDisplayName(currentLog.filename, currentLog.data.combatStartTime, currentLog.data.combatEndTime);
             ImGui::Text("%s", displayName.c_str());
 
             const auto& currentLogData = currentLog.data;
