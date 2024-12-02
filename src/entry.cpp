@@ -1,12 +1,3 @@
-#include <Windows.h>
-#include "resource.h"
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <algorithm>
-#include <thread>
-#include <mutex>
-#include <atomic>
 #include "nexus/Nexus.h"
 #include "mumble/Mumble.h"
 #include "imgui/imgui.h"
@@ -15,11 +6,6 @@
 #include "gui.h"
 #include "utils.h"
 #include "evtc_parser.h"
-#include <zip.h>
-#include <regex>
-#include <chrono>
-#include <shlwapi.h>
-#pragma comment(lib, "Shlwapi.lib")
 
 
 
@@ -30,41 +16,7 @@ void AddonRender();
 void AddonOptions();
 void ProcessKeybinds(const char* aIdentifier, bool aIsRelease);
 
-/* globals */
 AddonDefinition AddonDef = {};
-
-
-
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
-{
-    switch (ul_reason_for_call)
-    {
-    case DLL_PROCESS_ATTACH: hSelf = hModule; break;
-    case DLL_PROCESS_DETACH: break;
-    case DLL_THREAD_ATTACH: break;
-    case DLL_THREAD_DETACH: break;
-    }
-    return TRUE;
-}
-
-extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
-{
-    AddonDef.Signature = -996748;
-    AddonDef.APIVersion = NEXUS_API_VERSION;
-    AddonDef.Name = ADDON_NAME;
-    AddonDef.Version.Major = 1;
-    AddonDef.Version.Minor = 0;
-    AddonDef.Version.Build = 3;
-    AddonDef.Version.Revision = 6;
-    AddonDef.Author = "Unreal";
-    AddonDef.Description = "WvW log analysis tool.";
-    AddonDef.Load = AddonLoad;
-    AddonDef.Unload = AddonUnload;
-    AddonDef.Flags = EAddonFlags_None;
-    AddonDef.Provider = EUpdateProvider_GitHub;
-    AddonDef.UpdateLink = "https://github.com/jake-greygoose/WvW-Fight-Analysis-Addon";
-    return &AddonDef;
-}
 
 void AddonLoad(AddonAPI* aApi)
 {
@@ -100,17 +52,12 @@ void AddonLoad(AddonAPI* aApi)
     APIDefs->InputBinds.RegisterWithString("LOG_INDEX_DOWN", ProcessKeybinds, "(null)");
     APIDefs->InputBinds.RegisterWithString("SHOW_SQUAD_PLAYERS_ONLY", ProcessKeybinds, "(null)");
 
-    Downed = APIDefs->Textures.GetOrCreateFromResource("DOWNED_ICON", DOWNED, hSelf);
-    Death = APIDefs->Textures.GetOrCreateFromResource("DEATH_ICON", DEATH, hSelf);
-    Squad = APIDefs->Textures.GetOrCreateFromResource("SQUAD_ICON", SQUAD, hSelf);
     initMaps();
 
     directoryMonitorThread = std::thread(monitorDirectory, Settings::logHistorySize, Settings::pollIntervalMilliseconds);
 
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon loaded successfully.");
 }
-
-
 
 void AddonUnload()
 {
@@ -138,7 +85,6 @@ void AddonUnload()
 
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon unloaded successfully.");
 }
-
 
 void ProcessKeybinds(const char* aIdentifier, bool aIsRelease)
 {
@@ -188,16 +134,9 @@ void ProcessKeybinds(const char* aIdentifier, bool aIsRelease)
     }
 }
 
-
 void AddonRender()
 {
 
-    std::lock_guard<std::mutex> lock(parsedLogsMutex);
-
-    if (currentLogIndex >= parsedLogs.size())
-    {
-        currentLogIndex = 0;
-    }
 
     if (!NexusLink || !NexusLink->IsGameplay || !MumbleLink || MumbleLink->Context.IsMapOpen)
     {
@@ -227,7 +166,6 @@ void AddonRender()
     RenderMainWindow(hSelf);
 
 }
-
 
 void AddonOptions()
 {
@@ -342,4 +280,35 @@ void AddonOptions()
         Settings::Save(SettingsPath);
     }
 
+}
+
+extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
+{
+    AddonDef.Signature = -996748;
+    AddonDef.APIVersion = NEXUS_API_VERSION;
+    AddonDef.Name = ADDON_NAME;
+    AddonDef.Version.Major = 1;
+    AddonDef.Version.Minor = 0;
+    AddonDef.Version.Build = 3;
+    AddonDef.Version.Revision = 7;
+    AddonDef.Author = "Unreal";
+    AddonDef.Description = "WvW log analysis tool.";
+    AddonDef.Load = AddonLoad;
+    AddonDef.Unload = AddonUnload;
+    AddonDef.Flags = EAddonFlags_None;
+    AddonDef.Provider = EUpdateProvider_GitHub;
+    AddonDef.UpdateLink = "https://github.com/jake-greygoose/WvW-Fight-Analysis-Addon";
+    return &AddonDef;
+}
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+{
+    switch (ul_reason_for_call)
+    {
+    case DLL_PROCESS_ATTACH: hSelf = hModule; break;
+    case DLL_PROCESS_DETACH: break;
+    case DLL_THREAD_ATTACH: break;
+    case DLL_THREAD_DETACH: break;
+    }
+    return TRUE;
 }
