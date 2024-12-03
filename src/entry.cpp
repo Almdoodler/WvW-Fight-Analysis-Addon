@@ -30,8 +30,6 @@ void AddonLoad(AddonAPI* aApi)
     APIDefs->Renderer.Register(ERenderType_OptionsRender, AddonOptions);
     APIDefs->Renderer.Register(ERenderType_Render, AddonRender);
 
-    APIDefs->UI.RegisterCloseOnEscape("WvW Fight Analysis", &Settings::IsAddonWindowEnabled);
-
     GW2Root = APIDefs->Paths.GetGameDirectory();
     AddonPath = APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis");
     SettingsPath = APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json");
@@ -44,6 +42,9 @@ void AddonLoad(AddonAPI* aApi)
     std::filesystem::create_directory(AddonPath);
     Settings::Load(SettingsPath);
 
+    if (Settings::useNexusEscClose) {
+        APIDefs->UI.RegisterCloseOnEscape("WvW Fight Analysis", &Settings::IsAddonWindowEnabled);
+    }
     APIDefs->InputBinds.RegisterWithString(KB_WINDOW_TOGGLEVISIBLE, ProcessKeybinds, "(null)");
     APIDefs->InputBinds.RegisterWithString(KB_WINDOW_TOGGLEVISIBLE, ProcessKeybinds, "(null)");
     APIDefs->InputBinds.RegisterWithString("KB_WIDGET_TOGGLEVISIBLE", ProcessKeybinds, "(null)");
@@ -74,6 +75,10 @@ void AddonUnload()
         initialParsingThread.join();
     }
 
+    if (Settings::useNexusEscClose) {
+        APIDefs->UI.DeregisterCloseOnEscape("WvW Fight Analysis");
+    }
+
     APIDefs->Renderer.Deregister(AddonRender);
     APIDefs->Renderer.Deregister(AddonOptions);
     APIDefs->InputBinds.Deregister("KB_WINDOW_TOGGLEVISIBLE");
@@ -81,8 +86,6 @@ void AddonUnload()
     APIDefs->InputBinds.Deregister("LOG_INDEX_UP");
     APIDefs->InputBinds.Deregister("LOG_INDEX_DOWN");
     APIDefs->InputBinds.Deregister("SHOW_SQUAD_PLAYERS_ONLY");
-    APIDefs->UI.DeregisterCloseOnEscape("WvW Fight Analysis");
-
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon unloaded successfully.");
 }
 
@@ -199,6 +202,20 @@ void AddonOptions()
     {
         Settings::Settings[SHOW_NEW_PARSE_ALERT] = Settings::showNewParseAlert;
         Settings::Save(SettingsPath);
+    }
+    if (ImGui::Checkbox("Use Nexus Esc to Close##WvWFightAnalysis", &Settings::useNexusEscClose))
+    {
+        Settings::Settings[USE_NEXUS_ESC_CLOSE] = Settings::useNexusEscClose;
+        Settings::Save(SettingsPath);
+
+        if (Settings::useNexusEscClose)
+        {
+            APIDefs->UI.RegisterCloseOnEscape("WvW Fight Analysis", &Settings::IsAddonWindowEnabled);
+        }
+        else
+        {
+            APIDefs->UI.DeregisterCloseOnEscape("WvW Fight Analysis");
+        }
     }
     if (ImGui::Checkbox("Lock Window & Widget Position##WvWFightAnalysis", &Settings::disableMovingWindow))
     {

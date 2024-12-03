@@ -50,7 +50,7 @@ extern const char* WIDGET_WIDTH;
 extern const char* WIDGET_TEXT_VERTICAL_OFFSET;
 extern const char* WIDGET_TEXT_HORIZONTAL_OFFSET;
 extern const char* SPLIT_STATS_WINDOW;
-
+extern const char* USE_NEXUS_ESC_CLOSE;
 //Widget
 extern const char* WIDGET_STATS;
 extern const char* SHOW_WIDGET_ICON;
@@ -108,6 +108,7 @@ namespace Settings
 	extern bool useTabbedView;
 	extern bool showWindowTitle;
 	extern bool splitStatsWindow;
+	extern 	bool useNexusEscClose;
 	// Widget
 	extern std::string widgetStats;
 	extern char widgetStatsC[256];

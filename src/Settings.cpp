@@ -46,6 +46,7 @@ const char* SHOW_SCROLL_BAR = "ShowScrollBar";
 const char* USE_TABBED_VIEW = "UseTabbedView";
 const char* SHOW_WINDOW_TITLE = "ShowWindowTitle";
 const char* SPLIT_STATS_WINDOW = "SplitStatsWindow";
+const char* USE_NEXUS_ESC_CLOSE = "UseNexusEscClose";
 // Widget
 const char* WIDGET_STATS = "WidgetStats";
 const char* WIDGET_HEIGHT = "WidgetHeight";
@@ -236,6 +237,10 @@ namespace Settings
 		{
 			Settings[SPLIT_STATS_WINDOW].get_to<bool>(splitStatsWindow);
 		}
+		if (!Settings[USE_NEXUS_ESC_CLOSE].is_null())
+		{
+			Settings[USE_NEXUS_ESC_CLOSE].get_to<bool>(useNexusEscClose);
+		}
 	}
 	void Save(std::filesystem::path aPath)
 	{
@@ -293,6 +298,7 @@ namespace Settings
 	bool useTabbedView = true;
 	bool showWindowTitle = true;
 	bool splitStatsWindow = false;
+	bool useNexusEscClose = false;
 	// Widget
 	std::string widgetStats;
 	char widgetStatsC[256] = "players";
