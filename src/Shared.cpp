@@ -58,6 +58,7 @@ Texture* Damage = nullptr;
 Texture* Condi = nullptr;
 Texture* Strike = nullptr;
 Texture* Kdr = nullptr;
+Texture* Home = nullptr;
 
 // New definitions
 std::atomic<bool> initialParsingComplete{ false };

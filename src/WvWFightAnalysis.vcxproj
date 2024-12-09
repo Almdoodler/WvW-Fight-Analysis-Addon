@@ -217,16 +217,21 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\Arena_Proprietor_16x16.png" />
+    <Image Include="assets\Arena_Proprietor_icon.png" />
     <Image Include="assets\berserker_16x16.png" />
     <Image Include="assets\bladesworn_16x16.png" />
     <Image Include="assets\catalyst_16x16.png" />
     <Image Include="assets\chronomancer_16x16.png" />
     <Image Include="assets\condition_damage_18x18.png" />
+    <Image Include="assets\condition_damage_icon.png" />
     <Image Include="assets\damage_18x18.png" />
+    <Image Include="assets\damage_icon.png" />
     <Image Include="assets\daredevil_16x16.png" />
     <Image Include="assets\deadeye_16x16.png" />
     <Image Include="assets\death_16x16.png" />
+    <Image Include="assets\death_icon.png" />
     <Image Include="assets\downed_24x24.png" />
+    <Image Include="assets\downed_icon.png" />
     <Image Include="assets\dragonhunter_16x16.png" />
     <Image Include="assets\druid_16x16.png" />
     <Image Include="assets\elementalist_16x16.png" />
@@ -236,6 +241,7 @@
     <Image Include="assets\harbinger_16x16.png" />
     <Image Include="assets\herald_16x16.png" />
     <Image Include="assets\holosmith_16x16.png" />
+    <Image Include="assets\home_icon.png" />
     <Image Include="assets\mechanist_16x16.png" />
     <Image Include="assets\mesmer_16x16.png" />
     <Image Include="assets\mirage_16x16.png" />
@@ -250,7 +256,9 @@
     <Image Include="assets\specter_16x16.png" />
     <Image Include="assets\spellbreaker_16x16.png" />
     <Image Include="assets\squad_16x16.png" />
+    <Image Include="assets\squad_icon.png" />
     <Image Include="assets\strike_damage_30x30.png" />
+    <Image Include="assets\strike_damage_icon.png" />
     <Image Include="assets\tempest_16x16.png" />
     <Image Include="assets\thief_16x16.png" />
     <Image Include="assets\untamed_16x16.png" />

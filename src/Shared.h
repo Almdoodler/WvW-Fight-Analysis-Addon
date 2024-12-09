@@ -64,6 +64,7 @@ extern Texture* Damage;
 extern Texture* Condi;
 extern Texture* Strike;
 extern Texture* Kdr;
+extern Texture* Home;
 
 
 extern std::atomic<bool> initialParsingComplete;

@@ -136,6 +136,8 @@ STRIKE                  PNG                     "assets\\strike_damage_icon.png"
 
 KDR                     PNG                     "assets\\Arena_Proprietor_icon.png"
 
+HOME                    PNG                     "assets\\home_icon.png"
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
