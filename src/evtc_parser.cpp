@@ -495,10 +495,6 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 }
 
 
-
-
-
-
 ParsedData parseEVTCFile(const std::string& filePath) {
 	ParsedData result;
 	std::vector<char> bytes = extractZipFile(filePath);
@@ -901,7 +897,7 @@ void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToPars
 
 		while (!stopMonitoring)
 		{
-			DWORD waitStatus = WaitForSingleObject(overlapped.hEvent, 500); // Wait with timeout
+			DWORD waitStatus = WaitForSingleObject(overlapped.hEvent, 500);
 
 			if (stopMonitoring)
 			{
@@ -954,7 +950,6 @@ void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToPars
 
 					ResetEvent(overlapped.hEvent);
 
-					// Reissue the ReadDirectoryChangesW call
 					success = ReadDirectoryChangesW(
 						hDir,
 						buffer,
@@ -983,7 +978,6 @@ void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToPars
 			}
 			else if (waitStatus == WAIT_TIMEOUT)
 			{
-				// Continue waiting
 				continue;
 			}
 			else
@@ -1005,7 +999,6 @@ void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToPars
 	}
 }
 
-
 void monitorDirectory(size_t numLogsToParse, size_t pollIntervalMilliseconds)
 {
 	try
@@ -1017,7 +1010,6 @@ void monitorDirectory(size_t numLogsToParse, size_t pollIntervalMilliseconds)
 			std::filesystem::path arcPath = getArcPath();
 			Settings::LogDirectoryPath = arcPath.string();
 
-			// Copy the initial path into the char array for ImGui's InputText
 			strncpy(Settings::LogDirectoryPathC, Settings::LogDirectoryPath.c_str(), sizeof(Settings::LogDirectoryPathC) - 1);
 			Settings::LogDirectoryPathC[sizeof(Settings::LogDirectoryPathC) - 1] = '\0';
 
@@ -1068,7 +1060,6 @@ void monitorDirectory(size_t numLogsToParse, size_t pollIntervalMilliseconds)
 					break;
 				}
 
-				// Poll
 				scanForNewFiles(dirPath, processedFiles);
 			}
 		}
@@ -1076,7 +1067,6 @@ void monitorDirectory(size_t numLogsToParse, size_t pollIntervalMilliseconds)
 		{
 			APIDefs->Log(ELogLevel_INFO, ADDON_NAME, "Running under Windows. Using ReadDirectoryChangesW method.");
 
-			// Use the ReadDirectoryChangesW method
 			directoryMonitor(dirPath, numLogsToParse);
 		}
 	}
