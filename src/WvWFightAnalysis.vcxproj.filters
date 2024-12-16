@@ -192,9 +192,6 @@
     <Image Include="assets\Arena_Proprietor_16x16.png">
       <Filter>Assets</Filter>
     </Image>
-    <Image Include="assets\home_icon.png" />
-    <Image Include="assets\squad_icon.png" />
-    <Image Include="assets\strike_damage_icon.png" />
     <Image Include="assets\Arena_Proprietor_icon.png">
       <Filter>Assets</Filter>
     </Image>
@@ -208,6 +205,15 @@
       <Filter>Assets</Filter>
     </Image>
     <Image Include="assets\downed_icon.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="assets\home_icon.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="assets\squad_icon.png">
+      <Filter>Assets</Filter>
+    </Image>
+    <Image Include="assets\strike_damage_icon.png">
       <Filter>Assets</Filter>
     </Image>
   </ItemGroup>
