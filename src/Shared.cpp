@@ -84,5 +84,5 @@ std::unordered_map<std::string, TeamStats> aggregateTeamStats;
 std::mutex aggregateStatsMutex;
 
 // Constants
-const char* const ADDON_NAME = "WvW Fight Analysis Addon";
+const char* const ADDON_NAME = "WvW Fight Analysis";
 const char* KB_WINDOW_TOGGLEVISIBLE = "KB_WINDOW_TOGGLEVISIBLE";
