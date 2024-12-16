@@ -17,6 +17,7 @@ extern AddonAPI* APIDefs;
 extern HWND GameHandle;
 extern Mumble::Data* MumbleLink;
 extern NexusLinkData* NexusLink;
+extern bool firstInstall;
 extern std::filesystem::path SettingsPath;
 extern std::filesystem::path AddonPath;
 extern std::filesystem::path GW2Root;
@@ -73,6 +74,7 @@ extern std::mutex parsedLogsMutex;
 extern std::mutex processedFilesMutex;
 extern std::thread initialParsingThread;
 extern std::thread directoryMonitorThread;
+extern std::atomic<bool> isRestartInProgress;
 extern int currentLogIndex;
 
 

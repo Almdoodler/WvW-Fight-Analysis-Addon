@@ -8,7 +8,6 @@
 #include "evtc_parser.h"
 
 
-
 // Function prototypes
 void AddonLoad(AddonAPI* aApi);
 void AddonUnload();
@@ -17,6 +16,8 @@ void AddonOptions();
 void ProcessKeybinds(const char* aIdentifier, bool aIsRelease);
 
 AddonDefinition AddonDef = {};
+
+
 
 void AddonLoad(AddonAPI* aApi)
 {
@@ -34,18 +35,18 @@ void AddonLoad(AddonAPI* aApi)
     AddonPath = APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis");
     SettingsPath = APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json");
    
-    bool firstInstall = false;
     if (!std::filesystem::exists(AddonPath))
     {
         firstInstall = true;
     }
+
     std::filesystem::create_directory(AddonPath);
     Settings::Load(SettingsPath);
 
     if (Settings::useNexusEscClose) {
         APIDefs->UI.RegisterCloseOnEscape("WvW Fight Analysis", &Settings::IsAddonWindowEnabled);
     }
-    APIDefs->InputBinds.RegisterWithString(KB_WINDOW_TOGGLEVISIBLE, ProcessKeybinds, "(null)");
+
     APIDefs->InputBinds.RegisterWithString(KB_WINDOW_TOGGLEVISIBLE, ProcessKeybinds, "(null)");
     APIDefs->InputBinds.RegisterWithString("KB_WIDGET_TOGGLEVISIBLE", ProcessKeybinds, "(null)");
 
@@ -295,6 +296,35 @@ void AddonOptions()
         Settings::LogDirectoryPath = Settings::LogDirectoryPathC;
         Settings::Settings[CUSTOM_LOG_PATH] = Settings::LogDirectoryPath;
         Settings::Save(SettingsPath);
+    }
+
+    bool enabled = !isRestartInProgress.load();
+
+    if (!enabled) {
+        ImVec4 disabledColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
+        ImGui::PushStyleColor(ImGuiCol_Button, disabledColor);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, disabledColor);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, disabledColor);
+    }
+
+    bool buttonClicked = ImGui::Button("Restart Directory Monitoring");
+
+    if (!enabled) {
+        ImGui::PopStyleColor(3);
+    }
+
+    if (enabled && buttonClicked) {
+        isRestartInProgress.store(true);
+        std::thread([]() {
+            stopMonitoring = true;
+            if (directoryMonitorThread.joinable())
+            {
+                directoryMonitorThread.join();
+            }
+            stopMonitoring = false;
+            directoryMonitorThread = std::thread(monitorDirectory, Settings::logHistorySize, Settings::pollIntervalMilliseconds);
+            isRestartInProgress.store(false);
+            }).detach();
     }
 
 }

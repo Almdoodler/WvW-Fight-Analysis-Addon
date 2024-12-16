@@ -9,6 +9,8 @@ AddonAPI* APIDefs = nullptr;
 HWND GameHandle = nullptr;
 Mumble::Data* MumbleLink = nullptr;
 NexusLinkData* NexusLink = nullptr;
+bool firstInstall = false;
+std::atomic<bool> isRestartInProgress(false);
 std::filesystem::path SettingsPath;
 std::filesystem::path AddonPath;
 std::filesystem::path GW2Root;
