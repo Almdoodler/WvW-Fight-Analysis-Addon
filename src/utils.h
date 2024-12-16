@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
 #include <Windows.h>
 #include "imgui/imgui.h"
 
@@ -13,6 +14,7 @@ ImVec4 GetTeamColor(const std::string& teamName);
 
 void initMaps();
 void waitForFile(const std::string& filePath);
+std::filesystem::path getArcPath();
 
 Texture** getTextureInfo(const std::string& eliteSpec, int* outResourceId);
 std::vector<char> extractZipFile(const std::string& filePath);

@@ -1012,6 +1012,20 @@ void monitorDirectory(size_t numLogsToParse, size_t pollIntervalMilliseconds)
 	{
 		std::filesystem::path dirPath;
 
+		if (firstInstall) {
+
+			std::filesystem::path arcPath = getArcPath();
+			Settings::LogDirectoryPath = arcPath.string();
+
+			// Copy the initial path into the char array for ImGui's InputText
+			strncpy(Settings::LogDirectoryPathC, Settings::LogDirectoryPath.c_str(), sizeof(Settings::LogDirectoryPathC) - 1);
+			Settings::LogDirectoryPathC[sizeof(Settings::LogDirectoryPathC) - 1] = '\0';
+
+			Settings::Settings[CUSTOM_LOG_PATH] = Settings::LogDirectoryPath;
+			Settings::Save(SettingsPath);
+		}
+
+
 		if (!Settings::LogDirectoryPath.empty())
 		{
 			dirPath = std::filesystem::path(Settings::LogDirectoryPath);

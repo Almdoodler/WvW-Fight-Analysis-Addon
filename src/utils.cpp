@@ -381,3 +381,22 @@ std::vector<char> extractZipFile(const std::string& filePath) {
     return buffer;
 }
 
+std::filesystem::path getArcPath()
+{
+    std::filesystem::path filename = APIDefs->Paths.GetAddonDirectory("arcdps\\arcdps.ini");
+
+    char buffer[256] = { 0 };
+
+    GetPrivateProfileStringA(
+        "session",
+        "boss_encounter_path",
+        "",
+        buffer,
+        sizeof(buffer),
+        filename.string().c_str()
+    );
+
+    std::filesystem::path boss_encounter_path = buffer;
+
+    return boss_encounter_path;
+}
