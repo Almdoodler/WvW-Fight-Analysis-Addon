@@ -80,7 +80,8 @@ std::unordered_map<int, std::string> teamIDs;
 std::unordered_map<std::string, std::string> eliteSpecToProfession;
 std::unordered_map<std::string, std::string> eliteSpecShortNames;
 std::unordered_map<std::string, ImVec4> professionColors;
-std::unordered_map<std::string, TeamStats> aggregateTeamStats;
+GlobalAggregateStats globalAggregateStats;
+CachedAverages cachedAverages;
 std::mutex aggregateStatsMutex;
 
 // Constants

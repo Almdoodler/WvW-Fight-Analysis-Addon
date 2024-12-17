@@ -182,6 +182,81 @@ struct ParsedLog {
     ParsedData data;
 };
 
+struct SpecAggregateStats {
+    uint32_t totalCount = 0;
+};
+
+struct SquadAggregateStats {
+    uint32_t totalPlayers = 0;
+    uint32_t instanceCount = 0;
+    uint32_t totalDeaths = 0;
+    uint32_t totalDowned = 0;
+
+    std::unordered_map<std::string, SpecAggregateStats> eliteSpecTotals;
+
+    double getAveragePlayerCount() const {
+        return (instanceCount > 0)
+            ? static_cast<double>(totalPlayers) / instanceCount
+            : 0.0;
+    }
+
+    double getAverageSpecCount(const std::string& spec) const {
+        auto it = eliteSpecTotals.find(spec);
+        if (it != eliteSpecTotals.end() && instanceCount > 0) {
+            return static_cast<double>(it->second.totalCount) / instanceCount;
+        }
+        return 0.0;
+    }
+};
+
+struct TeamAggregateStats {
+    SquadAggregateStats teamTotals;
+    bool isPOVTeam = false;
+    SquadAggregateStats povSquadTotals;
+
+    double getAverageTeamPlayerCount() const {
+        return teamTotals.getAveragePlayerCount();
+    }
+
+    double getAverageTeamSpecCount(const std::string& spec) const {
+        return teamTotals.getAverageSpecCount(spec);
+    }
+
+    double getAveragePOVSquadPlayerCount() const {
+        if (isPOVTeam)
+            return povSquadTotals.getAveragePlayerCount();
+        return 0.0;
+    }
+
+    double getAveragePOVSquadSpecCount(const std::string& spec) const {
+        if (isPOVTeam)
+            return povSquadTotals.getAverageSpecCount(spec);
+        return 0.0;
+    }
+};
+
+struct GlobalAggregateStats {
+    uint64_t totalCombatTime = 0;
+    uint32_t combatInstanceCount = 0;
+    std::unordered_map<std::string, TeamAggregateStats> teamAggregates;
+
+    double getAverageCombatTime() const {
+        return (combatInstanceCount > 0)
+            ? static_cast<double>(totalCombatTime) / combatInstanceCount
+            : 0.0;
+    }
+};
+
+struct CachedAverages {
+    double averageCombatTime = 0.0;
+
+    std::unordered_map<std::string, double> averageTeamPlayerCounts;
+    std::unordered_map<std::string, std::unordered_map<std::string, double>> averageTeamSpecCounts;
+
+    std::unordered_map<std::string, double> averagePOVSquadPlayerCounts;
+    std::unordered_map<std::string, std::unordered_map<std::string, double>> averagePOVSquadSpecCounts;
+};
+
 extern std::deque<ParsedLog> parsedLogs;
 
 // Combat Event Structure
@@ -289,7 +364,8 @@ extern std::unordered_map<int, std::string> teamIDs;
 extern std::unordered_map<std::string, std::string> eliteSpecToProfession;
 extern std::unordered_map<std::string, std::string> eliteSpecShortNames;
 extern std::unordered_map<std::string, ImVec4> professionColors;
-extern std::unordered_map<std::string, TeamStats> aggregateTeamStats;
+extern GlobalAggregateStats globalAggregateStats;
+extern CachedAverages cachedAverages;
 extern std::mutex aggregateStatsMutex;
 
 // Constants

@@ -105,7 +105,6 @@ void updateStats(TeamStats& teamStats, Agent* agent, int32_t value, bool isDamag
 	}
 }
 
-
 void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentCount,
 	std::unordered_map<uint64_t, Agent>& agentsByAddress) {
 
@@ -190,7 +189,6 @@ void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentC
 		offset += agentBlockSize;
 	}
 }
-
 
 void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eventCount,
 	std::unordered_map<uint64_t, Agent>& agentsByAddress,
@@ -494,7 +492,6 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 		("Parsed EVTC file. Found " + std::to_string(result.totalIdentifiedPlayers) + " identified players").c_str());
 }
 
-
 ParsedData parseEVTCFile(const std::string& filePath) {
 	ParsedData result;
 	std::vector<char> bytes = extractZipFile(filePath);
@@ -591,12 +588,10 @@ ParsedData parseEVTCFile(const std::string& filePath) {
 	return result;
 }
 
-
 std::wstring getCanonicalPath(const std::filesystem::path& path)
 {
 	return std::filesystem::weakly_canonical(path).wstring();
 }
-
 
 bool isValidEVTCFile(const std::filesystem::path& dirPath, const std::filesystem::path& filePath)
 {
@@ -654,13 +649,11 @@ bool isValidEVTCFile(const std::filesystem::path& dirPath, const std::filesystem
 	return false;
 }
 
-
 void processEVTCFile(const std::filesystem::path& filePath)
 {
 	waitForFile(filePath.string());
 	processNewEVTCFile(filePath.string());
 }
-
 
 void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t numLogsToParse)
 {
@@ -732,7 +725,6 @@ void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t n
 
 			if (processedFiles.find(absolutePath) == processedFiles.end())
 			{
-				// Process the file
 				ParsedLog log;
 				log.filename = filePath.filename().string();
 				log.data = parseEVTCFile(filePath.string());
@@ -752,7 +744,6 @@ void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t n
 					continue;
 				}
 
-				// Add to parsed logs
 				parsedLogs.push_back(log);
 
 				while (parsedLogs.size() > Settings::logHistorySize)
@@ -804,7 +795,6 @@ void scanForNewFiles(const std::filesystem::path& dirPath, std::unordered_set<st
 			}
 		}
 
-		// Sort the files by last write time in descending order
 		std::sort(zevtcFiles.begin(), zevtcFiles.end(),
 			[](const std::filesystem::path& a, const std::filesystem::path& b)
 			{
@@ -813,29 +803,25 @@ void scanForNewFiles(const std::filesystem::path& dirPath, std::unordered_set<st
 
 		for (const auto& filePath : zevtcFiles)
 		{
-			// Get the last write time of the file
 			auto fileTime = std::filesystem::last_write_time(filePath);
 
-			// Only process files newer than maxProcessedTime
 			if (fileTime <= maxProcessedTime)
 			{
-				break; // Since files are sorted descending, no need to check older files
+				break;
 			}
 
 			std::wstring absolutePath = std::filesystem::absolute(filePath).wstring();
 
 			if (processedFiles.find(absolutePath) != processedFiles.end())
 			{
-				continue; // Already processed
+				continue;
 			}
 
 
 			processEVTCFile(filePath.string());
 
-			// Add the absolute path to the set of processed files
 			processedFiles.insert(absolutePath);
 
-			// Update maxProcessedTime
 			if (fileTime > maxProcessedTime)
 			{
 				maxProcessedTime = fileTime;
@@ -1086,6 +1072,7 @@ void processNewEVTCFile(const std::string& filePath)
 	log.filename = filename;
 	log.data = parseEVTCFile(filePath);
 
+	// Validate WvW log
 	if (log.data.fightId != 1)
 	{
 		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping non-WvW log: " + filename).c_str());
@@ -1112,45 +1099,67 @@ void processNewEVTCFile(const std::string& filePath)
 
 	{
 		std::lock_guard<std::mutex> lock(aggregateStatsMutex);
+
+		// Update total combat time
+		uint64_t fightDuration = (log.data.combatEndTime - log.data.combatStartTime);
+		globalAggregateStats.totalCombatTime += fightDuration;
+		globalAggregateStats.combatInstanceCount++;
+
+		// Aggregate team data
 		for (const auto& [teamName, stats] : log.data.teamStats)
 		{
-			auto& aggregateStats = aggregateTeamStats[teamName];
+			auto& teamAgg = globalAggregateStats.teamAggregates[teamName];
 
-			aggregateStats.totalDeaths += stats.totalDeaths;
-			aggregateStats.totalDowned += stats.totalDowned;
-
-			aggregateStats.totalDeathsFromKillingBlows += stats.totalDeathsFromKillingBlows;
-
-			if (stats.isPOVTeam)
-			{
-				aggregateStats.isPOVTeam = true;
-				auto& aggregateSquadStats = aggregateStats.squadStats;
-
-				aggregateSquadStats.totalDeaths += stats.squadStats.totalDeaths;
-				aggregateSquadStats.totalDowned += stats.squadStats.totalDowned;
-
-				aggregateSquadStats.totalDeathsFromKillingBlows += stats.squadStats.totalDeathsFromKillingBlows;
-				aggregateSquadStats.totalPlayers += stats.squadStats.totalPlayers;
-
-				for (const auto& [eliteSpec, squadSpecStats] : stats.squadStats.eliteSpecStats)
-				{
-					auto& aggregateSquadSpecStats = aggregateSquadStats.eliteSpecStats[eliteSpec];
-					aggregateSquadSpecStats.count += squadSpecStats.count;
-					aggregateSquadSpecStats.totalDamage += squadSpecStats.totalDamage;
-					aggregateSquadSpecStats.totalDamageVsPlayers += squadSpecStats.totalDamageVsPlayers;
-					aggregateSquadSpecStats.totalKills += squadSpecStats.totalKills;
-					aggregateSquadSpecStats.totalKillsVsPlayers += squadSpecStats.totalKillsVsPlayers;
-				}
-			}
+			// Update full team totals
+			teamAgg.teamTotals.totalPlayers += stats.totalPlayers;
+			teamAgg.teamTotals.totalDeaths += stats.totalDeaths;
+			teamAgg.teamTotals.totalDowned += stats.totalDowned;
+			teamAgg.teamTotals.instanceCount++;
 
 			for (const auto& [eliteSpec, specStats] : stats.eliteSpecStats)
 			{
-				auto& aggregateSpecStats = aggregateStats.eliteSpecStats[eliteSpec];
-				aggregateSpecStats.count += specStats.count;
-				aggregateSpecStats.totalDamage += specStats.totalDamage;
-				aggregateSpecStats.totalDamageVsPlayers += specStats.totalDamageVsPlayers;
-				aggregateSpecStats.totalKills += specStats.totalKills;
-				aggregateSpecStats.totalKillsVsPlayers += specStats.totalKillsVsPlayers;
+				teamAgg.teamTotals.eliteSpecTotals[eliteSpec].totalCount += specStats.count;
+			}
+
+			// POV team updates
+			if (stats.isPOVTeam) {
+				teamAgg.isPOVTeam = true;
+				teamAgg.povSquadTotals.totalPlayers += stats.squadStats.totalPlayers;
+				teamAgg.povSquadTotals.totalDeaths += stats.squadStats.totalDeaths;
+				teamAgg.povSquadTotals.totalDowned += stats.squadStats.totalDowned;
+				teamAgg.povSquadTotals.instanceCount++;
+
+				for (const auto& [eliteSpec, specStats] : stats.squadStats.eliteSpecStats)
+				{
+					teamAgg.povSquadTotals.eliteSpecTotals[eliteSpec].totalCount += specStats.count;
+				}
+			}
+		}
+
+		// Compute and cache averages
+		cachedAverages.averageCombatTime = globalAggregateStats.getAverageCombatTime();
+		cachedAverages.averageTeamPlayerCounts.clear();
+		cachedAverages.averageTeamSpecCounts.clear();
+		cachedAverages.averagePOVSquadPlayerCounts.clear();
+		cachedAverages.averagePOVSquadSpecCounts.clear();
+
+		for (const auto& [teamName, teamAgg] : globalAggregateStats.teamAggregates)
+		{
+			// Full team averages
+			cachedAverages.averageTeamPlayerCounts[teamName] = teamAgg.getAverageTeamPlayerCount();
+
+			for (const auto& [specName, _] : teamAgg.teamTotals.eliteSpecTotals)
+			{
+				cachedAverages.averageTeamSpecCounts[teamName][specName] = teamAgg.getAverageTeamSpecCount(specName);
+			}
+
+			// POV squad averages if POV
+			if (teamAgg.isPOVTeam) {
+				cachedAverages.averagePOVSquadPlayerCounts[teamName] = teamAgg.getAveragePOVSquadPlayerCount();
+				for (const auto& [specName, _] : teamAgg.povSquadTotals.eliteSpecTotals)
+				{
+					cachedAverages.averagePOVSquadSpecCounts[teamName][specName] = teamAgg.getAveragePOVSquadSpecCount(specName);
+				}
 			}
 		}
 	}
@@ -1160,6 +1169,8 @@ void processNewEVTCFile(const std::string& filePath)
 		APIDefs->UI.SendAlert(("Parsed New Log: " + displayName).c_str());
 	}
 }
+
+
 
 
 
