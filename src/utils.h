@@ -20,4 +20,5 @@ Texture** getTextureInfo(const std::string& eliteSpec, int* outResourceId);
 std::vector<char> extractZipFile(const std::string& filePath);
 std::string formatDamage(double damage);
 std::string generateLogDisplayName(const std::string& filename, uint64_t combatStartMs, uint64_t combatEndMs);
+std::string formatDuration(uint64_t milliseconds);
 bool isRunningUnderWine();

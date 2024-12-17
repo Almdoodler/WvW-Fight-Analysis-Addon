@@ -235,6 +235,14 @@ std::string generateLogDisplayName(const std::string& filename, uint64_t combatS
     return displayName;
 }
 
+std::string formatDuration(uint64_t milliseconds) {
+    std::chrono::milliseconds duration(milliseconds);
+    int minutes = std::chrono::duration_cast<std::chrono::minutes>(duration).count();
+    int seconds = std::chrono::duration_cast<std::chrono::seconds>(duration).count() % 60;
+
+    return std::to_string(minutes) + "m " + std::to_string(seconds) + "s";
+}
+
 bool isRunningUnderWine()
 {
     if (Settings::forceLinuxCompatibilityMode) {
