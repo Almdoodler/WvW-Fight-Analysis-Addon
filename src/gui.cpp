@@ -1299,6 +1299,16 @@ void RenderLogSelectionPopup(const std::deque<ParsedLog>& parsedLogs, int& curre
 				Settings::Settings[SHOW_WINDOW_TITLE] = Settings::showWindowTitle;
 				Settings::Save(SettingsPath);
 			}
+			if (ImGui::Checkbox("Show Background", &Settings::showWindowBackground))
+			{
+				Settings::Settings[SHOW_WINDOW_BACKGROUND] = Settings::showWindowBackground;
+				Settings::Save(SettingsPath);
+			}
+			if (ImGui::Checkbox("Allow Focus", &Settings::allowWindowFocus))
+			{
+				Settings::Settings[ALLOW_WINDOW_FOCUS] = Settings::allowWindowFocus;
+				Settings::Save(SettingsPath);
+			}
 			ImGui::EndMenu();
 		}
 
