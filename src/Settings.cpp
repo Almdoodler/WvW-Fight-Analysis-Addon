@@ -45,6 +45,8 @@ const char* SORT_SPEC_DAMAGE = "SortSpecDamage";
 const char* SHOW_SCROLL_BAR = "ShowScrollBar";
 const char* USE_TABBED_VIEW = "UseTabbedView";
 const char* SHOW_WINDOW_TITLE = "ShowWindowTitle";
+const char* ALLOW_WINDOW_FOCUS = "AllowWindowFocus";
+const char* SHOW_WINDOW_BACKGROUND = "ShowWindowBackground";
 const char* SPLIT_STATS_WINDOW = "SplitStatsWindow";
 const char* USE_NEXUS_ESC_CLOSE = "UseNexusEscClose";
 // Widget
@@ -225,6 +227,14 @@ namespace Settings
 		{
 			Settings[SHOW_WINDOW_TITLE].get_to<bool>(showWindowTitle);
 		}
+		if (!Settings[SHOW_WINDOW_BACKGROUND].is_null())
+		{
+			Settings[SHOW_WINDOW_BACKGROUND].get_to<bool>(showWindowBackground);
+		}
+		if (!Settings[ALLOW_WINDOW_FOCUS].is_null())
+		{
+			Settings[ALLOW_WINDOW_FOCUS].get_to<bool>(allowWindowFocus);
+		}
 		if (!Settings[DISABLE_MOVING_WINDOW].is_null())
 		{
 			Settings[DISABLE_MOVING_WINDOW].get_to<bool>(disableMovingWindow);
@@ -297,6 +307,8 @@ namespace Settings
 	bool showScrollBar = true;
 	bool useTabbedView = true;
 	bool showWindowTitle = true;
+	bool showWindowBackground = true;
+	bool allowWindowFocus = true;
 	bool splitStatsWindow = false;
 	bool useNexusEscClose = false;
 	// Widget

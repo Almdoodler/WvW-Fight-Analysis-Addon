@@ -45,15 +45,17 @@ extern const char* SORT_SPEC_DAMAGE;
 extern const char* USE_TABBED_VIEW;
 extern const char* SHOW_SCROLL_BAR;
 extern const char* SHOW_WINDOW_TITLE;
-extern const char* WIDGET_HEIGHT;
-extern const char* WIDGET_WIDTH;
-extern const char* WIDGET_TEXT_VERTICAL_OFFSET;
-extern const char* WIDGET_TEXT_HORIZONTAL_OFFSET;
+extern const char* SHOW_WINDOW_BACKGROUND;
+extern const char* ALLOW_WINDOW_FOCUS;
 extern const char* SPLIT_STATS_WINDOW;
 extern const char* USE_NEXUS_ESC_CLOSE;
 //Widget
 extern const char* WIDGET_STATS;
 extern const char* SHOW_WIDGET_ICON;
+extern const char* WIDGET_HEIGHT;
+extern const char* WIDGET_WIDTH;
+extern const char* WIDGET_TEXT_VERTICAL_OFFSET;
+extern const char* WIDGET_TEXT_HORIZONTAL_OFFSET;
 
 namespace Settings
 {
@@ -107,6 +109,8 @@ namespace Settings
 	extern bool showScrollBar;
 	extern bool useTabbedView;
 	extern bool showWindowTitle;
+	extern bool showWindowBackground;
+	extern bool allowWindowFocus;
 	extern bool splitStatsWindow;
 	extern 	bool useNexusEscClose;
 	// Widget
