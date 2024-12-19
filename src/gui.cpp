@@ -1384,6 +1384,9 @@ void RenderMainWindow(HINSTANCE hSelf)
 
 	if (!Settings::showScrollBar) window_flags |= ImGuiWindowFlags_NoScrollbar;
 	if (!Settings::showWindowTitle) window_flags |= ImGuiWindowFlags_NoTitleBar;
+	if (!Settings::allowWindowFocus) window_flags |= ImGuiWindowFlags_NoFocusOnAppearing;
+	if (!Settings::allowWindowFocus) window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus;
+	if (!Settings::showWindowBackground) window_flags |= ImGuiWindowFlags_NoBackground;
 	if (Settings::disableMovingWindow) window_flags |= ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 	if (Settings::disableClickingWindow) window_flags |= ImGuiWindowFlags_NoInputs;
 
