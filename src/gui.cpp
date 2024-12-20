@@ -1172,10 +1172,12 @@ void RenderSpecializationsSettingsPopup()
 
 void RenderTeamStatsDisplayOptions()
 {
-	if (ImGui::Checkbox("Show Log Name", &Settings::showLogName))
-	{
-		Settings::Settings[SHOW_LOG_NAME] = Settings::showLogName;
-		Settings::Save(SettingsPath);
+	if (Settings::splitStatsWindow) {
+		if (ImGui::Checkbox("Show Log Name", &Settings::showLogName))
+		{
+			Settings::Settings[SHOW_LOG_NAME] = Settings::showLogName;
+			Settings::Save(SettingsPath);
+		}
 	}
 	if (ImGui::Checkbox("Team Player Count", &Settings::showTeamTotalPlayers))
 	{
