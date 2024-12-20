@@ -27,6 +27,7 @@ const char* SHOW_CLASS_NAMES = "ShowClassNames";
 const char* USE_SHORT_CLASS_NAMES = "UseShortClassNames";
 const char* SHOW_CLASS_ICONS = "ShowClassIcons";
 const char* SHOW_SPEC_BARS = "ShowSpecBars";
+const char* SHOW_LOG_NAME = "ShowLogName";
 const char* VS_LOGGED_PLAYERS_ONLY = "VsLoggedPlayersOnly";
 const char* SQUAD_PLAYERS_ONLY = "SquadPlayersOnly";
 
@@ -130,6 +131,10 @@ namespace Settings
 		if (!Settings[IS_WINDOW_VISIBLE_IN_COMBAT].is_null())
 		{
 			Settings[IS_WINDOW_VISIBLE_IN_COMBAT].get_to<bool>(showWindowInCombat);
+		}
+		if (!Settings[SHOW_LOG_NAME].is_null())
+		{
+			Settings[SHOW_LOG_NAME].get_to<bool>(showLogName);
 		}
 		if (!Settings[SHOW_CLASS_NAMES].is_null())
 		{
@@ -290,6 +295,7 @@ namespace Settings
 	bool useShortClassNames = false;
 	bool showClassIcons = true;
 	bool showSpecBars = true;
+	bool showLogName = true;
 	bool vsLoggedPlayersOnly = true;
 	bool squadPlayersOnly = false;
 	// Team Stats

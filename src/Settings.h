@@ -28,6 +28,7 @@ extern const char* USE_SHORT_CLASS_NAMES;
 extern const char* SHOW_CLASS_NAMES;
 extern const char* SHOW_CLASS_ICONS;
 extern const char* SHOW_SPEC_BARS;
+extern const char* SHOW_LOG_NAME;
 extern const char* VS_LOGGED_PLAYERS_ONLY;
 extern const char* SQUAD_PLAYERS_ONLY;
 // Team Stats
@@ -91,6 +92,7 @@ namespace Settings
 	extern bool showClassNames;
 	extern bool showClassIcons;
 	extern bool showSpecBars;
+	extern bool showLogName;
 	extern bool vsLoggedPlayersOnly;
 	extern bool squadPlayersOnly;
 
