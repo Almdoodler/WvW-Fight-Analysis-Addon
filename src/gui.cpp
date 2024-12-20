@@ -1172,6 +1172,11 @@ void RenderSpecializationsSettingsPopup()
 
 void RenderTeamStatsDisplayOptions()
 {
+	if (ImGui::Checkbox("Show Log Name", &Settings::showLogName))
+	{
+		Settings::Settings[SHOW_LOG_NAME] = Settings::showLogName;
+		Settings::Save(SettingsPath);
+	}
 	if (ImGui::Checkbox("Team Player Count", &Settings::showTeamTotalPlayers))
 	{
 		Settings::Settings[SHOW_TEAM_TOTAL_PLAYERS] = Settings::showTeamTotalPlayers;
@@ -1236,6 +1241,11 @@ void RenderLogSelectionPopup(const std::deque<ParsedLog>& parsedLogs, int& curre
 		if (ImGui::BeginMenu("Display"))
 		{
 			if (!Settings::splitStatsWindow) {
+				if (ImGui::Checkbox("Show Log Name", &Settings::showLogName))
+				{
+					Settings::Settings[SHOW_LOG_NAME] = Settings::showLogName;
+					Settings::Save(SettingsPath);
+				}
 				if (ImGui::Checkbox("Show Spec Bars", &Settings::showSpecBars))
 				{
 					Settings::Settings[SHOW_SPEC_BARS] = Settings::showSpecBars;
@@ -1405,10 +1415,13 @@ void RenderMainWindow(HINSTANCE hSelf)
 		}
 
 		const auto& currentLog = parsedLogs[currentLogIndex];
-		std::string displayName = generateLogDisplayName(currentLog.filename, currentLog.data.combatStartTime, currentLog.data.combatEndTime);
-		ImGui::Text("%s", displayName.c_str());
-
 		const auto& currentLogData = currentLog.data;
+
+		if (Settings::showLogName) {
+			
+			std::string displayName = generateLogDisplayName(currentLog.filename, currentLog.data.combatStartTime, currentLog.data.combatEndTime);
+			ImGui::Text("%s", displayName.c_str());
+		}
 
 		std::array<TeamRenderInfo, 3> teams;
 		int teamsWithData = 0;
