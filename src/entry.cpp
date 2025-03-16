@@ -21,7 +21,10 @@ std::unique_ptr<wvwfightanalysis::gui::WindowRenderer> g_windowRenderer;
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -43,8 +46,11 @@ void AddonLoad(AddonAPI* aApi)
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -65,10 +71,13 @@ void AddonLoad(AddonAPI* aApi)
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
    
     if (!std::filesystem::exists(AddonPath))
     {
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -116,6 +125,9 @@ void AddonLoad(AddonAPI* aApi)
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -141,6 +153,7 @@ void AddonLoad(AddonAPI* aApi)
 void AddonUnload()
 {
     stopMonitoring = true;
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -179,6 +192,11 @@ void AddonUnload()
         directoryMonitorThread.join();
     }
 >>>>>>> Stashed changes
+=======
+    if (directoryMonitorThread.joinable()) {
+        directoryMonitorThread.join();
+    }
+>>>>>>> Stashed changes
     if (initialParsingThread.joinable()) {
 >>>>>>> Stashed changes
         initialParsingThread.join();
@@ -190,9 +208,12 @@ void AddonUnload()
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     if (Settings::useNexusEscClose) {
         APIDefs->UI.DeregisterCloseOnEscape("WvW Fight Analysis");
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
@@ -219,6 +240,9 @@ void AddonUnload()
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -295,6 +319,7 @@ void AddonRender()
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
     if (!NexusLink || !NexusLink->IsGameplay || !MumbleLink || MumbleLink->Context.IsMapOpen)
     {
@@ -333,6 +358,8 @@ void AddonRender()
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
     if (g_windowRenderer) {
         g_windowRenderer->RenderAllWindows(hSelf);
     }
@@ -341,6 +368,9 @@ void AddonRender()
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -820,6 +850,9 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

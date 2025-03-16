@@ -6,6 +6,7 @@
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
@@ -24,6 +25,8 @@ extern const char* HIDE_AGG_WINDOW_WHEN_EMPTY;
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 #include <memory>
 #include <vector>
 #include "nlohmann/json.hpp"
@@ -34,6 +37,9 @@ using json = nlohmann::json;
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -222,6 +228,7 @@ struct WindowManager {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/include/settings/Settings.h
 
 // Options
@@ -292,6 +299,8 @@ namespace Settings
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 
 extern const char* CUSTOM_LOG_PATH;
 extern const char* LOG_HISTORY_SIZE;
@@ -309,6 +318,9 @@ namespace Settings {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -325,6 +337,7 @@ namespace Settings {
     extern size_t pollIntervalMilliseconds;
     extern bool useNexusEscClose;
     extern bool debugStringsMode;
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
@@ -393,6 +406,8 @@ namespace Settings {
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
 
     extern WindowManager windowManager;
 
@@ -402,6 +417,9 @@ namespace Settings {
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

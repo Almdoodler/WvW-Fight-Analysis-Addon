@@ -75,7 +75,10 @@ extern Texture* Strips;
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/include/shared/Shared.h
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
