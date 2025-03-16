@@ -1,44 +1,12 @@
 #pragma once
 #include <cstdint>
 #include <string>
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream:src/gui.h
-#include "Shared.h"
-=======
 #include "shared/Shared.h"
 #include "settings/Settings.h"
->>>>>>> Stashed changes:src/include/gui/gui.h
-=======
-#include "shared/Shared.h"
-#include "settings/Settings.h"
->>>>>>> Stashed changes
-=======
-#include "shared/Shared.h"
-#include "settings/Settings.h"
->>>>>>> Stashed changes
-=======
-#include "shared/Shared.h"
-#include "settings/Settings.h"
->>>>>>> Stashed changes
-=======
-#include "shared/Shared.h"
-#include "settings/Settings.h"
->>>>>>> Stashed changes
-=======
-#include "shared/Shared.h"
-#include "settings/Settings.h"
->>>>>>> Stashed changes
 #include "nexus/Nexus.h"
 #include "mumble/Mumble.h"
 #include "imgui/imgui.h"
 
-<<<<<<< Updated upstream
-void DrawBar(float frac, int count, uint64_t totalDamage, const ImVec4& color, const std::string& eliteSpec, bool showDamage, HINSTANCE hSelf);
-=======
 // Helper rendering functions
 void DrawBar(
     float frac,
@@ -52,20 +20,11 @@ void DrawBar(
     HINSTANCE hSelf
 );
 
->>>>>>> Stashed changes
 void RenderSimpleRatioBar(
     const std::vector<float>& counts,
     const std::vector<ImVec4>& colors,
     const ImVec2& size,
     const std::vector<const char*>& texts,
-<<<<<<< Updated upstream
-    ImTextureID statIcon);
-void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf);
-void ratioBarSetup(HINSTANCE hSelf);
-void RenderSpecializationBars(const TeamStats& teamData, int teamIndex, HINSTANCE hSelf);
-void DrawAggregateStatsWindow(HINSTANCE hSelf);
-void RenderMainWindow(HINSTANCE hSelf);
-=======
     ImTextureID statIcon,
     const WidgetWindowSettings* settings
 );
@@ -90,4 +49,3 @@ void UpdateAggregateStats(const ParsedData& data);
 
 // Main orchestrator
 void RenderAllWindows(HINSTANCE hSelf);
->>>>>>> Stashed changes

@@ -61,27 +61,9 @@ Texture* Condi = nullptr;
 Texture* Strike = nullptr;
 Texture* Kdr = nullptr;
 Texture* Home = nullptr;
-<<<<<<< Updated upstream:src/Shared.cpp
-=======
 Texture* Downcont = nullptr;
 Texture* Killcont = nullptr;
 Texture* Strips = nullptr;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes:src/src/shared/Shared.cpp
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
 // New definitions
 std::atomic<bool> initialParsingComplete{ false };

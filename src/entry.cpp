@@ -17,87 +17,26 @@ void ProcessKeybinds(const char* aIdentifier, bool aIsRelease);
 
 AddonDefinition AddonDef = {};
 std::unique_ptr<wvwfightanalysis::gui::WindowRenderer> g_windowRenderer;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
-void AddonLoad(AddonAPI* aApi)
-{
+void AddonLoad(AddonAPI* aApi) {
     APIDefs = aApi;
     ImGui::SetCurrentContext((ImGuiContext*)APIDefs->ImguiContext);
     ImGui::SetAllocatorFunctions((void* (*)(size_t, void*))APIDefs->ImguiMalloc, (void(*)(void*, void*))APIDefs->ImguiFree);
     MumbleLink = (Mumble::Data*)APIDefs->DataLink.Get("DL_MUMBLE_LINK");
     NexusLink = (NexusLinkData*)APIDefs->DataLink.Get("DL_NEXUS_LINK");
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-
-
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     APIDefs->Renderer.Register(ERenderType_OptionsRender, AddonOptions);
     APIDefs->Renderer.Register(ERenderType_Render, AddonRender);
     GW2Root = APIDefs->Paths.GetGameDirectory();
     AddonPath = APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis");
     SettingsPath = APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json");
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-   
-    if (!std::filesystem::exists(AddonPath))
-    {
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     if (!std::filesystem::exists(AddonPath)) {
->>>>>>> Stashed changes
         firstInstall = true;
     }
     std::filesystem::create_directory(AddonPath);
     Settings::Load(SettingsPath);
     g_windowRenderer = std::make_unique<wvwfightanalysis::gui::WindowRenderer>();
 
-<<<<<<< Updated upstream
-    if (Settings::useNexusEscClose) {
-        APIDefs->UI.RegisterCloseOnEscape("WvW Fight Analysis", &Settings::IsAddonWindowEnabled);
-=======
     for (auto& mainWindow : Settings::windowManager.mainWindows) {
         if (mainWindow->useNexusEscClose) {
             APIDefs->UI.RegisterCloseOnEscape(
@@ -121,27 +60,10 @@ void AddonLoad(AddonAPI* aApi)
             Settings::windowManager.aggregateWindow->windowId.c_str(),
             &Settings::windowManager.aggregateWindow->isEnabled
         );
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     }
 
     APIDefs->InputBinds.RegisterWithString(KB_WINDOW_TOGGLEVISIBLE, ProcessKeybinds, "(null)");
     APIDefs->InputBinds.RegisterWithString("KB_WIDGET_TOGGLEVISIBLE", ProcessKeybinds, "(null)");
-
     APIDefs->InputBinds.RegisterWithString("LOG_INDEX_UP", ProcessKeybinds, "(null)");
     APIDefs->InputBinds.RegisterWithString("LOG_INDEX_DOWN", ProcessKeybinds, "(null)");
     APIDefs->InputBinds.RegisterWithString("SHOW_SQUAD_PLAYERS_ONLY", ProcessKeybinds, "(null)");
@@ -150,78 +72,16 @@ void AddonLoad(AddonAPI* aApi)
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon loaded successfully.");
 }
 
-void AddonUnload()
-{
+void AddonUnload() {
     stopMonitoring = true;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-
-
-    if (directoryMonitorThread.joinable())
-    {
-        directoryMonitorThread.join();
-    }
-
-    if (initialParsingThread.joinable())
-    {
-=======
     if (directoryMonitorThread.joinable()) {
         directoryMonitorThread.join();
     }
-=======
-    if (directoryMonitorThread.joinable()) {
-        directoryMonitorThread.join();
-    }
->>>>>>> Stashed changes
-=======
-    if (directoryMonitorThread.joinable()) {
-        directoryMonitorThread.join();
-    }
->>>>>>> Stashed changes
-=======
-    if (directoryMonitorThread.joinable()) {
-        directoryMonitorThread.join();
-    }
->>>>>>> Stashed changes
-=======
-    if (directoryMonitorThread.joinable()) {
-        directoryMonitorThread.join();
-    }
->>>>>>> Stashed changes
-=======
-    if (directoryMonitorThread.joinable()) {
-        directoryMonitorThread.join();
-    }
->>>>>>> Stashed changes
     if (initialParsingThread.joinable()) {
->>>>>>> Stashed changes
         initialParsingThread.join();
     }
     g_windowRenderer.reset();
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    if (Settings::useNexusEscClose) {
-        APIDefs->UI.DeregisterCloseOnEscape("WvW Fight Analysis");
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     for (auto& mainWindow : Settings::windowManager.mainWindows) {
         if (mainWindow->useNexusEscClose) {
             APIDefs->UI.DeregisterCloseOnEscape(mainWindow->windowId.c_str());
@@ -236,22 +96,6 @@ void AddonUnload()
 
     if (Settings::windowManager.aggregateWindow && Settings::windowManager.aggregateWindow->useNexusEscClose) {
         APIDefs->UI.DeregisterCloseOnEscape(Settings::windowManager.aggregateWindow->windowId.c_str());
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     }
 
     APIDefs->Renderer.Deregister(AddonRender);
@@ -264,23 +108,37 @@ void AddonUnload()
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon unloaded successfully.");
 }
 
-void ProcessKeybinds(const char* aIdentifier, bool aIsRelease)
-{
+void ProcessKeybinds(const char* aIdentifier, bool aIsRelease) {
     std::string str = aIdentifier;
     if (aIsRelease) return;
 
-    if (str == "KB_WINDOW_TOGGLEVISIBLE")
-    {
-        Settings::IsAddonWindowEnabled = !Settings::IsAddonWindowEnabled;
+    if (str == "KB_WINDOW_TOGGLEVISIBLE") {
+        bool anyVisible = false;
+        for (const auto& mainWindow : Settings::windowManager.mainWindows) {
+            if (mainWindow->isEnabled) {
+                anyVisible = true;
+                break;
+            }
+        }
+        for (auto& mainWindow : Settings::windowManager.mainWindows) {
+            mainWindow->isEnabled = !anyVisible;
+        }
         Settings::Save(SettingsPath);
     }
-    else if (str == "KB_WIDGET_TOGGLEVISIBLE")
-    {
-        Settings::IsAddonWidgetEnabled = !Settings::IsAddonWidgetEnabled;
+    else if (str == "KB_WIDGET_TOGGLEVISIBLE") {
+        bool anyVisible = false;
+        for (const auto& widgetWindow : Settings::windowManager.widgetWindows) {
+            if (widgetWindow->isEnabled) {
+                anyVisible = true;
+                break;
+            }
+        }
+        for (auto& widgetWindow : Settings::windowManager.widgetWindows) {
+            widgetWindow->isEnabled = !anyVisible;
+        }
         Settings::Save(SettingsPath);
     }
-    else if (str == "LOG_INDEX_DOWN") 
-    {
+    else if (str == "LOG_INDEX_DOWN") {
         if (!parsedLogs.empty()) {
             if (currentLogIndex == 0) {
                 currentLogIndex = static_cast<int>(parsedLogs.size()) - 1;
@@ -293,10 +151,8 @@ void ProcessKeybinds(const char* aIdentifier, bool aIsRelease)
             APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
                 ("Log Index: " + std::to_string(currentLogIndex)).c_str());
         }
-
     }
-    else if (str == "LOG_INDEX_UP")
-    {
+    else if (str == "LOG_INDEX_UP") {
         if (!parsedLogs.empty()) {
             currentLogIndex = (currentLogIndex + 1) % static_cast<int>(parsedLogs.size());
         }
@@ -305,92 +161,34 @@ void ProcessKeybinds(const char* aIdentifier, bool aIsRelease)
                 ("Log Index: " + std::to_string(currentLogIndex)).c_str());
         }
     }
-    else if (str == "SHOW_SQUAD_PLAYERS_ONLY")
-    {
-        Settings::squadPlayersOnly = !Settings::squadPlayersOnly;
+    else if (str == "SHOW_SQUAD_PLAYERS_ONLY") {
+        for (auto& mainWindow : Settings::windowManager.mainWindows) {
+            mainWindow->squadPlayersOnly = !mainWindow->squadPlayersOnly;
+        }
+        for (auto& widgetWindow : Settings::windowManager.widgetWindows) {
+            widgetWindow->squadPlayersOnly = !widgetWindow->squadPlayersOnly;
+        }
+        if (Settings::windowManager.aggregateWindow) {
+            Settings::windowManager.aggregateWindow->squadPlayersOnly = !Settings::windowManager.aggregateWindow->squadPlayersOnly;
+        }
         Settings::Save(SettingsPath);
     }
 }
 
-void AddonRender()
-{
+void AddonRender() {
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-
-    if (!NexusLink || !NexusLink->IsGameplay || !MumbleLink || MumbleLink->Context.IsMapOpen)
-    {
-        return;
-    }
-
-    if (
-        MumbleLink->Context.MapType != Mumble::EMapType::WvW_EternalBattlegrounds &&
-        MumbleLink->Context.MapType != Mumble::EMapType::WvW_BlueBorderlands &&
-        MumbleLink->Context.MapType != Mumble::EMapType::WvW_GreenBorderlands &&
-        MumbleLink->Context.MapType != Mumble::EMapType::WvW_RedBorderlands &&
-        MumbleLink->Context.MapType != Mumble::EMapType::WvW_ObsidianSanctum &&
-        MumbleLink->Context.MapType != Mumble::EMapType::WvW_EdgeOfTheMists &&
-        MumbleLink->Context.MapType != Mumble::EMapType::WvW_Lounge
-        ) {
-        return;
-    }
-
-    if (MumbleLink->Context.IsInCombat && !Settings::showWindowInCombat)
-    {
-        return;
-    }
-
-
-    ratioBarSetup(hSelf);
-    DrawAggregateStatsWindow(hSelf);
-    RenderMainWindow(hSelf);
-
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     if (g_windowRenderer) {
         g_windowRenderer->RenderAllWindows(hSelf);
     }
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 }
 
 void AddonOptions()
 {
     ImGui::Text("WvW Fight Analysis Settings");
-    if (ImGui::Checkbox("Window Enabled##WvWFightAnalysis", &Settings::IsAddonWindowEnabled))
+
+    if (ImGui::BeginTabBar("AddonOptionsTabBar"))
     {
-<<<<<<< Updated upstream
-        Settings::Settings[IS_ADDON_WINDOW_VISIBLE] = Settings::IsAddonWindowEnabled;
-        Settings::Save(SettingsPath);
-=======
         // Global Settings
         if (ImGui::BeginTabItem("Global Settings"))
         {
@@ -680,156 +478,7 @@ void AddonOptions()
         }
 
         ImGui::EndTabBar();
->>>>>>> Stashed changes
     }
-    if (ImGui::Checkbox("Widget Enabled##WvWFightAnalysis", &Settings::IsAddonWidgetEnabled))
-    {
-        Settings::Settings[IS_ADDON_WIDGET_VISIBLE] = Settings::IsAddonWidgetEnabled;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::Checkbox("Aggregate Stats Enabled##WvWFightAnalysis", &Settings::IsAddonAggWindowEnabled))
-    {
-        Settings::Settings[IS_ADDON_AGG_WINDOW_VISIBLE] = Settings::IsAddonAggWindowEnabled;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::Checkbox("Hide Aggregate Stats Window When Empty##WvWFightAnalysis", &Settings::hideAggWhenEmpty))
-    {
-        Settings::Settings[HIDE_AGG_WINDOW_WHEN_EMPTY] = Settings::IsAddonAggWindowEnabled;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::Checkbox("Visible In Combat##WvWFightAnalysis", &Settings::showWindowInCombat))
-    {
-        Settings::Settings[IS_WINDOW_VISIBLE_IN_COMBAT] = Settings::showWindowInCombat;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::Checkbox("Show Alert On Log Parse##WvWFightAnalysis", &Settings::showNewParseAlert))
-    {
-        Settings::Settings[SHOW_NEW_PARSE_ALERT] = Settings::showNewParseAlert;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::Checkbox("Use Nexus Esc to Close##WvWFightAnalysis", &Settings::useNexusEscClose))
-    {
-        Settings::Settings[USE_NEXUS_ESC_CLOSE] = Settings::useNexusEscClose;
-        Settings::Save(SettingsPath);
-
-        if (Settings::useNexusEscClose)
-        {
-            APIDefs->UI.RegisterCloseOnEscape("WvW Fight Analysis", &Settings::IsAddonWindowEnabled);
-        }
-        else
-        {
-            APIDefs->UI.DeregisterCloseOnEscape("WvW Fight Analysis");
-        }
-    }
-    if (ImGui::Checkbox("Lock Window & Widget Position##WvWFightAnalysis", &Settings::disableMovingWindow))
-    {
-        Settings::Settings[DISABLE_MOVING_WINDOW] = Settings::disableMovingWindow;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text("Disables moving & resizing.");
-        ImGui::EndTooltip();
-    }
-    if (ImGui::Checkbox("Enable Mouse-Through##WvWFightAnalysis", &Settings::disableClickingWindow))
-    {
-        Settings::Settings[DISABLE_CLICKING_WINDOW] = Settings::disableClickingWindow;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text("Window cannot be interacted with via mouse.");
-        ImGui::EndTooltip();
-    }
-    if (ImGui::Checkbox("Enable Wine Compatibility Mode##WvWFightAnalysis", &Settings::forceLinuxCompatibilityMode))
-    {
-        Settings::Settings[FORCE_LINUX_COMPAT] = Settings::forceLinuxCompatibilityMode;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text("Wine / Proton doesn't support ReadDirectoryChangesW, use directory polling instead.");
-        ImGui::EndTooltip();
-    }
-    int tempPollIntervalMilliseconds = static_cast<int>(Settings::pollIntervalMilliseconds);
-    if (ImGui::InputInt("ms Polling Interval##WvWFightAnalysis", &tempPollIntervalMilliseconds))
-    {
-        Settings::pollIntervalMilliseconds = static_cast<size_t>(std::clamp(tempPollIntervalMilliseconds, 500, 10000));
-        Settings::Settings[POLL_INTERVAL_MILLISECONDS] = Settings::pollIntervalMilliseconds;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text("Polling Interval when using Wine compatibility mode.");
-        ImGui::EndTooltip();
-    }
-    if (ImGui::InputInt("Team Player Threshold##WvWFightAnalysis", &Settings::teamPlayerThreshold))
-    {
-        Settings::teamPlayerThreshold = std::clamp(
-            Settings::teamPlayerThreshold, 0,100
-        );
-        Settings::Settings[TEAM_PLAYER_THRESHOLD] = Settings::teamPlayerThreshold;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text("Set a minimum amount of team players required to render team.");
-        ImGui::EndTooltip();
-    }
-    int tempLogHistorySize = static_cast<int>(Settings::logHistorySize);
-    if (ImGui::InputInt("Log History Size##WvWFightAnalysis", &tempLogHistorySize))
-    {
-        Settings::logHistorySize = static_cast<size_t>(std::clamp(tempLogHistorySize, 1, 20));
-        Settings::Settings[LOG_HISTORY_SIZE] = Settings::logHistorySize;
-        Settings::Save(SettingsPath);
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text("How many parsed logs to keep.");
-        ImGui::EndTooltip();
-    }
-    if (ImGui::InputText("Custom Log Path##WvWFightAnalysis", Settings::LogDirectoryPathC, sizeof(Settings::LogDirectoryPathC)))
-    {
-        Settings::LogDirectoryPath = Settings::LogDirectoryPathC;
-        Settings::Settings[CUSTOM_LOG_PATH] = Settings::LogDirectoryPath;
-        Settings::Save(SettingsPath);
-    }
-
-    bool enabled = !isRestartInProgress.load();
-
-    if (!enabled) {
-        ImVec4 disabledColor = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);
-        ImGui::PushStyleColor(ImGuiCol_Button, disabledColor);
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, disabledColor);
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, disabledColor);
-    }
-
-    bool buttonClicked = ImGui::Button("Restart Directory Monitoring");
-
-    if (!enabled) {
-        ImGui::PopStyleColor(3);
-    }
-
-    if (enabled && buttonClicked) {
-        isRestartInProgress.store(true);
-        std::thread([]() {
-            stopMonitoring = true;
-            if (directoryMonitorThread.joinable())
-            {
-                directoryMonitorThread.join();
-            }
-            stopMonitoring = false;
-            directoryMonitorThread = std::thread(monitorDirectory, Settings::logHistorySize, Settings::pollIntervalMilliseconds);
-            isRestartInProgress.store(false);
-            }).detach();
-    }
-
 }
 
 extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
@@ -838,30 +487,9 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.APIVersion = NEXUS_API_VERSION;
     AddonDef.Name = ADDON_NAME;
     AddonDef.Version.Major = 1;
-<<<<<<< Updated upstream
-    AddonDef.Version.Minor = 0;
-    AddonDef.Version.Build = 4;
-    AddonDef.Version.Revision = 0;
-=======
     AddonDef.Version.Minor = 1;
     AddonDef.Version.Build = 0;
     AddonDef.Version.Revision = 5;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     AddonDef.Author = "Unreal";
     AddonDef.Description = "WvW log analysis tool.";
     AddonDef.Load = AddonLoad;
