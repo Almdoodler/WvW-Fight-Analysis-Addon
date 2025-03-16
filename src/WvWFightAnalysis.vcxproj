@@ -190,6 +190,10 @@
   <ItemGroup>
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+    <ClInclude Include="include\gui\BarTemplate.h" />
+>>>>>>> Stashed changes
 =======
     <ClInclude Include="include\gui\BarTemplate.h" />
 >>>>>>> Stashed changes
@@ -214,6 +218,10 @@
   <ItemGroup>
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+    <ClCompile Include="src\gui\BarTemplate.cpp" />
+>>>>>>> Stashed changes
 =======
     <ClCompile Include="src\gui\BarTemplate.cpp" />
 >>>>>>> Stashed changes

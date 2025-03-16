@@ -52,6 +52,9 @@
 #define KILLCONT                        146
 #define STRIPS                          147
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -62,7 +65,11 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 #define _APS_NEXT_RESOURCE_VALUE        145
+=======
+#define _APS_NEXT_RESOURCE_VALUE        148
+>>>>>>> Stashed changes
 =======
 #define _APS_NEXT_RESOURCE_VALUE        148
 >>>>>>> Stashed changes

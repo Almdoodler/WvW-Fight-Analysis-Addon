@@ -24,7 +24,10 @@
     <ClCompile Include="gui.cpp" />
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     <ClCompile Include="src\gui\BarTemplate.cpp" />
@@ -33,6 +36,9 @@
     <ClCompile Include="src\gui\windows\AggregateWindow.cpp" />
     <ClCompile Include="src\gui\windows\WidgetWindow.cpp" />
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -62,9 +68,12 @@
     <ClInclude Include="evtc_parser.h" />
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     <ClInclude Include="utils.h" />
     <ClInclude Include="gui.h" />
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     <ClInclude Include="include\gui\BarTemplate.h" />
@@ -73,6 +82,9 @@
     <ClInclude Include="include\gui\windows\WidgetWindow.h" />
     <ClInclude Include="include\gui\windows\AggregateWindow.h" />
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
@@ -252,6 +264,9 @@
     </Image>
     <Image Include="assets\strips_icon.png" />
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes

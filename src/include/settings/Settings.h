@@ -3,6 +3,7 @@
 
 #include <mutex>
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
@@ -15,6 +16,8 @@ extern const char* IS_ADDON_AGG_WINDOW_VISIBLE;
 extern const char* HIDE_AGG_WINDOW_WHEN_EMPTY;
 =======
 =======
+=======
+>>>>>>> Stashed changes
 #include <memory>
 #include <vector>
 #include "nlohmann/json.hpp"
@@ -22,6 +25,9 @@ extern const char* HIDE_AGG_WINDOW_WHEN_EMPTY;
 
 using json = nlohmann::json;
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 namespace nlohmann {
     template<>
@@ -201,6 +207,7 @@ struct WindowManager {
     void RemoveWidgetWindow();
 };
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/include/settings/Settings.h
 
 // Options
@@ -265,6 +272,8 @@ namespace Settings
 	void Save(std::filesystem::path aPath);
 =======
 =======
+=======
+>>>>>>> Stashed changes
 
 extern const char* CUSTOM_LOG_PATH;
 extern const char* LOG_HISTORY_SIZE;
@@ -279,6 +288,9 @@ namespace Settings {
     extern std::mutex Mutex;
     extern json Settings;
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     extern std::string LogDirectoryPath;
     extern char LogDirectoryPathC[256];
@@ -289,6 +301,7 @@ namespace Settings {
     extern size_t pollIntervalMilliseconds;
     extern bool useNexusEscClose;
     extern bool debugStringsMode;
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/include/settings/Settings.h
 
@@ -348,12 +361,17 @@ namespace Settings {
 	extern float widgetTextHorizontalAlignOffset;
 	extern bool showWidgetIcon;
 =======
+=======
+>>>>>>> Stashed changes
 
     extern WindowManager windowManager;
 
     void Load(std::filesystem::path aPath);
     void Save(std::filesystem::path aPath);
     void InitializeDefaultWindows();
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
 
