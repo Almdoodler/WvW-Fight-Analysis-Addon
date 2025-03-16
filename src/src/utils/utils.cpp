@@ -629,7 +629,10 @@ std::function<bool(
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/src/utils/utils.cpp
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======

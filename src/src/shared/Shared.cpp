@@ -69,7 +69,10 @@ Texture* Strips = nullptr;
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/src/shared/Shared.cpp
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
