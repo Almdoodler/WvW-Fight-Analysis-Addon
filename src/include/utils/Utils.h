@@ -9,6 +9,7 @@
 
 class Texture;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:src/utils.h
 =======
 class BaseWindowSettings;
@@ -16,6 +17,10 @@ struct SpecStats;
 <<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/include/utils/Utils.h
 =======
+>>>>>>> Stashed changes
+=======
+class BaseWindowSettings;
+struct SpecStats;
 >>>>>>> Stashed changes
 =======
 class BaseWindowSettings;
@@ -36,8 +41,11 @@ std::string generateLogDisplayName(const std::string& filename, uint64_t combatS
 std::string formatDuration(uint64_t milliseconds);
 bool isRunningUnderWine();
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:src/utils.h
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 
@@ -68,8 +76,12 @@ std::function<bool(
 void LogMessage(ELogLevel level, const char* msg);
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 void LogMessage(ELogLevel level, const std::string& msg);
 >>>>>>> Stashed changes:src/include/utils/Utils.h
+=======
+void LogMessage(ELogLevel level, const std::string& msg);
+>>>>>>> Stashed changes
 =======
 void LogMessage(ELogLevel level, const std::string& msg);
 >>>>>>> Stashed changes

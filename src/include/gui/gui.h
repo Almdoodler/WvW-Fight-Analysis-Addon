@@ -3,12 +3,17 @@
 #include <string>
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:src/gui.h
 #include "Shared.h"
 =======
 #include "shared/Shared.h"
 #include "settings/Settings.h"
 >>>>>>> Stashed changes:src/include/gui/gui.h
+=======
+#include "shared/Shared.h"
+#include "settings/Settings.h"
+>>>>>>> Stashed changes
 =======
 #include "shared/Shared.h"
 #include "settings/Settings.h"
