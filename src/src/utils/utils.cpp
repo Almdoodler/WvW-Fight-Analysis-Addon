@@ -626,5 +626,8 @@ std::function<bool(
 
         return a.first < b.first;
     };
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/src/utils/utils.cpp
+=======
+>>>>>>> Stashed changes
 }

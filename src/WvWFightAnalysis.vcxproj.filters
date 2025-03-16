@@ -23,12 +23,18 @@
     <ClCompile Include="src\utils\utils.cpp" />
     <ClCompile Include="gui.cpp" />
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
     <ClCompile Include="src\gui\BarTemplate.cpp" />
     <ClCompile Include="src\gui\WindowRenderer.cpp" />
     <ClCompile Include="src\gui\windows\MainWindow.cpp" />
     <ClCompile Include="src\gui\windows\AggregateWindow.cpp" />
     <ClCompile Include="src\gui\windows\WidgetWindow.cpp" />
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   </ItemGroup>
   <ItemGroup>
@@ -55,14 +61,20 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="evtc_parser.h" />
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     <ClInclude Include="utils.h" />
     <ClInclude Include="gui.h" />
 =======
+=======
+>>>>>>> Stashed changes
     <ClInclude Include="include\gui\BarTemplate.h" />
     <ClInclude Include="include\gui\WindowRenderer.h" />
     <ClInclude Include="include\gui\windows\MainWindow.h" />
     <ClInclude Include="include\gui\windows\WidgetWindow.h" />
     <ClInclude Include="include\gui\windows\AggregateWindow.h" />
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   </ItemGroup>
   <ItemGroup>
@@ -239,6 +251,9 @@
       <Filter>Assets</Filter>
     </Image>
     <Image Include="assets\strips_icon.png" />
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   </ItemGroup>
 </Project>

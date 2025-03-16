@@ -1,15 +1,21 @@
 ﻿#define NOMINMAX
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 #include "gui.h"
 #include "Settings.h"
 #include "Shared.h"
 #include "utils.h"
 =======
+=======
+>>>>>>> Stashed changes
 #include "gui/gui.h"
 #include "settings/Settings.h"
 #include "shared/Shared.h"
 #include "utils/Utils.h"
 #include "gui/BarTemplate.h"
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 #include "resource.h"
 #include "nexus/Nexus.h"
@@ -20,7 +26,10 @@
 #include <algorithm>
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
 
 struct TeamRenderInfo {
 	bool hasData;
@@ -199,8 +208,11 @@ void RenderSpecializationBars(const TeamStats& teamData, int teamIndex, HINSTANC
 }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 void RenderTeamData(int teamIndex, const TeamStats& teamData, HINSTANCE hSelf)
 =======
+=======
+>>>>>>> Stashed changes
 
 
 void RenderTeamData(const TeamStats& teamData, const MainWindowSettings* settings, HINSTANCE hSelf)

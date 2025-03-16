@@ -66,7 +66,10 @@ Texture* Home = nullptr;
 Texture* Downcont = nullptr;
 Texture* Killcont = nullptr;
 Texture* Strips = nullptr;
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/src/shared/Shared.cpp
+=======
+>>>>>>> Stashed changes
 
 // New definitions
 std::atomic<bool> initialParsingComplete{ false };

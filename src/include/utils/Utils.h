@@ -12,7 +12,10 @@ class Texture;
 =======
 class BaseWindowSettings;
 struct SpecStats;
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/include/utils/Utils.h
+=======
+>>>>>>> Stashed changes
 
 // Function declarations
 ImVec4 GetTeamColor(const std::string& teamName);
@@ -55,5 +58,9 @@ std::function<bool(
     getSpecSortComparator(const std::string& sortCriteria, bool vsLogPlayers);
 
 void LogMessage(ELogLevel level, const char* msg);
+<<<<<<< Updated upstream
 void LogMessage(ELogLevel level, const std::string& msg);
 >>>>>>> Stashed changes:src/include/utils/Utils.h
+=======
+void LogMessage(ELogLevel level, const std::string& msg);
+>>>>>>> Stashed changes

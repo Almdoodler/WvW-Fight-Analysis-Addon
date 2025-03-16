@@ -2,6 +2,7 @@
 #define SETTINGS_H
 
 #include <mutex>
+<<<<<<< Updated upstream
 
 #include "nlohmann/json.hpp"
 using json = nlohmann::json;
@@ -13,6 +14,15 @@ extern const char* IS_ADDON_AGG_WINDOW_VISIBLE;
 
 extern const char* HIDE_AGG_WINDOW_WHEN_EMPTY;
 =======
+=======
+#include <memory>
+#include <vector>
+#include "nlohmann/json.hpp"
+#include "imgui/imgui.h"
+
+using json = nlohmann::json;
+
+>>>>>>> Stashed changes
 namespace nlohmann {
     template<>
     struct adl_serializer<ImVec4> {
@@ -190,6 +200,7 @@ struct WindowManager {
     void RemoveMainWindow();
     void RemoveWidgetWindow();
 };
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/include/settings/Settings.h
 
 // Options
@@ -253,6 +264,22 @@ namespace Settings
 	/* Saves the settings. */
 	void Save(std::filesystem::path aPath);
 =======
+=======
+
+extern const char* CUSTOM_LOG_PATH;
+extern const char* LOG_HISTORY_SIZE;
+extern const char* TEAM_PLAYER_THRESHOLD;
+extern const char* SHOW_NEW_PARSE_ALERT;
+extern const char* FORCE_LINUX_COMPAT;
+extern const char* POLL_INTERVAL_MILLISECONDS;
+extern const char* USE_NEXUS_ESC_CLOSE;
+extern const char* DEBUG_STRINGS_MODE;
+
+namespace Settings {
+    extern std::mutex Mutex;
+    extern json Settings;
+
+>>>>>>> Stashed changes
     extern std::string LogDirectoryPath;
     extern char LogDirectoryPathC[256];
     extern size_t logHistorySize;
@@ -262,6 +289,7 @@ namespace Settings
     extern size_t pollIntervalMilliseconds;
     extern bool useNexusEscClose;
     extern bool debugStringsMode;
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/include/settings/Settings.h
 
 	/* Windows */
@@ -319,6 +347,14 @@ namespace Settings
 	extern float widgetTextVerticalAlignOffset;
 	extern float widgetTextHorizontalAlignOffset;
 	extern bool showWidgetIcon;
+=======
+
+    extern WindowManager windowManager;
+
+    void Load(std::filesystem::path aPath);
+    void Save(std::filesystem::path aPath);
+    void InitializeDefaultWindows();
+>>>>>>> Stashed changes
 }
 
 #endif

@@ -17,7 +17,10 @@ void ProcessKeybinds(const char* aIdentifier, bool aIsRelease);
 
 AddonDefinition AddonDef = {};
 std::unique_ptr<wvwfightanalysis::gui::WindowRenderer> g_windowRenderer;
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 
 void AddonLoad(AddonAPI* aApi)
 {
@@ -27,8 +30,11 @@ void AddonLoad(AddonAPI* aApi)
     MumbleLink = (Mumble::Data*)APIDefs->DataLink.Get("DL_MUMBLE_LINK");
     NexusLink = (NexusLinkData*)APIDefs->DataLink.Get("DL_NEXUS_LINK");
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     APIDefs->Renderer.Register(ERenderType_OptionsRender, AddonOptions);
@@ -37,10 +43,13 @@ void AddonLoad(AddonAPI* aApi)
     AddonPath = APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis");
     SettingsPath = APIDefs->Paths.GetAddonDirectory("WvWFightAnalysis/settings.json");
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
    
     if (!std::filesystem::exists(AddonPath))
     {
 =======
+=======
+>>>>>>> Stashed changes
     if (!std::filesystem::exists(AddonPath)) {
 >>>>>>> Stashed changes
         firstInstall = true;
@@ -76,6 +85,9 @@ void AddonLoad(AddonAPI* aApi)
             Settings::windowManager.aggregateWindow->windowId.c_str(),
             &Settings::windowManager.aggregateWindow->isEnabled
         );
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     }
 
@@ -94,6 +106,7 @@ void AddonUnload()
 {
     stopMonitoring = true;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
 
     if (directoryMonitorThread.joinable())
@@ -107,6 +120,11 @@ void AddonUnload()
     if (directoryMonitorThread.joinable()) {
         directoryMonitorThread.join();
     }
+=======
+    if (directoryMonitorThread.joinable()) {
+        directoryMonitorThread.join();
+    }
+>>>>>>> Stashed changes
     if (initialParsingThread.joinable()) {
 >>>>>>> Stashed changes
         initialParsingThread.join();
@@ -114,9 +132,12 @@ void AddonUnload()
     g_windowRenderer.reset();
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     if (Settings::useNexusEscClose) {
         APIDefs->UI.DeregisterCloseOnEscape("WvW Fight Analysis");
 =======
+=======
+>>>>>>> Stashed changes
     for (auto& mainWindow : Settings::windowManager.mainWindows) {
         if (mainWindow->useNexusEscClose) {
             APIDefs->UI.DeregisterCloseOnEscape(mainWindow->windowId.c_str());
@@ -131,6 +152,9 @@ void AddonUnload()
 
     if (Settings::windowManager.aggregateWindow && Settings::windowManager.aggregateWindow->useNexusEscClose) {
         APIDefs->UI.DeregisterCloseOnEscape(Settings::windowManager.aggregateWindow->windowId.c_str());
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     }
 
@@ -195,6 +219,7 @@ void ProcessKeybinds(const char* aIdentifier, bool aIsRelease)
 void AddonRender()
 {
 
+<<<<<<< Updated upstream
 
     if (!NexusLink || !NexusLink->IsGameplay || !MumbleLink || MumbleLink->Context.IsMapOpen)
     {
@@ -225,10 +250,15 @@ void AddonRender()
 
 <<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
     if (g_windowRenderer) {
         g_windowRenderer->RenderAllWindows(hSelf);
     }
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
 
@@ -696,6 +726,9 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Minor = 1;
     AddonDef.Version.Build = 0;
     AddonDef.Version.Revision = 5;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     AddonDef.Author = "Unreal";
     AddonDef.Description = "WvW log analysis tool.";

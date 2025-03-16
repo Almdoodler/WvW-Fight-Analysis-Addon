@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:src/Settings.cpp
 #include "Settings.h"
 
@@ -8,6 +9,11 @@
 #include "shared/Shared.h"
 #include "utils/Utils.h"
 >>>>>>> Stashed changes:src/src/settings/Settings.cpp
+=======
+#include "settings/Settings.h"
+#include "shared/Shared.h"
+#include "utils/Utils.h"
+>>>>>>> Stashed changes
 #include <filesystem>
 #include <fstream>
 
@@ -56,6 +62,7 @@ const char* ALLOW_WINDOW_FOCUS = "AllowWindowFocus";
 const char* SHOW_WINDOW_BACKGROUND = "ShowWindowBackground";
 const char* SPLIT_STATS_WINDOW = "SplitStatsWindow";
 const char* USE_NEXUS_ESC_CLOSE = "UseNexusEscClose";
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream:src/Settings.cpp
 // Widget
 const char* WIDGET_STATS = "WidgetStats";
@@ -333,6 +340,8 @@ namespace Settings
 	float widgetTextHorizontalAlignOffset = 0.0f;
 	bool showWidgetIcon = true;
 =======
+=======
+>>>>>>> Stashed changes
 const char* DEBUG_STRINGS_MODE = "debugStringsMode";
 
 BaseWindowSettings::BaseWindowSettings(const json& j, const std::string& idPrefix) {

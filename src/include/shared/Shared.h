@@ -71,7 +71,10 @@ extern Texture* Home;
 extern Texture* Downcont;
 extern Texture* Killcont;
 extern Texture* Strips;
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes:src/include/shared/Shared.h
+=======
+>>>>>>> Stashed changes
 
 
 extern std::atomic<bool> initialParsingComplete;

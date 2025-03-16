@@ -146,6 +146,9 @@ KILLCONT                PNG                     "assets\\kill_cont_icon.png"
 
 STRIPS                PNG                     "assets\\strips_icon.png"
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
