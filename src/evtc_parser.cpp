@@ -1,8 +1,8 @@
 #define NOMINMAX
 #include "evtc_parser.h"
-#include "Settings.h"
-#include "Shared.h"
-#include "utils.h"
+#include "settings/Settings.h"
+#include "shared/Shared.h"
+#include "utils/Utils.h"
 #include <zip.h>
 #include <thread>
 #include <chrono>
@@ -275,8 +275,7 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 		povTeam = povAgent.team;
 		if (!povTeam.empty() && povTeam != "Unknown") {
 			result.teamStats[povTeam].isPOVTeam = true;
-			APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-				("POV Agent Team: " + povTeam).c_str());
+			LogMessage(ELogLevel_DEBUG, ("POV Agent Team: " + povTeam).c_str());
 		}
 		else {
 			APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
@@ -443,9 +442,8 @@ void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eve
 			}
 		}
 		else {
-			APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-				("Agent with unknown team - InstID: " + std::to_string(srcInstid) +
-					", Name: " + agent->name).c_str());
+			LogMessage(ELogLevel_DEBUG, ("Agent with unknown team - InstID: " + std::to_string(srcInstid) +
+				", Name: " + agent->name).c_str());
 		}
 	}
 
@@ -496,7 +494,7 @@ ParsedData parseEVTCFile(const std::string& filePath) {
 	ParsedData result;
 	std::vector<char> bytes = extractZipFile(filePath);
 	if (bytes.size() < 16) {
-		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "EVTC file is too small");
+		LogMessage(ELogLevel_DEBUG, "EVTC file is too small");
 		return result;
 	}
 
@@ -526,21 +524,21 @@ ParsedData parseEVTCFile(const std::string& filePath) {
 
 	if (headerStr.rfind("EVTC", 0) != 0 ||
 		!std::all_of(headerStr.begin() + 4, headerStr.end(), ::isdigit)) {
-		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Not EVTC " + headerStr).c_str());
+		LogMessage(ELogLevel_DEBUG, ("Not EVTC " + headerStr).c_str());
 		return ParsedData(); // Return an empty result
 	}
 
-	APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Header: " + headerStr + ", Revision: " + std::to_string(revision) + ", Fight Instance ID: " + std::to_string(fightId)).c_str());
+	LogMessage(ELogLevel_DEBUG, ("Header: " + headerStr + ", Revision: " + std::to_string(revision) + ", Fight Instance ID: " + std::to_string(fightId)).c_str());
 	int evtcVersion = std::stoi(headerStr.substr(4));
 
 	if (evtcVersion < 20240612) {
-		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Cannot parse EVTC Version is pre TeamChangeOnDespawn / 20240612"));
+		LogMessage(ELogLevel_DEBUG, ("Cannot parse EVTC Version is pre TeamChangeOnDespawn / 20240612"));
 		return ParsedData(); // Return an empty result
 	}
 
 	// Check if fightId is 1 (WvW)
 	if (fightId != 1) {
-		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping non-WvW log. FightInstanceID: " + std::to_string(fightId)).c_str());
+		LogMessage(ELogLevel_DEBUG, ("Skipping non-WvW log. FightInstanceID: " + std::to_string(fightId)).c_str());
 		return ParsedData(); // Return an empty result
 	}
 	
@@ -549,7 +547,7 @@ ParsedData parseEVTCFile(const std::string& filePath) {
 
 	// Read agent count (uint32_t)
 	if (offset + sizeof(uint32_t) > bytes.size()) {
-		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Incomplete EVTC file: Missing agent count");
+		LogMessage(ELogLevel_DEBUG, "Incomplete EVTC file: Missing agent count");
 		return result;
 	}
 	uint32_t agentCount;
@@ -561,7 +559,7 @@ ParsedData parseEVTCFile(const std::string& filePath) {
 
 	// Read skill count (uint32_t)
 	if (offset + sizeof(uint32_t) > bytes.size()) {
-		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Incomplete EVTC file: Missing skill count");
+		LogMessage(ELogLevel_DEBUG, "Incomplete EVTC file: Missing skill count");
 		return result;
 	}
 	uint32_t skillCount;
@@ -571,7 +569,7 @@ ParsedData parseEVTCFile(const std::string& filePath) {
 	// Skip skills (68 bytes per skill)
 	size_t skillsSize = 68 * skillCount;
 	if (offset + skillsSize > bytes.size()) {
-		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Incomplete EVTC file: Skills data missing");
+		LogMessage(ELogLevel_DEBUG, "Incomplete EVTC file: Skills data missing");
 		return result;
 	}
 	offset += skillsSize;
@@ -593,60 +591,80 @@ std::wstring getCanonicalPath(const std::filesystem::path& path)
 	return std::filesystem::weakly_canonical(path).wstring();
 }
 
-bool isValidEVTCFile(const std::filesystem::path& dirPath, const std::filesystem::path& filePath)
-{
-	std::filesystem::path relativePath;
+bool isValidEVTCFile(const std::filesystem::path& dirPath, const std::filesystem::path& filePath) {
 	try {
-		relativePath = std::filesystem::relative(filePath.parent_path(), dirPath);
-	}
-	catch (...) {
-		return false;
-	}
 
-	bool dirPathIsWvW = dirPath.filename().string().find("WvW") != std::string::npos;
-	bool dirPathIs1 = dirPath.filename().string() == "1";
-
-	std::vector<std::filesystem::path> components;
-	if (!dirPath.has_root_path() && !dirPathIsWvW && !dirPathIs1) {
-		components.push_back(dirPath.filename());
-	}
-	for (const auto& part : relativePath) {
-		components.push_back(part);
-	}
-
-	int wvwIndex = -1;
-	for (size_t i = 0; i < components.size(); ++i) {
-		if (components[i].string().find("WvW") != std::string::npos) {
-			wvwIndex = static_cast<int>(i);
-			break;
+		std::filesystem::path relativePath;
+		try {
+			relativePath = std::filesystem::relative(filePath.parent_path(), dirPath);
 		}
-	}
+		catch (const std::filesystem::filesystem_error& e) {
+			LogMessage(ELogLevel_DEBUG, ("Failed to get relative path: " + std::string(e.what())).c_str());
+			return false;
+		}
 
-	int dir1Index = -1;
-	if (wvwIndex == -1) {
-		for (size_t i = 0; i < components.size(); ++i) {
-			if (components[i].string() == "1") {
-				dir1Index = static_cast<int>(i);
-				break;
+		bool dirPathIsWvW = dirPath.filename().string().find("WvW") != std::string::npos;
+		bool dirPathIs1 = dirPath.filename().string() == "1";
+
+		std::vector<std::filesystem::path> components;
+		if (!dirPath.has_root_path() && !dirPathIsWvW && !dirPathIs1) {
+			components.push_back(dirPath.filename());
+		}
+
+		try {
+			for (const auto& part : relativePath) {
+				components.push_back(part);
 			}
 		}
-	}
+		catch (const std::exception& e) {
+			LogMessage(ELogLevel_DEBUG, ("Error processing path components: " + std::string(e.what())).c_str());
+			return false;
+		}
 
-	if (dirPathIsWvW) {
-		return components.size() <= 2;
-	}
-	if (wvwIndex != -1) {
-		return (components.size() - (wvwIndex + 1)) <= 2;
-	}
+		// Find WvW or instance 1 directory markers
+		int wvwIndex = -1;
+		int dir1Index = -1;
 
-	if (dirPathIs1) {
-		return components.size() <= 2;
-	}
-	if (dir1Index != -1) {
-		return (components.size() - (dir1Index + 1)) <= 2;
-	}
+		for (size_t i = 0; i < components.size(); ++i) {
+			try {
+				std::string componentStr = components[i].string();
+				if (componentStr.find("WvW") != std::string::npos) {
+					wvwIndex = static_cast<int>(i);
+					break;
+				}
+				if (componentStr == "1") {
+					dir1Index = static_cast<int>(i);
+					break;
+				}
+			}
+			catch (const std::exception& e) {
+				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+					("Error processing component: " + std::string(e.what())).c_str());
+				continue;
+			}
+		}
 
-	return false;
+		bool isValid = false;
+		if (dirPathIsWvW) {
+			isValid = components.size() <= 2;
+		}
+		else if (wvwIndex != -1) {
+			isValid = (components.size() - (wvwIndex + 1)) <= 2;
+		}
+		else if (dirPathIs1) {
+			isValid = components.size() <= 2;
+		}
+		else if (dir1Index != -1) {
+			isValid = (components.size() - (dir1Index + 1)) <= 2;
+		}
+
+		return isValid;
+	}
+	catch (const std::exception& e) {
+		APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
+			("Unexpected error in isValidEVTCFile: " + std::string(e.what())).c_str());
+		return false;
+	}
 }
 
 void processEVTCFile(const std::filesystem::path& filePath)
@@ -732,15 +750,13 @@ void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t n
 				// fightId 1 = WvW
 				if (log.data.fightId != 1)
 				{
-					APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-						("Skipping non-WvW log during initial parsing: " + log.filename).c_str());
+					LogMessage(ELogLevel_DEBUG, ("Skipping non-WvW log during initial parsing: " + log.filename).c_str());
 					continue;
 				}
 
 				if (log.data.totalIdentifiedPlayers == 0)
 				{
-					APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-						("Skipping log with no identified players during initial parsing: " + log.filename).c_str());
+					LogMessage(ELogLevel_DEBUG, ("Skipping log with no identified players during initial parsing: " + log.filename).c_str());
 					continue;
 				}
 
@@ -764,8 +780,7 @@ void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t n
 			}
 			else
 			{
-				APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-					("File already processed during initial parsing: " + filePath.string()).c_str());
+				LogMessage(ELogLevel_DEBUG, ("File already processed during initial parsing: " + filePath.string()).c_str());
 			}
 		}
 
@@ -778,62 +793,94 @@ void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t n
 	}
 }
 
-void scanForNewFiles(const std::filesystem::path& dirPath, std::unordered_set<std::wstring>& processedFiles)
-{
-	try
-	{
-		std::vector<std::filesystem::path> zevtcFiles;
+void scanForNewFiles(const std::filesystem::path& dirPath, std::unordered_set<std::wstring>& processedFiles) {
+	try {
+		LogMessage(ELogLevel_DEBUG, ("Scanning directory for new files: " + dirPath.string()).c_str());
 
-		for (const auto& entry : std::filesystem::recursive_directory_iterator(dirPath))
-		{
-			if (entry.is_regular_file() && entry.path().extension() == L".zevtc")
-			{
-				if (isValidEVTCFile(dirPath, entry.path()))
-				{
-					zevtcFiles.push_back(entry.path());
+		if (!std::filesystem::exists(dirPath)) {
+			APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+				("Directory does not exist: " + dirPath.string()).c_str());
+			return;
+		}
+
+		std::vector<std::filesystem::path> zevtcFiles;
+		size_t filesFound = 0;
+
+		try {
+			for (const auto& entry : std::filesystem::recursive_directory_iterator(dirPath)) {
+				if (entry.is_regular_file() && entry.path().extension() == L".zevtc") {
+					filesFound++;
+					if (isValidEVTCFile(dirPath, entry.path())) {
+						zevtcFiles.push_back(entry.path());
+					}
 				}
 			}
 		}
+		catch (const std::filesystem::filesystem_error& e) {
+			APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
+				("Filesystem error during directory scan: " + std::string(e.what())).c_str());
+			return;
+		}
 
-		std::sort(zevtcFiles.begin(), zevtcFiles.end(),
-			[](const std::filesystem::path& a, const std::filesystem::path& b)
-			{
-				return std::filesystem::last_write_time(a) > std::filesystem::last_write_time(b);
-			});
+		//LogMessage(ELogLevel_DEBUG, ("Found " + std::to_string(filesFound) + " total .zevtc files, " +
+			//std::to_string(zevtcFiles.size()) + " are valid").c_str());
 
-		for (const auto& filePath : zevtcFiles)
-		{
-			auto fileTime = std::filesystem::last_write_time(filePath);
-
-			if (fileTime <= maxProcessedTime)
-			{
-				break;
+		if (!zevtcFiles.empty()) {
+			try {
+				std::sort(zevtcFiles.begin(), zevtcFiles.end(),
+					[](const std::filesystem::path& a, const std::filesystem::path& b) {
+						return std::filesystem::last_write_time(a) > std::filesystem::last_write_time(b);
+					});
+			}
+			catch (const std::exception& e) {
+				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+					("Error sorting files by time: " + std::string(e.what())).c_str());
+				return;
 			}
 
-			std::wstring absolutePath = std::filesystem::absolute(filePath).wstring();
+			size_t processedCount = 0;
+			for (const auto& filePath : zevtcFiles) {
+				try {
+					auto fileTime = std::filesystem::last_write_time(filePath);
+					if (fileTime <= maxProcessedTime) {
+						break;
+					}
 
-			if (processedFiles.find(absolutePath) != processedFiles.end())
-			{
-				continue;
+					std::wstring absolutePath = std::filesystem::absolute(filePath).wstring();
+					{
+						std::lock_guard<std::mutex> lock(processedFilesMutex);
+						if (processedFiles.find(absolutePath) != processedFiles.end()) {
+							continue;
+						}
+
+						processEVTCFile(filePath);
+						processedFiles.insert(absolutePath);
+						processedCount++;
+
+						if (fileTime > maxProcessedTime) {
+							maxProcessedTime = fileTime;
+						}
+					}
+				}
+				catch (const std::exception& e) {
+					APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+						("Error processing file " + filePath.string() + ": " + e.what()).c_str());
+					continue;
+				}
 			}
 
-
-			processEVTCFile(filePath.string());
-
-			processedFiles.insert(absolutePath);
-
-			if (fileTime > maxProcessedTime)
-			{
-				maxProcessedTime = fileTime;
+			if (processedCount > 0) {
+				APIDefs->Log(ELogLevel_INFO, ADDON_NAME,
+					("Successfully processed " + std::to_string(processedCount) + " new files").c_str());
 			}
 		}
 	}
-	catch (const std::exception& ex)
-	{
-		APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-			("Exception in scanning directory: " + std::string(ex.what())).c_str());
+	catch (const std::exception& e) {
+		APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
+			("Fatal error in scanForNewFiles: " + std::string(e.what())).c_str());
 	}
 }
+
 
 // ReadDirectoryChangesW doesn't seem to work under Wine, we'll keep using this version on Windows though
 void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToParse)
@@ -856,16 +903,20 @@ void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToPars
 			return;
 		}
 
-		char buffer[4096];
+		// Use a larger buffer (64 KB) to reduce the chance of overflow
+		const size_t bufferSize = 65536;
+		std::vector<char> buffer(bufferSize);
+
 		OVERLAPPED overlapped = { 0 };
 		overlapped.hEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
 
+		// Do an initial scan of the directory
 		parseInitialLogs(processedFiles, numLogsToParse);
 
 		BOOL success = ReadDirectoryChangesW(
 			hDir,
-			buffer,
-			sizeof(buffer),
+			buffer.data(),
+			static_cast<DWORD>(buffer.size()),
 			TRUE,
 			FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_SIZE |
 			FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_CREATION,
@@ -896,7 +947,8 @@ void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToPars
 				DWORD bytesTransferred = 0;
 				if (GetOverlappedResult(hDir, &overlapped, &bytesTransferred, FALSE))
 				{
-					BYTE* pBuffer = reinterpret_cast<BYTE*>(buffer);
+					// Process the notifications from our buffer.
+					BYTE* pBuffer = reinterpret_cast<BYTE*>(buffer.data());
 					FILE_NOTIFY_INFORMATION* fni = reinterpret_cast<FILE_NOTIFY_INFORMATION*>(pBuffer);
 
 					do
@@ -916,11 +968,9 @@ void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToPars
 
 								{
 									std::lock_guard<std::mutex> lock(processedFilesMutex);
-
 									if (processedFiles.find(fullPathStr) == processedFiles.end())
 									{
 										processEVTCFile(fullPath);
-
 										processedFiles.insert(fullPathStr);
 									}
 								}
@@ -934,12 +984,13 @@ void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToPars
 							reinterpret_cast<BYTE*>(fni) + fni->NextEntryOffset);
 					} while (true);
 
+					// Prepare to receive the next set of changes.
 					ResetEvent(overlapped.hEvent);
 
 					success = ReadDirectoryChangesW(
 						hDir,
-						buffer,
-						sizeof(buffer),
+						buffer.data(),
+						static_cast<DWORD>(buffer.size()),
 						TRUE,
 						FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_SIZE |
 						FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_CREATION,
@@ -957,9 +1008,42 @@ void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToPars
 				else
 				{
 					DWORD errorCode = GetLastError();
-					APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-						("GetOverlappedResult failed with error code: " + std::to_string(errorCode)).c_str());
-					break;
+					// Check if the error indicates a buffer overflow.
+					if (errorCode == ERROR_NOTIFY_ENUM_DIR)
+					{
+						APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+							"Buffer overflow detected. Some file change notifications may have been lost. Rescanning directory.");
+						// Rescan the entire directory to catch up on any missed events.
+						parseInitialLogs(processedFiles, numLogsToParse);
+
+						ResetEvent(overlapped.hEvent);
+
+						success = ReadDirectoryChangesW(
+							hDir,
+							buffer.data(),
+							static_cast<DWORD>(buffer.size()),
+							TRUE,
+							FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_SIZE |
+							FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_CREATION,
+							nullptr,
+							&overlapped,
+							nullptr);
+
+						if (!success)
+						{
+							APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+								"Failed to reissue directory monitoring after buffer overflow.");
+							break;
+						}
+						// Continue to wait for the next batch of notifications.
+						continue;
+					}
+					else
+					{
+						APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+							("GetOverlappedResult failed with error code: " + std::to_string(errorCode)).c_str());
+						break;
+					}
 				}
 			}
 			else if (waitStatus == WAIT_TIMEOUT)
@@ -985,43 +1069,50 @@ void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToPars
 	}
 }
 
-void monitorDirectory(size_t numLogsToParse, size_t pollIntervalMilliseconds)
-{
-	try
-	{
+void monitorDirectory(size_t numLogsToParse, size_t pollIntervalMilliseconds) {
+	try {
+		APIDefs->Log(ELogLevel_INFO, ADDON_NAME, "Starting directory monitoring");
 		std::filesystem::path dirPath;
 
+		// Handle first install configuration
 		if (firstInstall) {
+			try {
+				std::filesystem::path arcPath = getArcPath();
+				Settings::LogDirectoryPath = arcPath.string();
 
-			std::filesystem::path arcPath = getArcPath();
-			Settings::LogDirectoryPath = arcPath.string();
+				if (Settings::LogDirectoryPath.length() >= sizeof(Settings::LogDirectoryPathC)) {
+					APIDefs->Log(ELogLevel_WARNING, ADDON_NAME, "Path too long for buffer");
+					return;
+				}
 
-			strncpy(Settings::LogDirectoryPathC, Settings::LogDirectoryPath.c_str(), sizeof(Settings::LogDirectoryPathC) - 1);
-			Settings::LogDirectoryPathC[sizeof(Settings::LogDirectoryPathC) - 1] = '\0';
+				strncpy(Settings::LogDirectoryPathC, Settings::LogDirectoryPath.c_str(),
+					sizeof(Settings::LogDirectoryPathC) - 1);
+				Settings::LogDirectoryPathC[sizeof(Settings::LogDirectoryPathC) - 1] = '\0';
 
-			Settings::Settings[CUSTOM_LOG_PATH] = Settings::LogDirectoryPath;
-			Settings::Save(SettingsPath);
-		}
-
-
-		if (!Settings::LogDirectoryPath.empty())
-		{
-			dirPath = std::filesystem::path(Settings::LogDirectoryPath);
-
-			if (!std::filesystem::exists(dirPath) || !std::filesystem::is_directory(dirPath))
-			{
-				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-					("Specified log directory does not exist: " + dirPath.string()).c_str());
+				Settings::Settings[CUSTOM_LOG_PATH] = Settings::LogDirectoryPath;
+				Settings::Save(SettingsPath);
+			}
+			catch (const std::exception& e) {
+				APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
+					("First install configuration failed: " + std::string(e.what())).c_str());
 				return;
 			}
 		}
-		else
-		{
+
+		// Set up directory path
+		if (!Settings::LogDirectoryPath.empty()) {
+			dirPath = std::filesystem::path(Settings::LogDirectoryPath);
+
+			if (!std::filesystem::exists(dirPath) || !std::filesystem::is_directory(dirPath)) {
+				APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
+					("Invalid log directory path: " + dirPath.string()).c_str());
+				return;
+			}
+		}
+		else {
 			char documentsPath[MAX_PATH];
-			if (FAILED(SHGetFolderPath(nullptr, CSIDL_PERSONAL, nullptr, SHGFP_TYPE_CURRENT, documentsPath)))
-			{
-				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-					"Failed to get path to user's Documents folder.");
+			if (FAILED(SHGetFolderPath(nullptr, CSIDL_PERSONAL, nullptr, SHGFP_TYPE_CURRENT, documentsPath))) {
+				APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME, "Failed to get Documents folder path");
 				return;
 			}
 
@@ -1029,38 +1120,49 @@ void monitorDirectory(size_t numLogsToParse, size_t pollIntervalMilliseconds)
 				"arcdps" / "arcdps.cbtlogs";
 		}
 
-		// Determine if we're running under Wine
+		APIDefs->Log(ELogLevel_INFO, ADDON_NAME,
+			("Monitoring directory: " + dirPath.string()).c_str());
+
+		// Check for Wine environment
 		bool runningUnderWine = isRunningUnderWine();
-		if (runningUnderWine)
-		{
-			APIDefs->Log(ELogLevel_INFO, ADDON_NAME, "Running under Wine/Proton. Using polling method.");
+		if (runningUnderWine) {
+			APIDefs->Log(ELogLevel_INFO, ADDON_NAME,
+				"Running under Wine/Proton - using polling method");
 
-			parseInitialLogs(processedFiles, numLogsToParse);
+			try {
+				parseInitialLogs(processedFiles, numLogsToParse);
 
-			while (!stopMonitoring)
-			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(pollIntervalMilliseconds));
+				while (!stopMonitoring) {
+					std::this_thread::sleep_for(std::chrono::milliseconds(pollIntervalMilliseconds));
 
-				if (stopMonitoring)
-				{
-					break;
+					if (stopMonitoring) break;
+
+					if (!std::filesystem::exists(dirPath)) {
+						APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+							"Monitored directory no longer exists, waiting...");
+						continue;
+					}
+
+					scanForNewFiles(dirPath, processedFiles);
 				}
-
-				scanForNewFiles(dirPath, processedFiles);
+			}
+			catch (const std::exception& e) {
+				APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
+					("Error in Wine polling loop: " + std::string(e.what())).c_str());
 			}
 		}
-		else
-		{
-			APIDefs->Log(ELogLevel_INFO, ADDON_NAME, "Running under Windows. Using ReadDirectoryChangesW method.");
-
+		else {
+			APIDefs->Log(ELogLevel_INFO, ADDON_NAME,
+				"Running under Windows - using ReadDirectoryChangesW");
 			directoryMonitor(dirPath, numLogsToParse);
 		}
 	}
-	catch (const std::exception& ex)
-	{
-		APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-			("Exception in directory monitoring thread: " + std::string(ex.what())).c_str());
+	catch (const std::exception& e) {
+		APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
+			("Fatal error in monitorDirectory: " + std::string(e.what())).c_str());
 	}
+
+	APIDefs->Log(ELogLevel_INFO, ADDON_NAME, "Directory monitoring stopped");
 }
 
 void processNewEVTCFile(const std::string& filePath)
@@ -1075,13 +1177,13 @@ void processNewEVTCFile(const std::string& filePath)
 	// Validate WvW log
 	if (log.data.fightId != 1)
 	{
-		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping non-WvW log: " + filename).c_str());
+		LogMessage(ELogLevel_DEBUG, ("Skipping non-WvW log: " + filename).c_str());
 		return;
 	}
 
 	if (log.data.totalIdentifiedPlayers == 0)
 	{
-		APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping log with no identified players: " + filename).c_str());
+		LogMessage(ELogLevel_DEBUG, ("Skipping log with no identified players: " + filename).c_str());
 		return;
 	}
 

@@ -1,7 +1,12 @@
 #pragma once
 #include <cstdint>
 #include <string>
+<<<<<<< Updated upstream:src/gui.h
 #include "Shared.h"
+=======
+#include "shared/Shared.h"
+#include "settings/Settings.h"
+>>>>>>> Stashed changes:src/include/gui/gui.h
 #include "nexus/Nexus.h"
 #include "mumble/Mumble.h"
 #include "imgui/imgui.h"

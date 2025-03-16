@@ -66,6 +66,12 @@ extern Texture* Condi;
 extern Texture* Strike;
 extern Texture* Kdr;
 extern Texture* Home;
+<<<<<<< Updated upstream:src/Shared.h
+=======
+extern Texture* Downcont;
+extern Texture* Killcont;
+extern Texture* Strips;
+>>>>>>> Stashed changes:src/include/shared/Shared.h
 
 
 extern std::atomic<bool> initialParsingComplete;

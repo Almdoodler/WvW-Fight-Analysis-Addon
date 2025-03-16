@@ -114,6 +114,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -132,6 +133,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -152,6 +154,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -174,6 +177,7 @@
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -184,22 +188,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+<<<<<<< Updated upstream
+=======
+    <ClInclude Include="include\gui\BarTemplate.h" />
+>>>>>>> Stashed changes
     <ClInclude Include="evtc_parser.h" />
-    <ClInclude Include="gui.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_internal.h" />
     <ClInclude Include="imgui\imstb_rectpack.h" />
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
+    <ClInclude Include="include\gui\WindowRenderer.h" />
+    <ClInclude Include="include\gui\windows\AggregateWindow.h" />
+    <ClInclude Include="include\gui\windows\MainWindow.h" />
+    <ClInclude Include="include\gui\windows\WidgetWindow.h" />
     <ClInclude Include="mumble\Mumble.h" />
     <ClInclude Include="nexus\Nexus.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="Settings.h" />
-    <ClInclude Include="Shared.h" />
-    <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
+<<<<<<< Updated upstream
+=======
+    <ClCompile Include="src\gui\BarTemplate.cpp" />
+>>>>>>> Stashed changes
     <ClCompile Include="entry.cpp" />
     <ClCompile Include="evtc_parser.cpp" />
     <ClCompile Include="gui.cpp" />
@@ -208,9 +220,13 @@
     <ClCompile Include="imgui\imgui_draw.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
-    <ClCompile Include="Settings.cpp" />
-    <ClCompile Include="Shared.cpp" />
-    <ClCompile Include="utils.cpp" />
+    <ClCompile Include="src\settings\Settings.cpp" />
+    <ClCompile Include="src\shared\Shared.cpp" />
+    <ClCompile Include="src\gui\WindowRenderer.cpp" />
+    <ClCompile Include="src\gui\windows\AggregateWindow.cpp" />
+    <ClCompile Include="src\gui\windows\MainWindow.cpp" />
+    <ClCompile Include="src\gui\windows\WidgetWindow.cpp" />
+    <ClCompile Include="src\utils\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.rc" />
@@ -259,6 +275,7 @@
     <Image Include="assets\squad_icon.png" />
     <Image Include="assets\strike_damage_30x30.png" />
     <Image Include="assets\strike_damage_icon.png" />
+    <Image Include="assets\strips_icon.png" />
     <Image Include="assets\tempest_16x16.png" />
     <Image Include="assets\thief_16x16.png" />
     <Image Include="assets\untamed_16x16.png" />
