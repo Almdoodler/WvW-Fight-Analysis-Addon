@@ -2,6 +2,8 @@
 #include "evtc_parser.h"
 #include "settings/Settings.h"
 #include "shared/Shared.h"
+#include "parser/file_helpers.h"
+#include "parser/statistics_helper.h"
 #include "utils/Utils.h"
 #include <zip.h>
 #include <thread>
@@ -16,1265 +18,647 @@
 #include <vector>
 #include <mutex>
 
+
 std::unordered_set<std::wstring> processedFiles;
 std::filesystem::file_time_type maxProcessedTime = std::filesystem::file_time_type::min();
 
-void updateStats(TeamStats& teamStats, Agent* agent, int32_t value, bool isDamage, bool isKill, bool vsPlayer, bool isStrikeDamage, bool isCondiDamage) {
-	auto& specStats = teamStats.eliteSpecStats[agent->eliteSpec];
-	
-	// Update team stats
-	if (isDamage) {
-		teamStats.totalDamage += value;
-		specStats.totalDamage += value;
+// Note: updateStats, isTrackedBoon, isDamageInDownSequence, isDamageInKillSequence
+// have been moved to statistics_helper.cpp
 
-		if (isStrikeDamage) {
-			teamStats.totalStrikeDamage += value;
-			specStats.totalStrikeDamage += value;
-		}
-		else if (isCondiDamage) {
-			teamStats.totalCondiDamage += value;
-			specStats.totalCondiDamage += value;
-		}
+std::unordered_map<uint64_t, AgentState> preProcessAgentStates(const std::vector<CombatEvent>& events) {
+    std::unordered_map<uint64_t, AgentState> agentStates;
 
-		if (vsPlayer) {
-			teamStats.totalDamageVsPlayers += value;
-			specStats.totalDamageVsPlayers += value;
+    for (const auto& event : events) {
+        auto& state = agentStates[event.srcAgent];
 
-			if (isStrikeDamage) {
-				teamStats.totalStrikeDamageVsPlayers += value;
-				specStats.totalStrikeDamageVsPlayers += value;
-			}
-			else if (isCondiDamage) {
-				teamStats.totalCondiDamageVsPlayers += value;
-				specStats.totalCondiDamageVsPlayers += value;
-			}
-		}
-	}
+        // Store all state change events for precise sequencing
+        if (event.isStateChange == static_cast<uint8_t>(StateChange::ChangeDown) ||
+            event.isStateChange == static_cast<uint8_t>(StateChange::ChangeUp) ||
+            event.isStateChange == static_cast<uint8_t>(StateChange::ChangeDead) ||
+            event.isStateChange == static_cast<uint8_t>(StateChange::HealthUpdate)) {
+            state.relevantEvents.push_back(event);
+        }
 
-	if (isKill) {
-		teamStats.totalKills++;
-		specStats.totalKills++;
-		if (vsPlayer) {
-			teamStats.totalKillsVsPlayers++;
-			specStats.totalKillsVsPlayers++;
-		}
-	}
+        // Also maintain interval structures for quick filtering
+        if (event.isStateChange == static_cast<uint8_t>(StateChange::ChangeDown)) {
+            state.downIntervals.emplace_back(event.time, UINT64_MAX);
+            state.currentlyDowned = true;
+        }
+        else if (event.isStateChange == static_cast<uint8_t>(StateChange::ChangeUp)) {
+            if (state.currentlyDowned && !state.downIntervals.empty()) {
+                state.downIntervals.back().second = event.time;
+                state.currentlyDowned = false;
+            }
+        }
+        else if (event.isStateChange == static_cast<uint8_t>(StateChange::ChangeDead)) {
+            if (state.currentlyDowned && !state.downIntervals.empty()) {
+                state.downIntervals.back().second = event.time;
+                state.currentlyDowned = false;
+            }
+            state.deathIntervals.emplace_back(event.time, UINT64_MAX);
+        }
+        else if (event.isStateChange == static_cast<uint8_t>(StateChange::HealthUpdate)) {
+            float healthPercent = (event.dstAgent * 100.0f) / event.value;
+            state.healthUpdates.emplace_back(event.time, healthPercent);
+        }
+    }
 
-	// If the agent is in the squad
-	if (teamStats.isPOVTeam && agent->subgroupNumber > 0) {
-		auto& squadStats = teamStats.squadStats;
-		auto& squadSpecStats = squadStats.eliteSpecStats[agent->eliteSpec];
+    // Sort all intervals and events
+    for (auto& [_, state] : agentStates) {
+        std::sort(state.healthUpdates.begin(), state.healthUpdates.end());
+        std::sort(state.downIntervals.begin(), state.downIntervals.end());
+        std::sort(state.deathIntervals.begin(), state.deathIntervals.end());
 
-		// Update squad stats
-		if (isDamage) {
-			squadStats.totalDamage += value;
-			squadSpecStats.totalDamage += value;
+        // Use explicit comparison function for CombatEvents
+        std::sort(state.relevantEvents.begin(), state.relevantEvents.end(),
+            [](const CombatEvent& a, const CombatEvent& b) -> bool {
+                return a.time < b.time;
+            });
+    }
 
-			if (isStrikeDamage) {
-				squadStats.totalStrikeDamage += value;
-				squadSpecStats.totalStrikeDamage += value;
-			}
-			else if (isCondiDamage) {
-				squadStats.totalCondiDamage += value;
-				squadSpecStats.totalCondiDamage += value;
-			}
-
-			if (vsPlayer) {
-				squadStats.totalDamageVsPlayers += value;
-				squadSpecStats.totalDamageVsPlayers += value;
-
-				if (isStrikeDamage) {
-					squadStats.totalStrikeDamageVsPlayers += value;
-					squadSpecStats.totalStrikeDamageVsPlayers += value;
-				}
-				else if (isCondiDamage) {
-					squadStats.totalCondiDamageVsPlayers += value;
-					squadSpecStats.totalCondiDamageVsPlayers += value;
-				}
-			}
-		}
-
-		if (isKill) {
-			squadStats.totalKills++;
-			squadSpecStats.totalKills++;
-			if (vsPlayer) {
-				squadStats.totalKillsVsPlayers++;
-				squadSpecStats.totalKillsVsPlayers++;
-			}
-		}
-	}
+    return agentStates;
 }
 
 void parseAgents(const std::vector<char>& bytes, size_t& offset, uint32_t agentCount,
-	std::unordered_map<uint64_t, Agent>& agentsByAddress) {
+    std::unordered_map<uint64_t, Agent>& agentsByAddress) {
 
-	const size_t agentBlockSize = 96; // Each agent block is 96 bytes
+    const size_t agentBlockSize = 96; // Each agent block is 96 bytes
 
-	for (uint32_t i = 0; i < agentCount; ++i) {
-		if (offset + agentBlockSize > bytes.size()) {
-			APIDefs->Log(ELogLevel_WARNING, ADDON_NAME, "Insufficient data for agent block");
-			break;
-		}
+    for (uint32_t i = 0; i < agentCount; ++i) {
+        if (offset + agentBlockSize > bytes.size()) {
+            APIDefs->Log(ELogLevel_WARNING, ADDON_NAME, "Insufficient data for agent block");
+            break;
+        }
 
-		Agent agent;
-		std::memcpy(&agent.address, bytes.data() + offset, sizeof(uint64_t));
-		std::memcpy(&agent.professionId, bytes.data() + offset + 8, sizeof(uint32_t));
-		std::memcpy(&agent.eliteSpecId, bytes.data() + offset + 12, sizeof(int32_t));
+        Agent agent;
+        std::memcpy(&agent.address, bytes.data() + offset, sizeof(uint64_t));
+        std::memcpy(&agent.professionId, bytes.data() + offset + 8, sizeof(uint32_t));
+        std::memcpy(&agent.eliteSpecId, bytes.data() + offset + 12, sizeof(int32_t));
 
-		// Read the full 68-byte name field
-		char nameData[68];
-		std::memcpy(nameData, bytes.data() + offset + 28, 68);
-		nameData[67] = '\0'; // Ensure null termination
+        // Read the full 68-byte name field
+        char nameData[68];
+        std::memcpy(nameData, bytes.data() + offset + 28, 68);
+        nameData[67] = '\0'; // Ensure null termination
 
-		// Split the nameData into substrings
-		std::vector<std::string> splitStr;
-		size_t start = 0;
-		while (start < 68) {
-			size_t end = start;
-			while (end < 68 && nameData[end] != '\0') {
-				++end;
-			}
-			if (start != end) {
-				splitStr.emplace_back(nameData + start, nameData + end);
-			}
-			start = end + 1;
-			if (end >= 67) {
-				break;
-			}
-		}
+        // Split the nameData into substrings
+        std::vector<std::string> splitStr;
+        size_t start = 0;
+        while (start < 68) {
+            size_t end = start;
+            while (end < 68 && nameData[end] != '\0') {
+                ++end;
+            }
+            if (start != end) {
+                splitStr.emplace_back(nameData + start, nameData + end);
+            }
+            start = end + 1;
+            if (end >= 67) {
+                break;
+            }
+        }
 
-		// Assign character name, account name, and subgroup
-		if (!splitStr.empty()) {
-			agent.name = splitStr[0]; // Character name
-		}
-		else {
-			agent.name = "";
-		}
-		if (splitStr.size() > 1) {
-			agent.accountName = splitStr[1]; // Account name
-		}
-		else {
-			agent.accountName = "";
-		}
-		if (splitStr.size() > 2) {
-			agent.subgroup = splitStr[2]; // Subgroup as string
-		}
-		else {
-			agent.subgroup = "";
-		}
+        // Assign character name, account name, and subgroup
+        if (!splitStr.empty()) {
+            agent.name = splitStr[0]; // Character name
+        }
+        else {
+            agent.name = "";
+        }
+        if (splitStr.size() > 1) {
+            agent.accountName = splitStr[1]; // Account name
+        }
+        else {
+            agent.accountName = "";
+        }
+        if (splitStr.size() > 2) {
+            agent.subgroup = splitStr[2]; // Subgroup as string
+        }
+        else {
+            agent.subgroup = "";
+        }
 
-		if (!agent.subgroup.empty()) {
-			try {
-				agent.subgroupNumber = std::stoi(agent.subgroup);
-			}
-			catch (const std::exception&) {
-				agent.subgroupNumber = -1; // Invalid subgroup number
-			}
-		}
-		else {
-			agent.subgroupNumber = -1; // No subgroup information
-		}
+        if (!agent.subgroup.empty()) {
+            try {
+                agent.subgroupNumber = std::stoi(agent.subgroup);
+            }
+            catch (const std::exception&) {
+                agent.subgroupNumber = -1; // Invalid subgroup number
+            }
+        }
+        else {
+            agent.subgroupNumber = -1; // No subgroup information
+        }
 
-		if (professions.find(agent.professionId) != professions.end()) {
-			agent.profession = professions[agent.professionId];
-			if (agent.eliteSpecId != -1 && eliteSpecs.find(agent.eliteSpecId) != eliteSpecs.end()) {
-				agent.eliteSpec = eliteSpecs[agent.eliteSpecId];
-			}
-			else {
-				agent.eliteSpec = "Core " + agent.profession;
-			}
-			agentsByAddress[agent.address] = agent;
-		}
+        if (professions.find(agent.professionId) != professions.end()) {
+            agent.profession = professions[agent.professionId];
+            if (agent.eliteSpecId != -1 && eliteSpecs.find(agent.eliteSpecId) != eliteSpecs.end()) {
+                agent.eliteSpec = eliteSpecs[agent.eliteSpecId];
+            }
+            else {
+                agent.eliteSpec = "Core " + agent.profession;
+            }
+            agentsByAddress[agent.address] = agent;
+        }
 
-		offset += agentBlockSize;
-	}
+        offset += agentBlockSize;
+    }
 }
 
 void parseCombatEvents(const std::vector<char>& bytes, size_t offset, size_t eventCount,
-	std::unordered_map<uint64_t, Agent>& agentsByAddress,
-	std::unordered_map<uint16_t, Agent*>& playersBySrcInstid,
-	ParsedData& result) {
+    std::unordered_map<uint64_t, Agent>& agentsByAddress,
+    std::unordered_map<uint16_t, Agent*>& playersBySrcInstid,
+    ParsedData& result) {
 
-	uint64_t logStartTime = UINT64_MAX;
-	uint64_t logEndTime = 0;
-	result.combatStartTime = UINT64_MAX;
-	result.combatEndTime = 0;
-	uint64_t earliestTime = UINT64_MAX;
-	uint64_t latestTime = 0;
-	uint64_t povAgentID = 0;
+    uint64_t logStartTime = UINT64_MAX;
+    uint64_t logEndTime = 0;
+    result.combatStartTime = UINT64_MAX;
+    result.combatEndTime = 0;
+    uint64_t earliestTime = UINT64_MAX;
+    uint64_t latestTime = 0;
+    uint64_t povAgentID = 0;
 
-	const size_t eventSize = sizeof(CombatEvent);
+    const size_t eventSize = sizeof(CombatEvent);
+    std::unordered_map<uint16_t, Agent*> agentsByInstid;
 
-	// Create a mapping from instance IDs to agents
-	std::unordered_map<uint16_t, Agent*> agentsByInstid;
+    std::vector<CombatEvent> allEvents;
+    allEvents.reserve(eventCount);
 
-	// First pass: Collect times, map agents to instance IDs, and process team assignments
-	for (size_t i = 0; i < eventCount; ++i) {
-		size_t eventOffset = offset + (i * eventSize);
-		if (eventOffset + eventSize > bytes.size()) {
-			break;
-		}
+    // First pass: collect all events
+    for (size_t i = 0; i < eventCount; ++i) {
+        size_t eventOffset = offset + (i * eventSize);
+        if (eventOffset + eventSize > bytes.size()) {
+            break;
+        }
+        CombatEvent event;
+        std::memcpy(&event, bytes.data() + eventOffset, eventSize);
+        allEvents.push_back(event);
+    }
 
-		CombatEvent event;
-		std::memcpy(&event, bytes.data() + eventOffset, eventSize);
+    auto agentStates = preProcessAgentStates(allEvents);
 
-		earliestTime = std::min(earliestTime, event.time);
-		latestTime = std::max(latestTime, event.time);
+    // Process all events
+    for (const auto& event : allEvents) {
+        earliestTime = std::min(earliestTime, event.time);
+        latestTime = std::max(latestTime, event.time);
 
-		switch (static_cast<StateChange>(event.isStateChange)) {
-		case StateChange::LogStart:
-			logStartTime = event.time;
-			break;
-		case StateChange::LogEnd:
-			logEndTime = event.time;
-			break;
-		case StateChange::EnterCombat:
-			result.combatStartTime = std::min(result.combatStartTime, event.time);
-			break;
-		case StateChange::ExitCombat:
-			result.combatEndTime = std::max(result.combatEndTime, event.time);
-			break;
-		case StateChange::PointOfView:
-			povAgentID = event.srcAgent;
-			break;
-		case StateChange::None:
-			// Map srcInstid
-			if (agentsByAddress.find(event.srcAgent) != agentsByAddress.end()) {
-				Agent& agent = agentsByAddress[event.srcAgent];
-				agent.id = event.srcInstid;
-				agentsByInstid[event.srcInstid] = &agent;
-				playersBySrcInstid[event.srcInstid] = &agent;
-			}
-			// Map dstInstid
-			if (agentsByAddress.find(event.dstAgent) != agentsByAddress.end()) {
-				Agent& agent = agentsByAddress[event.dstAgent];
-				agent.id = event.dstInstid;
-				agentsByInstid[event.dstInstid] = &agent;
-			}
-			break;
-		case StateChange::TeamChange: {
-			uint32_t teamID = static_cast<uint32_t>(event.value);
-			if (teamID != 0 && agentsByAddress.find(event.srcAgent) != agentsByAddress.end()) {
-				auto it = teamIDs.find(teamID);
-				if (it != teamIDs.end()) {
-					Agent& agent = agentsByAddress[event.srcAgent];
-					agent.team = it->second;
-				}
-			}
-			break;
-		}
-		default:
-			break;
-		}
-	}
+        switch (static_cast<StateChange>(event.isStateChange)) {
+        case StateChange::LogStart:
+            logStartTime = event.time;
+            break;
+        case StateChange::LogEnd:
+            logEndTime = event.time;
+            break;
+        case StateChange::EnterCombat:
+            result.combatStartTime = std::min(result.combatStartTime, event.time);
+            break;
+        case StateChange::ExitCombat:
+            result.combatEndTime = std::max(result.combatEndTime, event.time);
+            break;
+        case StateChange::PointOfView:
+            povAgentID = event.srcAgent;
+            break;
+        case StateChange::None:
+            // Map srcInstid
+            if (agentsByAddress.find(event.srcAgent) != agentsByAddress.end()) {
+                Agent& agent = agentsByAddress[event.srcAgent];
+                agent.id = event.srcInstid;
+                agentsByInstid[event.srcInstid] = &agent;
+                playersBySrcInstid[event.srcInstid] = &agent;
+            }
+            // Map dstInstid
+            if (agentsByAddress.find(event.dstAgent) != agentsByAddress.end()) {
+                Agent& agent = agentsByAddress[event.dstAgent];
+                agent.id = event.dstInstid;
+                agentsByInstid[event.dstInstid] = &agent;
+            }
+            break;
+        case StateChange::TeamChange: {
+            uint32_t teamID = static_cast<uint32_t>(event.value);
+            if (teamID != 0 && agentsByAddress.find(event.srcAgent) != agentsByAddress.end()) {
+                auto it = teamIDs.find(teamID);
+                if (it != teamIDs.end()) {
+                    Agent& agent = agentsByAddress[event.srcAgent];
+                    agent.team = it->second;
+                }
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
 
-	// After processing all events and assigning teams, set the isPOVTeam flag
-	std::string povTeam;
-	if (agentsByAddress.find(povAgentID) != agentsByAddress.end()) {
-		Agent& povAgent = agentsByAddress[povAgentID];
-		povTeam = povAgent.team;
-		if (!povTeam.empty() && povTeam != "Unknown") {
-			result.teamStats[povTeam].isPOVTeam = true;
-			LogMessage(ELogLevel_DEBUG, ("POV Agent Team: " + povTeam).c_str());
-		}
-		else {
-			APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-				("POV Agent's team is unknown - AgentID: " + std::to_string(povAgentID)).c_str());
-		}
-	}
-	else {
-		APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-			("POV Agent not found - AgentID: " + std::to_string(povAgentID)).c_str());
-	}
+    // Set POV team
+    std::string povTeam;
+    if (agentsByAddress.find(povAgentID) != agentsByAddress.end()) {
+        Agent& povAgent = agentsByAddress[povAgentID];
+        povTeam = povAgent.team;
+        if (!povTeam.empty() && povTeam != "Unknown") {
+            result.teamStats[povTeam].isPOVTeam = true;
+            APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
+                ("POV Agent Team: " + povTeam).c_str());
+        }
+        else {
+            APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
+                ("POV Agent's team is unknown - AgentID: " + std::to_string(povAgentID)).c_str());
+        }
+    }
 
-	if (result.combatStartTime == UINT64_MAX) {
-		result.combatStartTime = (logStartTime != UINT64_MAX) ? logStartTime : earliestTime;
-	}
-	if (result.combatEndTime == 0) {
-		result.combatEndTime = (logEndTime != 0) ? logEndTime : latestTime;
-	}
+    // Set combat times
+    if (result.combatStartTime == UINT64_MAX) {
+        result.combatStartTime = (logStartTime != UINT64_MAX) ? logStartTime : earliestTime;
+    }
+    if (result.combatEndTime == 0) {
+        result.combatEndTime = (logEndTime != 0) ? logEndTime : latestTime;
+    }
 
-	// Second pass: Process deaths and downs events
-	for (size_t i = 0; i < eventCount; ++i) {
-		size_t eventOffset = offset + (i * eventSize);
-		if (eventOffset + eventSize > bytes.size()) {
-			break;
-		}
+    // Process deaths and downs events
+    for (const auto& event : allEvents) {
+        StateChange stateChange = static_cast<StateChange>(event.isStateChange);
+        if (stateChange == StateChange::ChangeDead || stateChange == StateChange::ChangeDown) {
+            uint16_t srcInstid = event.srcInstid;
+            auto agentIt = agentsByInstid.find(srcInstid);
+            if (agentIt != agentsByInstid.end()) {
+                Agent* agent = agentIt->second;
+                const std::string& team = agent->team;
+                if (team != "Unknown") {
+                    auto& teamStats = result.teamStats[team];
+                    if (stateChange == StateChange::ChangeDead) {
+                        teamStats.totalDeaths++;
+                        teamStats.eliteSpecStats[agent->eliteSpec].totalDeaths++;
+                        if (teamStats.isPOVTeam && agent->subgroupNumber > 0) {
+                            teamStats.squadStats.totalDeaths++;
+                            teamStats.squadStats.eliteSpecStats[agent->eliteSpec].totalDeaths++;
+                        }
+                    }
+                    else {
+                        teamStats.totalDowned++;
+                        teamStats.eliteSpecStats[agent->eliteSpec].totalDowned++;
+                        if (teamStats.isPOVTeam && agent->subgroupNumber > 0) {
+                            teamStats.squadStats.totalDowned++;
+                            teamStats.squadStats.eliteSpecStats[agent->eliteSpec].totalDowned++;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-		CombatEvent event;
-		std::memcpy(&event, bytes.data() + eventOffset, eventSize);
+    // Process damage, kills, and strips events
+    for (const auto& event : allEvents) {
+        if (event.isStateChange == static_cast<uint8_t>(StateChange::None)) {
+            if (event.isActivation == static_cast<uint8_t>(Activation::None)) {
+                // Handle buff removals (strips)
+                if (event.isBuffRemove != static_cast<uint8_t>(BuffRemove::None)) {
+                    // Skip if destination agent is 0 (unknown) - since dst is now our stripper
+                    if (event.dstAgent == 0) {
+                        continue;
+                    }
+                    // Skip if it's a self-strip
+                    if (event.srcInstid == event.dstInstid) {
+                        continue;
+                    }
+                    // Skip if overstackValue (RemovedDuration) is 0
+                    if (event.value == 0) {
+                        continue;
+                    }
+                    // Only count "All" removals of specific boons
+                    if (event.isBuffRemove == static_cast<uint8_t>(BuffRemove::All) &&
+                        isTrackedBoon(event.skillId)) {
 
-		StateChange stateChange = static_cast<StateChange>(event.isStateChange);
-		if (stateChange == StateChange::ChangeDead || stateChange == StateChange::ChangeDown) {
-			uint16_t srcInstid = event.srcInstid;
-			auto agentIt = agentsByInstid.find(srcInstid);
-			if (agentIt != agentsByInstid.end()) {
-				Agent* agent = agentIt->second;
-				const std::string& team = agent->team;
-				if (team != "Unknown") {
-					auto& teamStats = result.teamStats[team];
-					if (stateChange == StateChange::ChangeDead) {
-						teamStats.totalDeaths++;
-						if (teamStats.isPOVTeam && agent->subgroupNumber > 0) {
-							teamStats.squadStats.totalDeaths++;
-						}
-					}
-					else {
-						teamStats.totalDowned++;
-						if (teamStats.isPOVTeam && agent->subgroupNumber > 0) {
-							teamStats.squadStats.totalDowned++;
-						}
-					}
-				}
-			}
-		}
-	}
+                        // Look up the destination agent (stripper) instead of source
+                        auto dstIt = playersBySrcInstid.find(event.dstInstid);
+                        if (dstIt != playersBySrcInstid.end()) {
+                            Agent* stripper = dstIt->second;
+                            const std::string& stripperTeam = stripper->team;
+                            if (stripperTeam != "Unknown") {
+                                bool vsPlayer = false;
+                                // Now check the source agent (target) instead of destination
+                                auto srcIt = agentsByInstid.find(event.srcInstid);
+                                if (srcIt != agentsByInstid.end()) {
+                                    Agent* target = srcIt->second;
+                                    if (target->team != "Unknown") {
+                                        vsPlayer = true;
+                                    }
+                                }
+                                updateStats(result.teamStats[stripperTeam], stripper, 0, false, false,
+                                    vsPlayer, false, false, false, false, true);
+                            }
+                        }
+                    }
+                }
+                // Handle damage and kills
+                else if (event.isBuffRemove == static_cast<uint8_t>(BuffRemove::None)) {
+                    ResultCode resultCode = static_cast<ResultCode>(event.result);
 
-	// Third pass: Process damage and kill events
-	for (size_t i = 0; i < eventCount; ++i) {
-		size_t eventOffset = offset + (i * eventSize);
-		if (eventOffset + eventSize > bytes.size()) {
-			break;
-		}
+                    if (resultCode == ResultCode::Normal || resultCode == ResultCode::Critical ||
+                        resultCode == ResultCode::Glance || resultCode == ResultCode::KillingBlow) {
 
-		CombatEvent event;
-		std::memcpy(&event, bytes.data() + eventOffset, eventSize);
+                        int32_t damageValue = 0;
+                        bool isStrikeDamage = false;
+                        bool isCondiDamage = false;
 
-		if (event.isStateChange == static_cast<uint8_t>(StateChange::None) &&
-			event.isActivation == static_cast<uint8_t>(Activation::None) &&
-			event.isBuffRemove == static_cast<uint8_t>(BuffRemove::None)) {
+                        if (event.buff == 0) {
+                            damageValue = event.value;
+                            isStrikeDamage = true;
+                        }
+                        else if (event.buff == 1) {
+                            damageValue = event.buffDmg;
+                            isCondiDamage = true;
+                        }
 
-			ResultCode resultCode = static_cast<ResultCode>(event.result);
+                        if (damageValue > 0) {
+                            auto srcIt = playersBySrcInstid.find(event.srcInstid);
+                            if (srcIt != playersBySrcInstid.end()) {
+                                Agent* attacker = srcIt->second;
+                                const std::string& attackerTeam = attacker->team;
 
-			if (resultCode == ResultCode::Normal || resultCode == ResultCode::Critical ||
-				resultCode == ResultCode::Glance || resultCode == ResultCode::KillingBlow) {
+                                if (attackerTeam != "Unknown") {
+                                    bool vsPlayer = false;
+                                    bool isDownedContribution = false;
+                                    bool isKillContribution = false;
 
-				int32_t damageValue = 0;
-				bool isStrikeDamage = false;
-				bool isCondiDamage = false;
+                                    auto dstIt = agentsByInstid.find(event.dstInstid);
+                                    if (dstIt != agentsByInstid.end()) {
+                                        Agent* target = dstIt->second;
+                                        if (target->team != "Unknown") {
+                                            vsPlayer = true;
+                                            auto stateIt = agentStates.find(target->address);
+                                            if (stateIt != agentStates.end()) {
+                                                isDownedContribution = isDamageInDownSequence(target, stateIt->second, event.time);
+                                                isKillContribution = isDamageInKillSequence(target, stateIt->second, event.time);
+                                            }
+                                        }
+                                    }
 
-				if (event.buff == 0) {
-					damageValue = event.value;
-					isStrikeDamage = true;
-				}
-				else if (event.buff == 1) {
-					damageValue = event.buffDmg;
-					isCondiDamage = true;
-				}
+                                    updateStats(result.teamStats[attackerTeam], attacker, damageValue, true, false,
+                                        vsPlayer, isStrikeDamage, isCondiDamage, isDownedContribution, isKillContribution, false);
+                                }
+                            }
+                        }
 
-				if (damageValue > 0) {
-					auto srcIt = playersBySrcInstid.find(event.srcInstid);
-					if (srcIt != playersBySrcInstid.end()) {
-						Agent* attacker = srcIt->second;
-						const std::string& attackerTeam = attacker->team;
+                        // Process KillingBlow events
+                        if (resultCode == ResultCode::KillingBlow) {
+                            auto srcIt = playersBySrcInstid.find(event.srcInstid);
+                            if (srcIt != playersBySrcInstid.end()) {
+                                Agent* attacker = srcIt->second;
+                                const std::string& attackerTeam = attacker->team;
 
-						if (attackerTeam != "Unknown") {
-							bool vsPlayer = false;
+                                if (attackerTeam != "Unknown") {
+                                    auto dstIt = agentsByInstid.find(event.dstInstid);
+                                    if (dstIt != agentsByInstid.end()) {
+                                        Agent* target = dstIt->second;
+                                        const std::string& targetTeam = target->team;
 
-							
-							auto dstIt = agentsByInstid.find(event.dstInstid);
-							if (dstIt != agentsByInstid.end()) {
-								Agent* target = dstIt->second;
-								if (target->team != "Unknown") {
-									vsPlayer = true;
-								}
-							}
+                                        if (targetTeam != "Unknown") {
+                                            result.teamStats[targetTeam].totalDeathsFromKillingBlows++;
+                                            if (result.teamStats[targetTeam].isPOVTeam && target->subgroupNumber > 0) {
+                                                result.teamStats[targetTeam].squadStats.totalDeathsFromKillingBlows++;
+                                            }
+                                            updateStats(result.teamStats[attackerTeam], attacker, 0, false, true,
+                                                true, false, false, false, false, false);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-							
-							updateStats(result.teamStats[attackerTeam], attacker, damageValue, true, false, vsPlayer, isStrikeDamage, isCondiDamage);
-						}
-					}
-				}
-			}
+    // Collect statistics
+    for (const auto& [srcInstid, agent] : playersBySrcInstid) {
+        if (agent->team != "Unknown") {
+            auto& teamStats = result.teamStats[agent->team];
+            auto& specStats = teamStats.eliteSpecStats[agent->eliteSpec];
 
-			// Process KillingBlow events to collect kills per team
-			if (resultCode == ResultCode::KillingBlow) {
-				
-				auto srcIt = playersBySrcInstid.find(event.srcInstid);
-				if (srcIt != playersBySrcInstid.end()) {
-					Agent* attacker = srcIt->second;
-					const std::string& attackerTeam = attacker->team;
+            teamStats.totalPlayers++;
+            specStats.count++;
+            result.totalIdentifiedPlayers++;
 
-					if (attackerTeam != "Unknown") {
-						
-						auto dstIt = agentsByInstid.find(event.dstInstid);
-						if (dstIt != agentsByInstid.end()) {
-							Agent* target = dstIt->second;
-							const std::string& targetTeam = target->team;
+            if (teamStats.isPOVTeam && agent->subgroupNumber > 0) {
+                auto& squadStats = teamStats.squadStats;
+                auto& squadSpecStats = squadStats.eliteSpecStats[agent->eliteSpec];
 
-							if (targetTeam != "Unknown") {
-
-								result.teamStats[targetTeam].totalDeathsFromKillingBlows++;
-
-								if (result.teamStats[targetTeam].isPOVTeam && target->subgroupNumber > 0) {
-									result.teamStats[targetTeam].squadStats.totalDeathsFromKillingBlows++;
-								}
-								updateStats(result.teamStats[attackerTeam], attacker, 0, false, true, true, false, false);
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-
-
-
-
-
-	// Collect statistics
-	for (const auto& [srcInstid, agent] : playersBySrcInstid) {
-		if (agent->team != "Unknown") {
-			auto& teamStats = result.teamStats[agent->team];
-			auto& specStats = teamStats.eliteSpecStats[agent->eliteSpec];
-
-			teamStats.totalPlayers++;
-			specStats.count++;
-			result.totalIdentifiedPlayers++;
-
-			if (teamStats.isPOVTeam && agent->subgroupNumber > 0) {
-				auto& squadStats = teamStats.squadStats;
-				auto& squadSpecStats = squadStats.eliteSpecStats[agent->eliteSpec];
-
-				squadStats.totalPlayers++;
-				squadSpecStats.count++;
-			}
-		}
-		else {
-			LogMessage(ELogLevel_DEBUG, ("Agent with unknown team - InstID: " + std::to_string(srcInstid) +
-				", Name: " + agent->name).c_str());
-		}
-	}
-
-	// Log the totals
-	// for (const auto& [teamName, stats] : result.teamStats) {
-	//     std::string message = "Team: " + teamName +
-	//         ", Total Damage: " + std::to_string(stats.totalDamage) +
-	//         ", Damage vs Players: " + std::to_string(stats.totalDamageVsPlayers) +
-	//         ", Total Players: " + std::to_string(stats.totalPlayers) +
-	//         ", Total Downs: " + std::to_string(stats.totalDowned) +
-	//         ", Total Deaths: " + std::to_string(stats.totalDeaths) +
-	//         ", Total Kills: " + std::to_string(stats.totalKills) +
-	//         ", Kills vs Players: " + std::to_string(stats.totalKillsVsPlayers);
-	//     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, message.c_str());
-
-	//     // Log per specialization
-	//     for (const auto& [eliteSpec, specStats] : stats.eliteSpecStats) {
-	//         std::string specMessage = "  Elite Spec: " + eliteSpec +
-	//             ", Count: " + std::to_string(specStats.count) +
-	//             ", Total Damage: " + std::to_string(specStats.totalDamage) +
-	//             ", Damage vs Players: " + std::to_string(specStats.totalDamageVsPlayers) +
-	//             ", Total Kills: " + std::to_string(specStats.totalKills) +
-	//             ", Kills vs Players: " + std::to_string(specStats.totalKillsVsPlayers);
-	//         APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, specMessage.c_str());
-	//     }
-
-	//     // Log squad stats if it's the POV team
-	//     if (stats.isPOVTeam) {
-	//         const auto& squadStats = stats.squadStats;
-	//         std::string squadMessage = "Squad Stats - Total Players: " + std::to_string(squadStats.totalPlayers) +
-	//             ", Total Damage: " + std::to_string(squadStats.totalDamage);
-	//         APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, squadMessage.c_str());
-
-	//         for (const auto& [eliteSpec, squadSpecStats] : squadStats.eliteSpecStats) {
-	//             std::string squadSpecMessage = "  Squad Elite Spec: " + eliteSpec +
-	//                 ", Count: " + std::to_string(squadSpecStats.count) +
-	//                 ", Total Damage: " + std::to_string(squadSpecStats.totalDamage);
-	//             APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, squadSpecMessage.c_str());
-	//         }
-	//     }
-	// }
-
-	APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-		("Parsed EVTC file. Found " + std::to_string(result.totalIdentifiedPlayers) + " identified players").c_str());
+                squadStats.totalPlayers++;
+                squadSpecStats.count++;
+            }
+        }
+        else {
+            APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
+                ("Agent with unknown team - InstID: " + std::to_string(srcInstid) +
+                    ", Name: " + agent->name).c_str());
+        }
+    }
 }
 
 ParsedData parseEVTCFile(const std::string& filePath) {
-	ParsedData result;
-	std::vector<char> bytes = extractZipFile(filePath);
-	if (bytes.size() < 16) {
-		LogMessage(ELogLevel_DEBUG, "EVTC file is too small");
-		return result;
-	}
+    ParsedData result;
+    std::vector<char> bytes = extractZipFile(filePath);
+    if (bytes.size() < 16) {
+        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "EVTC file is too small");
+        return result;
+    }
 
-	size_t offset = 0;
+    size_t offset = 0;
 
-	// Read header (12 bytes)
-	char header[13] = { 0 };
-	std::memcpy(header, bytes.data() + offset, 12);
-	offset += 12;
+    // Read header (12 bytes)
+    char header[13] = { 0 };
+    std::memcpy(header, bytes.data() + offset, 12);
+    offset += 12;
 
-	// Read revision (1 byte)
-	uint8_t revision;
-	std::memcpy(&revision, bytes.data() + offset, sizeof(uint8_t));
-	offset += sizeof(uint8_t);
+    // Read revision (1 byte)
+    uint8_t revision;
+    std::memcpy(&revision, bytes.data() + offset, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
 
-	// Read fight instance ID (uint16_t)
-	uint16_t fightId;
-	std::memcpy(&fightId, bytes.data() + offset, sizeof(uint16_t));
-	offset += sizeof(uint16_t);
+    // Read fight instance ID (uint16_t)
+    uint16_t fightId;
+    std::memcpy(&fightId, bytes.data() + offset, sizeof(uint16_t));
+    offset += sizeof(uint16_t);
 
-	// skip (1 byte)
-	uint8_t skipByte;
-	std::memcpy(&skipByte, bytes.data() + offset, sizeof(uint8_t));
-	offset += sizeof(uint8_t);
+    // skip (1 byte)
+    uint8_t skipByte;
+    std::memcpy(&skipByte, bytes.data() + offset, sizeof(uint8_t));
+    offset += sizeof(uint8_t);
 
-	std::string headerStr(header);
+    std::string headerStr(header);
 
-	if (headerStr.rfind("EVTC", 0) != 0 ||
-		!std::all_of(headerStr.begin() + 4, headerStr.end(), ::isdigit)) {
-		LogMessage(ELogLevel_DEBUG, ("Not EVTC " + headerStr).c_str());
-		return ParsedData(); // Return an empty result
-	}
+    if (headerStr.rfind("EVTC", 0) != 0 ||
+        !std::all_of(headerStr.begin() + 4, headerStr.end(), ::isdigit)) {
+        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Not EVTC " + headerStr).c_str());
+        return ParsedData(); // Return an empty result
+    }
 
-	LogMessage(ELogLevel_DEBUG, ("Header: " + headerStr + ", Revision: " + std::to_string(revision) + ", Fight Instance ID: " + std::to_string(fightId)).c_str());
-	int evtcVersion = std::stoi(headerStr.substr(4));
+    APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Header: " + headerStr + ", Revision: " + std::to_string(revision) + ", Fight Instance ID: " + std::to_string(fightId)).c_str());
+    int evtcVersion = std::stoi(headerStr.substr(4));
 
-	if (evtcVersion < 20240612) {
-		LogMessage(ELogLevel_DEBUG, ("Cannot parse EVTC Version is pre TeamChangeOnDespawn / 20240612"));
-		return ParsedData(); // Return an empty result
-	}
+    if (evtcVersion < 20240612) {
+        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Cannot parse EVTC Version is pre TeamChangeOnDespawn / 20240612"));
+        return ParsedData(); // Return an empty result
+    }
 
-	// Check if fightId is 1 (WvW)
-	if (fightId != 1) {
-		LogMessage(ELogLevel_DEBUG, ("Skipping non-WvW log. FightInstanceID: " + std::to_string(fightId)).c_str());
-		return ParsedData(); // Return an empty result
-	}
-	
-
-	result.fightId = fightId;
-
-	// Read agent count (uint32_t)
-	if (offset + sizeof(uint32_t) > bytes.size()) {
-		LogMessage(ELogLevel_DEBUG, "Incomplete EVTC file: Missing agent count");
-		return result;
-	}
-	uint32_t agentCount;
-	std::memcpy(&agentCount, bytes.data() + offset, sizeof(uint32_t));
-	offset += sizeof(uint32_t);
-
-	std::unordered_map<uint64_t, Agent> agentsByAddress;
-	parseAgents(bytes, offset, agentCount, agentsByAddress);
-
-	// Read skill count (uint32_t)
-	if (offset + sizeof(uint32_t) > bytes.size()) {
-		LogMessage(ELogLevel_DEBUG, "Incomplete EVTC file: Missing skill count");
-		return result;
-	}
-	uint32_t skillCount;
-	std::memcpy(&skillCount, bytes.data() + offset, sizeof(uint32_t));
-	offset += sizeof(uint32_t);
-
-	// Skip skills (68 bytes per skill)
-	size_t skillsSize = 68 * skillCount;
-	if (offset + skillsSize > bytes.size()) {
-		LogMessage(ELogLevel_DEBUG, "Incomplete EVTC file: Skills data missing");
-		return result;
-	}
-	offset += skillsSize;
-
-	// Parse combat events
-	const size_t eventSize = sizeof(CombatEvent);
-	size_t remainingBytes = bytes.size() - offset;
-	size_t eventCount = remainingBytes / eventSize;
-
-	std::unordered_map<uint16_t, Agent*> playersBySrcInstid;
-	parseCombatEvents(bytes, offset, eventCount, agentsByAddress, playersBySrcInstid, result);
+    // Check if fightId is 1 (WvW)
+    if (fightId != 1) {
+        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping non-WvW log. FightInstanceID: " + std::to_string(fightId)).c_str());
+        return ParsedData(); // Return an empty result
+    }
 
 
-	return result;
-}
+    result.fightId = fightId;
 
-std::wstring getCanonicalPath(const std::filesystem::path& path)
-{
-	return std::filesystem::weakly_canonical(path).wstring();
-}
+    // Read agent count (uint32_t)
+    if (offset + sizeof(uint32_t) > bytes.size()) {
+        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Incomplete EVTC file: Missing agent count");
+        return result;
+    }
+    uint32_t agentCount;
+    std::memcpy(&agentCount, bytes.data() + offset, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
 
-bool isValidEVTCFile(const std::filesystem::path& dirPath, const std::filesystem::path& filePath) {
-	try {
+    std::unordered_map<uint64_t, Agent> agentsByAddress;
+    parseAgents(bytes, offset, agentCount, agentsByAddress);
 
-		std::filesystem::path relativePath;
-		try {
-			relativePath = std::filesystem::relative(filePath.parent_path(), dirPath);
-		}
-		catch (const std::filesystem::filesystem_error& e) {
-			LogMessage(ELogLevel_DEBUG, ("Failed to get relative path: " + std::string(e.what())).c_str());
-			return false;
-		}
+    // Read skill count (uint32_t)
+    if (offset + sizeof(uint32_t) > bytes.size()) {
+        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Incomplete EVTC file: Missing skill count");
+        return result;
+    }
+    uint32_t skillCount;
+    std::memcpy(&skillCount, bytes.data() + offset, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
 
-		bool dirPathIsWvW = dirPath.filename().string().find("WvW") != std::string::npos;
-		bool dirPathIs1 = dirPath.filename().string() == "1";
+    // Skip skills (68 bytes per skill)
+    size_t skillsSize = 68 * skillCount;
+    if (offset + skillsSize > bytes.size()) {
+        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Incomplete EVTC file: Skills data missing");
+        return result;
+    }
+    offset += skillsSize;
 
-		std::vector<std::filesystem::path> components;
-		if (!dirPath.has_root_path() && !dirPathIsWvW && !dirPathIs1) {
-			components.push_back(dirPath.filename());
-		}
+    // Parse combat events
+    const size_t eventSize = sizeof(CombatEvent);
+    size_t remainingBytes = bytes.size() - offset;
+    size_t eventCount = remainingBytes / eventSize;
 
-		try {
-			for (const auto& part : relativePath) {
-				components.push_back(part);
-			}
-		}
-		catch (const std::exception& e) {
-			LogMessage(ELogLevel_DEBUG, ("Error processing path components: " + std::string(e.what())).c_str());
-			return false;
-		}
+    std::unordered_map<uint16_t, Agent*> playersBySrcInstid;
+    parseCombatEvents(bytes, offset, eventCount, agentsByAddress, playersBySrcInstid, result);
 
-		// Find WvW or instance 1 directory markers
-		int wvwIndex = -1;
-		int dir1Index = -1;
 
-		for (size_t i = 0; i < components.size(); ++i) {
-			try {
-				std::string componentStr = components[i].string();
-				if (componentStr.find("WvW") != std::string::npos) {
-					wvwIndex = static_cast<int>(i);
-					break;
-				}
-				if (componentStr == "1") {
-					dir1Index = static_cast<int>(i);
-					break;
-				}
-			}
-			catch (const std::exception& e) {
-				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-					("Error processing component: " + std::string(e.what())).c_str());
-				continue;
-			}
-		}
-
-		bool isValid = false;
-		if (dirPathIsWvW) {
-			isValid = components.size() <= 2;
-		}
-		else if (wvwIndex != -1) {
-			isValid = (components.size() - (wvwIndex + 1)) <= 2;
-		}
-		else if (dirPathIs1) {
-			isValid = components.size() <= 2;
-		}
-		else if (dir1Index != -1) {
-			isValid = (components.size() - (dir1Index + 1)) <= 2;
-		}
-
-		return isValid;
-	}
-	catch (const std::exception& e) {
-		APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
-			("Unexpected error in isValidEVTCFile: " + std::string(e.what())).c_str());
-		return false;
-	}
+    return result;
 }
 
 void processEVTCFile(const std::filesystem::path& filePath)
 {
-	waitForFile(filePath.string());
-	processNewEVTCFile(filePath.string());
-}
-
-void parseInitialLogs(std::unordered_set<std::wstring>& processedFiles, size_t numLogsToParse)
-{
-	try
-	{
-		std::filesystem::path dirPath;
-		if (!Settings::LogDirectoryPath.empty())
-		{
-			dirPath = std::filesystem::path(Settings::LogDirectoryPath);
-			APIDefs->Log(ELogLevel_INFO, ADDON_NAME,
-				("Custom log path specified: " + dirPath.string()).c_str());
-			if (!std::filesystem::exists(dirPath) || !std::filesystem::is_directory(dirPath))
-			{
-				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-					("Specified log directory does not exist: " + dirPath.string()).c_str());
-				return;
-			}
-		}
-		else
-		{
-			char documentsPath[MAX_PATH];
-			if (FAILED(SHGetFolderPath(nullptr, CSIDL_PERSONAL, nullptr, SHGFP_TYPE_CURRENT, documentsPath)))
-			{
-				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-					"Failed to get path to user's Documents folder.");
-				return;
-			}
-
-			dirPath = std::filesystem::path(documentsPath) / "Guild Wars 2" / "addons" /
-				"arcdps" / "arcdps.cbtlogs";
-		}
-
-		std::vector<std::filesystem::path> zevtcFiles;
-
-		// Recursively search for .zevtc files in the directory
-		for (const auto& entry : std::filesystem::recursive_directory_iterator(dirPath))
-		{
-			if (entry.is_regular_file() && entry.path().extension() == L".zevtc")
-			{
-				if (isValidEVTCFile(dirPath, entry.path()))
-				{
-					zevtcFiles.push_back(entry.path());
-				}
-			}
-		}
-
-		if (zevtcFiles.empty())
-		{
-			APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-				("No valid .zevtc files found in directory: " + dirPath.string()).c_str());
-			return;
-		}
-
-		// Sort escending order (newest first)
-		std::sort(zevtcFiles.begin(), zevtcFiles.end(),
-			[](const std::filesystem::path& a, const std::filesystem::path& b)
-			{
-				return std::filesystem::last_write_time(a) > std::filesystem::last_write_time(b);
-			});
-
-		size_t numFilesToParse = std::min<size_t>(zevtcFiles.size(), numLogsToParse);
-
-		for (size_t i = 0; i < numFilesToParse; ++i)
-		{
-			const std::filesystem::path& filePath = zevtcFiles[i];
-			waitForFile(filePath.string());
-
-			std::wstring absolutePath = std::filesystem::absolute(filePath).wstring();
-
-			if (processedFiles.find(absolutePath) == processedFiles.end())
-			{
-				ParsedLog log;
-				log.filename = filePath.filename().string();
-				log.data = parseEVTCFile(filePath.string());
-
-				// fightId 1 = WvW
-				if (log.data.fightId != 1)
-				{
-					LogMessage(ELogLevel_DEBUG, ("Skipping non-WvW log during initial parsing: " + log.filename).c_str());
-					continue;
-				}
-
-				if (log.data.totalIdentifiedPlayers == 0)
-				{
-					LogMessage(ELogLevel_DEBUG, ("Skipping log with no identified players during initial parsing: " + log.filename).c_str());
-					continue;
-				}
-
-				parsedLogs.push_back(log);
-
-				while (parsedLogs.size() > Settings::logHistorySize)
-				{
-					parsedLogs.pop_front();
-				}
-				currentLogIndex = 0;
-
-				processedFiles.insert(absolutePath);
-
-				// In the Wine implementation we will only parse logs with newer time stamps.
-				// Not quite the same behaviour but good enough
-				auto fileTime = std::filesystem::last_write_time(filePath);
-				if (fileTime > maxProcessedTime)
-				{
-					maxProcessedTime = fileTime;
-				}
-			}
-			else
-			{
-				LogMessage(ELogLevel_DEBUG, ("File already processed during initial parsing: " + filePath.string()).c_str());
-			}
-		}
-
-		initialParsingComplete = true;
-	}
-	catch (const std::exception& ex)
-	{
-		APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-			("Exception in initial parsing: " + std::string(ex.what())).c_str());
-	}
-}
-
-void scanForNewFiles(const std::filesystem::path& dirPath, std::unordered_set<std::wstring>& processedFiles) {
-	try {
-		LogMessage(ELogLevel_DEBUG, ("Scanning directory for new files: " + dirPath.string()).c_str());
-
-		if (!std::filesystem::exists(dirPath)) {
-			APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-				("Directory does not exist: " + dirPath.string()).c_str());
-			return;
-		}
-
-		std::vector<std::filesystem::path> zevtcFiles;
-		size_t filesFound = 0;
-
-		try {
-			for (const auto& entry : std::filesystem::recursive_directory_iterator(dirPath)) {
-				if (entry.is_regular_file() && entry.path().extension() == L".zevtc") {
-					filesFound++;
-					if (isValidEVTCFile(dirPath, entry.path())) {
-						zevtcFiles.push_back(entry.path());
-					}
-				}
-			}
-		}
-		catch (const std::filesystem::filesystem_error& e) {
-			APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
-				("Filesystem error during directory scan: " + std::string(e.what())).c_str());
-			return;
-		}
-
-		//LogMessage(ELogLevel_DEBUG, ("Found " + std::to_string(filesFound) + " total .zevtc files, " +
-			//std::to_string(zevtcFiles.size()) + " are valid").c_str());
-
-		if (!zevtcFiles.empty()) {
-			try {
-				std::sort(zevtcFiles.begin(), zevtcFiles.end(),
-					[](const std::filesystem::path& a, const std::filesystem::path& b) {
-						return std::filesystem::last_write_time(a) > std::filesystem::last_write_time(b);
-					});
-			}
-			catch (const std::exception& e) {
-				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-					("Error sorting files by time: " + std::string(e.what())).c_str());
-				return;
-			}
-
-			size_t processedCount = 0;
-			for (const auto& filePath : zevtcFiles) {
-				try {
-					auto fileTime = std::filesystem::last_write_time(filePath);
-					if (fileTime <= maxProcessedTime) {
-						break;
-					}
-
-					std::wstring absolutePath = std::filesystem::absolute(filePath).wstring();
-					{
-						std::lock_guard<std::mutex> lock(processedFilesMutex);
-						if (processedFiles.find(absolutePath) != processedFiles.end()) {
-							continue;
-						}
-
-						processEVTCFile(filePath);
-						processedFiles.insert(absolutePath);
-						processedCount++;
-
-						if (fileTime > maxProcessedTime) {
-							maxProcessedTime = fileTime;
-						}
-					}
-				}
-				catch (const std::exception& e) {
-					APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-						("Error processing file " + filePath.string() + ": " + e.what()).c_str());
-					continue;
-				}
-			}
-
-			if (processedCount > 0) {
-				APIDefs->Log(ELogLevel_INFO, ADDON_NAME,
-					("Successfully processed " + std::to_string(processedCount) + " new files").c_str());
-			}
-		}
-	}
-	catch (const std::exception& e) {
-		APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
-			("Fatal error in scanForNewFiles: " + std::string(e.what())).c_str());
-	}
-}
-
-
-// ReadDirectoryChangesW doesn't seem to work under Wine, we'll keep using this version on Windows though
-void directoryMonitor(const std::filesystem::path& dirPath, size_t numLogsToParse)
-{
-	try
-	{
-		HANDLE hDir = CreateFileW(
-			dirPath.wstring().c_str(),
-			FILE_LIST_DIRECTORY,
-			FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-			nullptr,
-			OPEN_EXISTING,
-			FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
-			nullptr);
-
-		if (hDir == INVALID_HANDLE_VALUE)
-		{
-			APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-				("Failed to open directory for monitoring: " + dirPath.string()).c_str());
-			return;
-		}
-
-		// Use a larger buffer (64 KB) to reduce the chance of overflow
-		const size_t bufferSize = 65536;
-		std::vector<char> buffer(bufferSize);
-
-		OVERLAPPED overlapped = { 0 };
-		overlapped.hEvent = CreateEvent(nullptr, TRUE, FALSE, nullptr);
-
-		// Do an initial scan of the directory
-		parseInitialLogs(processedFiles, numLogsToParse);
-
-		BOOL success = ReadDirectoryChangesW(
-			hDir,
-			buffer.data(),
-			static_cast<DWORD>(buffer.size()),
-			TRUE,
-			FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_SIZE |
-			FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_CREATION,
-			nullptr,
-			&overlapped,
-			nullptr);
-
-		if (!success)
-		{
-			APIDefs->Log(ELogLevel_WARNING, ADDON_NAME, "Failed to start directory monitoring.");
-			CloseHandle(overlapped.hEvent);
-			CloseHandle(hDir);
-			return;
-		}
-
-		while (!stopMonitoring)
-		{
-			DWORD waitStatus = WaitForSingleObject(overlapped.hEvent, 500);
-
-			if (stopMonitoring)
-			{
-				CancelIoEx(hDir, &overlapped);
-				break;
-			}
-
-			if (waitStatus == WAIT_OBJECT_0)
-			{
-				DWORD bytesTransferred = 0;
-				if (GetOverlappedResult(hDir, &overlapped, &bytesTransferred, FALSE))
-				{
-					// Process the notifications from our buffer.
-					BYTE* pBuffer = reinterpret_cast<BYTE*>(buffer.data());
-					FILE_NOTIFY_INFORMATION* fni = reinterpret_cast<FILE_NOTIFY_INFORMATION*>(pBuffer);
-
-					do
-					{
-						std::wstring filenameW(fni->FileName, fni->FileNameLength / sizeof(WCHAR));
-						std::filesystem::path fullPath = dirPath / filenameW;
-
-						// Filter for .zevtc files
-						if ((fni->Action == FILE_ACTION_ADDED ||
-							fni->Action == FILE_ACTION_MODIFIED ||
-							fni->Action == FILE_ACTION_RENAMED_NEW_NAME) &&
-							fullPath.extension() == L".zevtc")
-						{
-							if (isValidEVTCFile(dirPath, fullPath))
-							{
-								std::wstring fullPathStr = std::filesystem::absolute(fullPath).wstring();
-
-								{
-									std::lock_guard<std::mutex> lock(processedFilesMutex);
-									if (processedFiles.find(fullPathStr) == processedFiles.end())
-									{
-										processEVTCFile(fullPath);
-										processedFiles.insert(fullPathStr);
-									}
-								}
-							}
-						}
-
-						if (fni->NextEntryOffset == 0)
-							break;
-
-						fni = reinterpret_cast<FILE_NOTIFY_INFORMATION*>(
-							reinterpret_cast<BYTE*>(fni) + fni->NextEntryOffset);
-					} while (true);
-
-					// Prepare to receive the next set of changes.
-					ResetEvent(overlapped.hEvent);
-
-					success = ReadDirectoryChangesW(
-						hDir,
-						buffer.data(),
-						static_cast<DWORD>(buffer.size()),
-						TRUE,
-						FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_SIZE |
-						FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_CREATION,
-						nullptr,
-						&overlapped,
-						nullptr);
-
-					if (!success)
-					{
-						APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-							"Failed to reissue directory monitoring.");
-						break;
-					}
-				}
-				else
-				{
-					DWORD errorCode = GetLastError();
-					// Check if the error indicates a buffer overflow.
-					if (errorCode == ERROR_NOTIFY_ENUM_DIR)
-					{
-						APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-							"Buffer overflow detected. Some file change notifications may have been lost. Rescanning directory.");
-						// Rescan the entire directory to catch up on any missed events.
-						parseInitialLogs(processedFiles, numLogsToParse);
-
-						ResetEvent(overlapped.hEvent);
-
-						success = ReadDirectoryChangesW(
-							hDir,
-							buffer.data(),
-							static_cast<DWORD>(buffer.size()),
-							TRUE,
-							FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_SIZE |
-							FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_CREATION,
-							nullptr,
-							&overlapped,
-							nullptr);
-
-						if (!success)
-						{
-							APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-								"Failed to reissue directory monitoring after buffer overflow.");
-							break;
-						}
-						// Continue to wait for the next batch of notifications.
-						continue;
-					}
-					else
-					{
-						APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-							("GetOverlappedResult failed with error code: " + std::to_string(errorCode)).c_str());
-						break;
-					}
-				}
-			}
-			else if (waitStatus == WAIT_TIMEOUT)
-			{
-				continue;
-			}
-			else
-			{
-				DWORD errorCode = GetLastError();
-				APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-					("WaitForSingleObject failed with error code: " + std::to_string(errorCode)).c_str());
-				break;
-			}
-		}
-
-		CloseHandle(overlapped.hEvent);
-		CloseHandle(hDir);
-	}
-	catch (const std::exception& ex)
-	{
-		APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-			("Exception in directory monitoring thread: " + std::string(ex.what())).c_str());
-	}
-}
-
-void monitorDirectory(size_t numLogsToParse, size_t pollIntervalMilliseconds) {
-	try {
-		APIDefs->Log(ELogLevel_INFO, ADDON_NAME, "Starting directory monitoring");
-		std::filesystem::path dirPath;
-
-		// Handle first install configuration
-		if (firstInstall) {
-			try {
-				std::filesystem::path arcPath = getArcPath();
-				Settings::LogDirectoryPath = arcPath.string();
-
-				if (Settings::LogDirectoryPath.length() >= sizeof(Settings::LogDirectoryPathC)) {
-					APIDefs->Log(ELogLevel_WARNING, ADDON_NAME, "Path too long for buffer");
-					return;
-				}
-
-				strncpy(Settings::LogDirectoryPathC, Settings::LogDirectoryPath.c_str(),
-					sizeof(Settings::LogDirectoryPathC) - 1);
-				Settings::LogDirectoryPathC[sizeof(Settings::LogDirectoryPathC) - 1] = '\0';
-
-				Settings::Settings[CUSTOM_LOG_PATH] = Settings::LogDirectoryPath;
-				Settings::Save(SettingsPath);
-			}
-			catch (const std::exception& e) {
-				APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
-					("First install configuration failed: " + std::string(e.what())).c_str());
-				return;
-			}
-		}
-
-		// Set up directory path
-		if (!Settings::LogDirectoryPath.empty()) {
-			dirPath = std::filesystem::path(Settings::LogDirectoryPath);
-
-			if (!std::filesystem::exists(dirPath) || !std::filesystem::is_directory(dirPath)) {
-				APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
-					("Invalid log directory path: " + dirPath.string()).c_str());
-				return;
-			}
-		}
-		else {
-			char documentsPath[MAX_PATH];
-			if (FAILED(SHGetFolderPath(nullptr, CSIDL_PERSONAL, nullptr, SHGFP_TYPE_CURRENT, documentsPath))) {
-				APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME, "Failed to get Documents folder path");
-				return;
-			}
-
-			dirPath = std::filesystem::path(documentsPath) / "Guild Wars 2" / "addons" /
-				"arcdps" / "arcdps.cbtlogs";
-		}
-
-		APIDefs->Log(ELogLevel_INFO, ADDON_NAME,
-			("Monitoring directory: " + dirPath.string()).c_str());
-
-		// Check for Wine environment
-		bool runningUnderWine = isRunningUnderWine();
-		if (runningUnderWine) {
-			APIDefs->Log(ELogLevel_INFO, ADDON_NAME,
-				"Running under Wine/Proton - using polling method");
-
-			try {
-				parseInitialLogs(processedFiles, numLogsToParse);
-
-				while (!stopMonitoring) {
-					std::this_thread::sleep_for(std::chrono::milliseconds(pollIntervalMilliseconds));
-
-					if (stopMonitoring) break;
-
-					if (!std::filesystem::exists(dirPath)) {
-						APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-							"Monitored directory no longer exists, waiting...");
-						continue;
-					}
-
-					scanForNewFiles(dirPath, processedFiles);
-				}
-			}
-			catch (const std::exception& e) {
-				APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
-					("Error in Wine polling loop: " + std::string(e.what())).c_str());
-			}
-		}
-		else {
-			APIDefs->Log(ELogLevel_INFO, ADDON_NAME,
-				"Running under Windows - using ReadDirectoryChangesW");
-			directoryMonitor(dirPath, numLogsToParse);
-		}
-	}
-	catch (const std::exception& e) {
-		APIDefs->Log(ELogLevel_CRITICAL, ADDON_NAME,
-			("Fatal error in monitorDirectory: " + std::string(e.what())).c_str());
-	}
-
-	APIDefs->Log(ELogLevel_INFO, ADDON_NAME, "Directory monitoring stopped");
+    waitForFile(filePath.string());
+    processNewEVTCFile(filePath.string());
 }
 
 void processNewEVTCFile(const std::string& filePath)
 {
-	std::filesystem::path path(filePath);
-	std::string filename = path.filename().string();
+    std::filesystem::path path(filePath);
+    std::string filename = path.filename().string();
 
-	ParsedLog log;
-	log.filename = filename;
-	log.data = parseEVTCFile(filePath);
+    ParsedLog log;
+    log.filename = filename;
+    log.data = parseEVTCFile(filePath);
 
-	// Validate WvW log
-	if (log.data.fightId != 1)
-	{
-		LogMessage(ELogLevel_DEBUG, ("Skipping non-WvW log: " + filename).c_str());
-		return;
-	}
+    // Validate WvW log
+    if (log.data.fightId != 1)
+    {
+        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping non-WvW log: " + filename).c_str());
+        return;
+    }
 
-	if (log.data.totalIdentifiedPlayers == 0)
-	{
-		LogMessage(ELogLevel_DEBUG, ("Skipping log with no identified players: " + filename).c_str());
-		return;
-	}
+    if (log.data.totalIdentifiedPlayers == 0)
+    {
+        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Skipping log with no identified players: " + filename).c_str());
+        return;
+    }
 
-	{
-		std::lock_guard<std::mutex> lock(parsedLogsMutex);
-		parsedLogs.push_front(log);
+    {
+        std::lock_guard<std::mutex> lock(parsedLogsMutex);
+        parsedLogs.push_front(log);
 
-		while (parsedLogs.size() > Settings::logHistorySize)
-		{
-			parsedLogs.pop_back();
-		}
+        while (parsedLogs.size() > Settings::logHistorySize)
+        {
+            parsedLogs.pop_back();
+        }
 
-		currentLogIndex = 0;
-	}
+        currentLogIndex = 0;
+    }
 
-	{
-		std::lock_guard<std::mutex> lock(aggregateStatsMutex);
+    {
+        std::lock_guard<std::mutex> lock(aggregateStatsMutex);
 
-		// Update total combat time
-		uint64_t fightDuration = (log.data.combatEndTime - log.data.combatStartTime);
-		globalAggregateStats.totalCombatTime += fightDuration;
-		globalAggregateStats.combatInstanceCount++;
+        // Update total combat time
+        uint64_t fightDuration = (log.data.combatEndTime - log.data.combatStartTime);
+        globalAggregateStats.totalCombatTime += fightDuration;
+        globalAggregateStats.combatInstanceCount++;
 
-		// Aggregate team data
-		for (const auto& [teamName, stats] : log.data.teamStats)
-		{
-			auto& teamAgg = globalAggregateStats.teamAggregates[teamName];
+        // Aggregate team data
+        for (const auto& [teamName, stats] : log.data.teamStats)
+        {
+            auto& teamAgg = globalAggregateStats.teamAggregates[teamName];
 
-			// Update full team totals
-			teamAgg.teamTotals.totalPlayers += stats.totalPlayers;
-			teamAgg.teamTotals.totalDeaths += stats.totalDeaths;
-			teamAgg.teamTotals.totalDowned += stats.totalDowned;
-			teamAgg.teamTotals.instanceCount++;
+            // Update full team totals
+            teamAgg.teamTotals.totalPlayers += stats.totalPlayers;
+            teamAgg.teamTotals.totalDeaths += stats.totalDeaths;
+            teamAgg.teamTotals.totalDowned += stats.totalDowned;
+            teamAgg.teamTotals.instanceCount++;
 
-			for (const auto& [eliteSpec, specStats] : stats.eliteSpecStats)
-			{
-				teamAgg.teamTotals.eliteSpecTotals[eliteSpec].totalCount += specStats.count;
-			}
+            for (const auto& [eliteSpec, specStats] : stats.eliteSpecStats)
+            {
+                teamAgg.teamTotals.eliteSpecTotals[eliteSpec].totalCount += specStats.count;
+            }
 
-			// POV team updates
-			if (stats.isPOVTeam) {
-				teamAgg.isPOVTeam = true;
-				teamAgg.povSquadTotals.totalPlayers += stats.squadStats.totalPlayers;
-				teamAgg.povSquadTotals.totalDeaths += stats.squadStats.totalDeaths;
-				teamAgg.povSquadTotals.totalDowned += stats.squadStats.totalDowned;
-				teamAgg.povSquadTotals.instanceCount++;
+            // POV team updates
+            if (stats.isPOVTeam) {
+                teamAgg.isPOVTeam = true;
+                teamAgg.povSquadTotals.totalPlayers += stats.squadStats.totalPlayers;
+                teamAgg.povSquadTotals.totalDeaths += stats.squadStats.totalDeaths;
+                teamAgg.povSquadTotals.totalDowned += stats.squadStats.totalDowned;
+                teamAgg.povSquadTotals.instanceCount++;
 
-				for (const auto& [eliteSpec, specStats] : stats.squadStats.eliteSpecStats)
-				{
-					teamAgg.povSquadTotals.eliteSpecTotals[eliteSpec].totalCount += specStats.count;
-				}
-			}
-		}
+                for (const auto& [eliteSpec, specStats] : stats.squadStats.eliteSpecStats)
+                {
+                    teamAgg.povSquadTotals.eliteSpecTotals[eliteSpec].totalCount += specStats.count;
+                }
+            }
+        }
 
-		// Compute and cache averages
-		cachedAverages.averageCombatTime = globalAggregateStats.getAverageCombatTime();
-		cachedAverages.averageTeamPlayerCounts.clear();
-		cachedAverages.averageTeamSpecCounts.clear();
-		cachedAverages.averagePOVSquadPlayerCounts.clear();
-		cachedAverages.averagePOVSquadSpecCounts.clear();
+        // Compute and cache averages
+        cachedAverages.averageCombatTime = globalAggregateStats.getAverageCombatTime();
+        cachedAverages.averageTeamPlayerCounts.clear();
+        cachedAverages.averageTeamSpecCounts.clear();
+        cachedAverages.averagePOVSquadPlayerCounts.clear();
+        cachedAverages.averagePOVSquadSpecCounts.clear();
 
-		for (const auto& [teamName, teamAgg] : globalAggregateStats.teamAggregates)
-		{
-			// Full team averages
-			cachedAverages.averageTeamPlayerCounts[teamName] = teamAgg.getAverageTeamPlayerCount();
+        for (const auto& [teamName, teamAgg] : globalAggregateStats.teamAggregates)
+        {
+            // Full team averages
+            cachedAverages.averageTeamPlayerCounts[teamName] = teamAgg.getAverageTeamPlayerCount();
 
-			for (const auto& [specName, _] : teamAgg.teamTotals.eliteSpecTotals)
-			{
-				cachedAverages.averageTeamSpecCounts[teamName][specName] = teamAgg.getAverageTeamSpecCount(specName);
-			}
+            for (const auto& [specName, _] : teamAgg.teamTotals.eliteSpecTotals)
+            {
+                cachedAverages.averageTeamSpecCounts[teamName][specName] = teamAgg.getAverageTeamSpecCount(specName);
+            }
 
-			// POV squad averages if POV
-			if (teamAgg.isPOVTeam) {
-				cachedAverages.averagePOVSquadPlayerCounts[teamName] = teamAgg.getAveragePOVSquadPlayerCount();
-				for (const auto& [specName, _] : teamAgg.povSquadTotals.eliteSpecTotals)
-				{
-					cachedAverages.averagePOVSquadSpecCounts[teamName][specName] = teamAgg.getAveragePOVSquadSpecCount(specName);
-				}
-			}
-		}
-	}
+            // POV squad averages if POV
+            if (teamAgg.isPOVTeam) {
+                cachedAverages.averagePOVSquadPlayerCounts[teamName] = teamAgg.getAveragePOVSquadPlayerCount();
+                for (const auto& [specName, _] : teamAgg.povSquadTotals.eliteSpecTotals)
+                {
+                    cachedAverages.averagePOVSquadSpecCounts[teamName][specName] = teamAgg.getAveragePOVSquadSpecCount(specName);
+                }
+            }
+        }
+    }
 
-	if (Settings::showNewParseAlert) {
-		std::string displayName = generateLogDisplayName(log.filename, log.data.combatStartTime, log.data.combatEndTime);
-		APIDefs->UI.SendAlert(("Parsed New Log: " + displayName).c_str());
-	}
+    if (Settings::showNewParseAlert) {
+        std::string displayName = generateLogDisplayName(log.filename, log.data.combatStartTime, log.data.combatEndTime);
+        APIDefs->UI.SendAlert(("Parsed New Log: " + displayName).c_str());
+    }
 }
-
-
-
-
-
-
-

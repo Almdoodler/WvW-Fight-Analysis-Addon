@@ -5,7 +5,7 @@
 #include "shared/Shared.h"
 #include "settings/Settings.h"
 #include "utils/Utils.h"
-#include "evtc_parser.h"
+#include "parser/evtc_parser.h"
 
 
 // Function prototypes
@@ -35,6 +35,7 @@ void AddonLoad(AddonAPI* aApi) {
     }
     std::filesystem::create_directory(AddonPath);
     Settings::Load(SettingsPath);
+    initMaps();
     g_windowRenderer = std::make_unique<wvwfightanalysis::gui::WindowRenderer>();
 
     for (auto& mainWindow : Settings::windowManager.mainWindows) {
@@ -67,7 +68,6 @@ void AddonLoad(AddonAPI* aApi) {
     APIDefs->InputBinds.RegisterWithString("LOG_INDEX_UP", ProcessKeybinds, "(null)");
     APIDefs->InputBinds.RegisterWithString("LOG_INDEX_DOWN", ProcessKeybinds, "(null)");
     APIDefs->InputBinds.RegisterWithString("SHOW_SQUAD_PLAYERS_ONLY", ProcessKeybinds, "(null)");
-    initMaps();
     directoryMonitorThread = std::thread(monitorDirectory, Settings::logHistorySize, Settings::pollIntervalMilliseconds);
     APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Addon loaded successfully.");
 }
@@ -489,7 +489,7 @@ extern "C" __declspec(dllexport) AddonDefinition * GetAddonDef()
     AddonDef.Version.Major = 1;
     AddonDef.Version.Minor = 1;
     AddonDef.Version.Build = 0;
-    AddonDef.Version.Revision = 5;
+    AddonDef.Version.Revision = 7;
     AddonDef.Author = "Unreal";
     AddonDef.Description = "WvW log analysis tool.";
     AddonDef.Load = AddonLoad;

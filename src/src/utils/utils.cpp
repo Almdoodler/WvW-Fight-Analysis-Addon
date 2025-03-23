@@ -103,9 +103,9 @@ void initMaps() {
 
     // Map of team IDs to team names
     teamIDs = {
-        {697,  "Red"}, {705,  "Red"}, {706,  "Red"}, {882,  "Red"}, {2520, "Red"},
+        {697,  "Red"}, {705,  "Red"}, {706,  "Red"}, {882,  "Red"}, {885, "Red"}, {2520, "Red"},
         {39,   "Green"}, {2739, "Green"}, {2741, "Green"}, {2752, "Green"}, {2763, "Green"},
-        {432,  "Blue"}, {1277, "Blue"}, {1989, "Blue"}
+        {432,  "Blue"}, {1277, "Blue"}, {1281, "Blue"}, {1989, "Blue"}
     };
 
     // Map of elite specializations to professions
@@ -274,7 +274,7 @@ void LogMessage(ELogLevel level, const std::string& msg) {
     LogMessage(level, msg.c_str());
 }
 
-std::string generateLogDisplayName(const std::string& filename, uint64_t combatStartMs, uint64_t combatEndMs) 
+std::string generateLogDisplayName(const std::string& filename, uint64_t combatStartMs, uint64_t combatEndMs)
 {
 
     size_t lastDotPosition = filename.find_last_of('.');
@@ -302,40 +302,6 @@ std::string formatDuration(uint64_t milliseconds) {
     return std::to_string(minutes) + "m " + std::to_string(seconds) + "s";
 }
 
-bool isRunningUnderWine()
-{
-    if (Settings::forceLinuxCompatibilityMode) {
-        return true;
-    }
-    HKEY hKey;
-    LONG result = RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Wine", 0, KEY_READ, &hKey);
-    if (result == ERROR_SUCCESS)
-    {
-        RegCloseKey(hKey);
-        return true;
-    }
-    else
-    {
-        result = RegOpenKeyExA(HKEY_LOCAL_MACHINE, "Software\\Wine", 0, KEY_READ, &hKey);
-        if (result == ERROR_SUCCESS)
-        {
-            RegCloseKey(hKey);
-            return true;
-        }
-    }
-
-    HMODULE hNtDll = GetModuleHandleA("ntdll.dll");
-    if (hNtDll)
-    {
-        FARPROC wine_get_version = GetProcAddress(hNtDll, "wine_get_version");
-        if (wine_get_version)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
 
 Texture** getTextureInfo(const std::string& eliteSpec, int* outResourceId) {
     auto it = textureMap.find(eliteSpec);
@@ -384,185 +350,6 @@ std::string formatDamage(double damage) {
 }
 
 
-std::vector<char> extractZipFile(const std::string& filePath) {
-    try {
-        LogMessage(ELogLevel_DEBUG, ("Attempting to extract zip file: " + filePath).c_str());
-
-        int err = 0;
-        zip* z = zip_open(filePath.c_str(), 0, &err);
-        if (!z) {
-            std::string errMsg = "Failed to open zip file. Error code: " + std::to_string(err);
-            switch (err) {
-            case ZIP_ER_NOENT:
-                errMsg += " (File does not exist)";
-                break;
-            case ZIP_ER_NOZIP:
-                errMsg += " (Not a zip file)";
-                break;
-            case ZIP_ER_INVAL:
-                errMsg += " (Invalid argument)";
-                break;
-            case ZIP_ER_MEMORY:
-                errMsg += " (Memory allocation failed)";
-                break;
-            }
-            APIDefs->Log(ELogLevel_WARNING, ADDON_NAME, errMsg.c_str());
-            return std::vector<char>();
-        }
-
-        zip_stat_t zstat;
-        zip_stat_init(&zstat);
-        if (zip_stat_index(z, 0, 0, &zstat) != 0) {
-            APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-                "Failed to get zip file statistics");
-            zip_close(z);
-            return std::vector<char>();
-        }
-
-        // Check for reasonable file size to prevent memory issues
-        if (zstat.size > 100 * 1024 * 1024) { // 100MB limit
-            APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-                ("Zip file too large: " + std::to_string(zstat.size) + " bytes").c_str());
-            zip_close(z);
-            return std::vector<char>();
-        }
-
-        try {
-            std::vector<char> buffer(zstat.size);
-            zip_file* f = zip_fopen_index(z, 0, 0);
-            if (!f) {
-                APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-                    "Failed to open file in zip archive");
-                zip_close(z);
-                return std::vector<char>();
-            }
-
-            zip_int64_t bytesRead = zip_fread(f, buffer.data(), zstat.size);
-            if (bytesRead < 0 || static_cast<zip_uint64_t>(bytesRead) != zstat.size) {
-                APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-                    ("Failed to read complete file. Expected: " + std::to_string(zstat.size) +
-                        " bytes, Read: " + std::to_string(bytesRead) + " bytes").c_str());
-                zip_fclose(f);
-                zip_close(z);
-                return std::vector<char>();
-            }
-
-            zip_fclose(f);
-            zip_close(z);
-
-            LogMessage(ELogLevel_DEBUG, ("Successfully extracted zip file: " + filePath +
-                " (" + std::to_string(buffer.size()) + " bytes)").c_str());
-            return buffer;
-        }
-        catch (const std::bad_alloc& e) {
-            APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-                ("Memory allocation failed for zip buffer: " + std::string(e.what())).c_str());
-            zip_close(z);
-            return std::vector<char>();
-        }
-    }
-    catch (const std::exception& e) {
-        APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-            ("Unexpected error while extracting zip file: " + std::string(e.what())).c_str());
-        return std::vector<char>();
-    }
-}
-
-void waitForFile(const std::string& filePath) {
-    try {
-        LogMessage(ELogLevel_DEBUG, ("Starting to wait for file: " + filePath).c_str());
-
-        const int MAX_RETRIES = 30; // 15 seconds total max wait time
-        const int RETRY_DELAY_MS = 500;
-        int retries = 0;
-        DWORD previousSize = 0;
-        HANDLE hFile = INVALID_HANDLE_VALUE;
-
-        while (retries < MAX_RETRIES) {
-            try {
-                hFile = CreateFile(
-                    filePath.c_str(),
-                    GENERIC_READ,
-                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                    nullptr,
-                    OPEN_EXISTING,
-                    FILE_ATTRIBUTE_NORMAL,
-                    nullptr);
-
-                if (hFile == INVALID_HANDLE_VALUE) {
-                    DWORD error = GetLastError();
-                    if (error != ERROR_SHARING_VIOLATION) {
-                        LogMessage(ELogLevel_DEBUG, ("File not accessible, error code: " + std::to_string(error)).c_str());
-                    }
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    retries++;
-                    continue;
-                }
-
-                DWORD currentSize = GetFileSize(hFile, nullptr);
-                if (currentSize == INVALID_FILE_SIZE) {
-                    DWORD error = GetLastError();
-                    APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-                        ("Failed to get file size, error code: " + std::to_string(error)).c_str());
-                    CloseHandle(hFile);
-                    retries++;
-                    continue;
-                }
-
-                if (currentSize == previousSize && currentSize > 0) {
-                    LogMessage(ELogLevel_DEBUG, ("File size stabilized at " + std::to_string(currentSize) + " bytes").c_str());
-                    CloseHandle(hFile);
-                    break;
-                }
-                LogMessage(ELogLevel_DEBUG, ("File size changed from " + std::to_string(previousSize) +
-                    " to " + std::to_string(currentSize) + " bytes").c_str());
-                previousSize = currentSize;
-                CloseHandle(hFile);
-                std::this_thread::sleep_for(std::chrono::milliseconds(RETRY_DELAY_MS));
-                retries++;
-            }
-            catch (const std::exception& e) {
-                if (hFile != INVALID_HANDLE_VALUE) {
-                    CloseHandle(hFile);
-                }
-                APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-                    ("Error while checking file: " + std::string(e.what())).c_str());
-                throw;
-            }
-        }
-
-        if (retries >= MAX_RETRIES) {
-            APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-                ("Timeout waiting for file to stabilize: " + filePath).c_str());
-        }
-    }
-    catch (const std::exception& e) {
-        APIDefs->Log(ELogLevel_WARNING, ADDON_NAME,
-            ("Fatal error in waitForFile: " + std::string(e.what())).c_str());
-        throw;
-    }
-}
-
-
-std::filesystem::path getArcPath()
-{
-    std::filesystem::path filename = APIDefs->Paths.GetAddonDirectory("arcdps\\arcdps.ini");
-
-    char buffer[256] = { 0 };
-
-    GetPrivateProfileStringA(
-        "session",
-        "boss_encounter_path",
-        "",
-        buffer,
-        sizeof(buffer),
-        filename.string().c_str()
-    );
-
-    std::filesystem::path boss_encounter_path = buffer;
-
-    return boss_encounter_path;
-}
 
 void RegisterWindowForNexusEsc(BaseWindowSettings* window, const std::string& defaultName) {
     if (window && window->useNexusEscClose) {
@@ -650,27 +437,27 @@ std::function<bool(
     return [sortCriteria, vsLogPlayers](
         const std::pair<std::string, SpecStats>& a,
         const std::pair<std::string, SpecStats>& b)
-    {
-        uint64_t valueA = getSortValue(sortCriteria, a.second, vsLogPlayers);
-        uint64_t valueB = getSortValue(sortCriteria, b.second, vsLogPlayers);
+        {
+            uint64_t valueA = getSortValue(sortCriteria, a.second, vsLogPlayers);
+            uint64_t valueB = getSortValue(sortCriteria, b.second, vsLogPlayers);
 
-        if (valueA != valueB) {
-            return valueA > valueB;
-        }
+            if (valueA != valueB) {
+                return valueA > valueB;
+            }
 
-        uint64_t damageA = vsLogPlayers ?
-            a.second.totalDamageVsPlayers : a.second.totalDamage;
-        uint64_t damageB = vsLogPlayers ?
-            b.second.totalDamageVsPlayers : b.second.totalDamage;
+            uint64_t damageA = vsLogPlayers ?
+                a.second.totalDamageVsPlayers : a.second.totalDamage;
+            uint64_t damageB = vsLogPlayers ?
+                b.second.totalDamageVsPlayers : b.second.totalDamage;
 
-        if (damageA != damageB) {
-            return damageA > damageB;
-        }
+            if (damageA != damageB) {
+                return damageA > damageB;
+            }
 
-        if (a.second.count != b.second.count) {
-            return a.second.count > b.second.count;
-        }
+            if (a.second.count != b.second.count) {
+                return a.second.count > b.second.count;
+            }
 
-        return a.first < b.first;
-    };
+            return a.first < b.first;
+        };
 }

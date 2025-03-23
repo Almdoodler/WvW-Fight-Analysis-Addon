@@ -191,7 +191,7 @@ struct ParsedData {
         if (combatEndTime > combatStartTime) {
             return (combatEndTime - combatStartTime) / 1000.0;
         }
-        return 0.0; 
+        return 0.0;
     }
 };
 
