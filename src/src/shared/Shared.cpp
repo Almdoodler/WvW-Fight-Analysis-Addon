@@ -1,4 +1,4 @@
-#include "Shared.h"
+#include "shared/Shared.h"
 #include <deque>
 #include <filesystem>
 
@@ -61,6 +61,9 @@ Texture* Condi = nullptr;
 Texture* Strike = nullptr;
 Texture* Kdr = nullptr;
 Texture* Home = nullptr;
+Texture* Downcont = nullptr;
+Texture* Killcont = nullptr;
+Texture* Strips = nullptr;
 
 // New definitions
 std::atomic<bool> initialParsingComplete{ false };

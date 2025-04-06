@@ -66,6 +66,9 @@ extern Texture* Condi;
 extern Texture* Strike;
 extern Texture* Kdr;
 extern Texture* Home;
+extern Texture* Downcont;
+extern Texture* Killcont;
+extern Texture* Strips;
 
 
 extern std::atomic<bool> initialParsingComplete;
@@ -84,7 +87,6 @@ struct TextureInfo {
 };
 
 
-// Structures
 struct Agent {
     uint64_t address;
     uint32_t professionId;
@@ -99,21 +101,25 @@ struct Agent {
     std::string team = "Unknown";
 };
 
-
-
 struct SpecStats {
     uint32_t count = 0;
     uint32_t totalKills = 0;
     uint32_t totalKillsVsPlayers = 0;
+    uint32_t totalDeaths = 0;
+    uint32_t totalDowned = 0;
     uint64_t totalDamage = 0;
+    uint64_t totalStrips = 0;
+    uint64_t totalStripsVsPlayers = 0;
     uint64_t totalStrikeDamage = 0;
     uint64_t totalCondiDamage = 0;
     uint64_t totalDamageVsPlayers = 0;
     uint64_t totalStrikeDamageVsPlayers = 0;
     uint64_t totalCondiDamageVsPlayers = 0;
+    uint64_t totalDownedContribution = 0;
+    uint64_t totalDownedContributionVsPlayers = 0;
+    uint64_t totalKillContribution = 0;
+    uint64_t totalKillContributionVsPlayers = 0;
 };
-
-
 
 struct SquadStats {
     uint32_t totalPlayers = 0;
@@ -122,12 +128,18 @@ struct SquadStats {
     uint32_t totalKills = 0;
     uint32_t totalDeathsFromKillingBlows = 0;
     uint64_t totalDamage = 0;
+    uint64_t totalStrips = 0;
+    uint64_t totalStripsVsPlayers = 0;
     uint64_t totalStrikeDamage = 0;
     uint64_t totalCondiDamage = 0;
     uint64_t totalDamageVsPlayers = 0;
     uint64_t totalStrikeDamageVsPlayers = 0;
     uint64_t totalCondiDamageVsPlayers = 0;
     uint32_t totalKillsVsPlayers = 0;
+    uint64_t totalDownedContribution = 0;
+    uint64_t totalDownedContributionVsPlayers = 0;
+    uint64_t totalKillContribution = 0;
+    uint64_t totalKillContributionVsPlayers = 0;
     float getKillDeathRatio() const {
         if (totalDeathsFromKillingBlows == 0) {
             return static_cast<float>(totalKills);
@@ -144,12 +156,18 @@ struct TeamStats {
     uint32_t totalKills = 0;
     uint32_t totalDeathsFromKillingBlows = 0;
     uint64_t totalDamage = 0;
+    uint64_t totalStrips = 0;
+    uint64_t totalStripsVsPlayers = 0;
     uint64_t totalStrikeDamage = 0;
     uint64_t totalCondiDamage = 0;
     uint64_t totalDamageVsPlayers = 0;
     uint64_t totalStrikeDamageVsPlayers = 0;
     uint64_t totalCondiDamageVsPlayers = 0;
     uint32_t totalKillsVsPlayers = 0;
+    uint64_t totalDownedContribution = 0;
+    uint64_t totalDownedContributionVsPlayers = 0;
+    uint64_t totalKillContribution = 0;
+    uint64_t totalKillContributionVsPlayers = 0;
     bool isPOVTeam = false;
     float getKillDeathRatio() const {
         if (totalDeathsFromKillingBlows == 0) {
@@ -173,7 +191,7 @@ struct ParsedData {
         if (combatEndTime > combatStartTime) {
             return (combatEndTime - combatStartTime) / 1000.0;
         }
-        return 0.0; 
+        return 0.0;
     }
 };
 
@@ -289,6 +307,13 @@ struct CombatEvent {
 };
 #pragma pack(pop)
 
+struct AgentState {
+    std::vector<std::pair<uint64_t, uint64_t>> downIntervals;
+    std::vector<std::pair<uint64_t, uint64_t>> deathIntervals;
+    std::vector<std::pair<uint64_t, float>> healthUpdates;
+    std::vector<CombatEvent> relevantEvents;
+    bool currentlyDowned = false;
+};
 
 // enum
 
@@ -355,7 +380,31 @@ enum class BuffRemove : uint8_t {
     Manual = 3
 };
 
+enum class BuffCategory : uint8_t {
+    Boon = 0,
+    Any = 1,
+    Condition = 2,
+    Food = 4,
+    Upgrade = 6,
+    Boost = 8,
+    Trait = 11,
+    Enhancement = 13,
+    Stance = 16,
+};
 
+enum class BoonIds : uint32_t {
+    Protection = 717,
+    Regeneration = 718,
+    Swiftness = 719,
+    Fury = 725,
+    Vigor = 726,
+    Might = 740,
+    Aegis = 743,
+    Retaliation = 873,
+    Stability = 1122,
+    Quickness = 1187,
+    Resistance = 26980
+};
 
 // Maps
 extern std::unordered_map<int, std::string> professions;

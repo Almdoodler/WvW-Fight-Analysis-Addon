@@ -1,12 +1,11 @@
-#include "utils.h"
+#include "settings/Settings.h"
+#include "shared/Shared.h"
+#include "utils/Utils.h"
 #include "resource.h"
-#include "Shared.h"
-#include "Settings.h"
+#include "settings/Settings.h"
 #include "evtc_parser.h"
-#include "utils.h"
 #include <thread>
 #include <chrono>
-#include "utils.h"
 #include <zip.h>
 #include <shlobj.h>
 #include <sstream>
@@ -20,7 +19,6 @@
 #include <string>
 #include <Windows.h>
 
-const char* ADDON_WINDOW_VISIBLE = "KB_MISTINSIGHT_WINDOW_VISIBLE";
 
 static const wchar_t CP1252_UNICODE_TABLE[] =
 L"\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007"
@@ -144,9 +142,9 @@ void initMaps() {
 
     // Map of team IDs to team names
     teamIDs = {
-        {697,  "Red"}, {705,  "Red"}, {706,  "Red"}, {882,  "Red"}, {2520, "Red"},
+        {697,  "Red"}, {705,  "Red"}, {706,  "Red"}, {882,  "Red"}, {885, "Red"}, {2520, "Red"},
         {39,   "Green"}, {2739, "Green"}, {2741, "Green"}, {2752, "Green"}, {2763, "Green"},
-        {432,  "Blue"}, {1277, "Blue"}, {1989, "Blue"}
+        {432,  "Blue"}, {1277, "Blue"}, {1281, "Blue"}, {1989, "Blue"}
     };
 
     // Map of elite specializations to professions
@@ -203,6 +201,56 @@ void initMaps() {
     };
 }
 
+
+const std::vector<ProfessionColor> professionColorPair = {
+    {
+        "Guardian",
+        ImVec4(10 / 255.0f, 222 / 255.0f, 255 / 255.0f, 110 / 255.0f),
+        ImVec4(10 / 255.0f, 222 / 255.0f, 255 / 255.0f, 54 / 255.0f)
+    },
+    {
+        "Warrior",
+        ImVec4(255 / 255.0f, 212 / 255.0f, 61 / 255.0f, 110 / 255.0f),
+        ImVec4(255 / 255.0f, 212 / 255.0f, 61 / 255.0f, 54 / 255.0f)
+    },
+    {
+        "Engineer",
+        ImVec4(227 / 255.0f, 115 / 255.0f, 41 / 255.0f, 110 / 255.0f),
+        ImVec4(227 / 255.0f, 115 / 255.0f, 41 / 255.0f, 54 / 255.0f)
+    },
+    {
+        "Ranger",
+        ImVec4(135 / 255.0f, 222 / 255.0f, 10 / 255.0f, 110 / 255.0f),
+        ImVec4(135 / 255.0f, 222 / 255.0f, 10 / 255.0f, 54 / 255.0f)
+    },
+    {
+        "Thief",
+        ImVec4(227 / 255.0f, 94 / 255.0f, 115 / 255.0f, 115 / 255.0f),
+        ImVec4(227 / 255.0f, 94 / 255.0f, 115 / 255.0f, 71 / 255.0f)
+    },
+    {
+        "Elementalist",
+        ImVec4(247 / 255.0f, 56 / 255.0f, 56 / 255.0f, 110 / 255.0f),
+        ImVec4(247 / 255.0f, 56 / 255.0f, 56 / 255.0f, 54 / 255.0f)
+    },
+    {
+        "Mesmer",
+        ImVec4(204 / 255.0f, 59 / 255.0f, 209 / 255.0f, 110 / 255.0f),
+        ImVec4(204 / 255.0f, 59 / 255.0f, 209 / 255.0f, 54 / 255.0f)
+    },
+    {
+        "Necromancer",
+        ImVec4(5 / 255.0f, 227 / 255.0f, 125 / 255.0f, 110 / 255.0f),
+        ImVec4(5 / 255.0f, 227 / 255.0f, 125 / 255.0f, 54 / 255.0f)
+    },
+    {
+        "Revenant",
+        ImVec4(161 / 255.0f, 41 / 255.0f, 41 / 255.0f, 115 / 255.0f),
+        ImVec4(161 / 255.0f, 41 / 255.0f, 41 / 255.0f, 71 / 255.0f)
+    }
+};
+
+
 std::unordered_map<std::string, TextureInfo> textureMap = {
     {"Berserker", {BERSERKER, &Berserker}},
     {"Bladesworn", {BLADESWORN, &Bladesworn}},
@@ -254,7 +302,18 @@ ImVec4 GetTeamColor(const std::string& teamName)
         return ImGui::GetStyleColorVec4(ImGuiCol_Text); // Default text color
 }
 
-std::string generateLogDisplayName(const std::string& filename, uint64_t combatStartMs, uint64_t combatEndMs) 
+void LogMessage(ELogLevel level, const char* msg) {
+    if (level == ELogLevel_DEBUG && !Settings::debugStringsMode) {
+        return;
+    }
+    APIDefs->Log(level, ADDON_NAME, msg);
+}
+
+void LogMessage(ELogLevel level, const std::string& msg) {
+    LogMessage(level, msg.c_str());
+}
+
+std::string generateLogDisplayName(const std::string& filename, uint64_t combatStartMs, uint64_t combatEndMs)
 {
 
     size_t lastDotPosition = filename.find_last_of('.');
@@ -282,40 +341,6 @@ std::string formatDuration(uint64_t milliseconds) {
     return std::to_string(minutes) + "m " + std::to_string(seconds) + "s";
 }
 
-bool isRunningUnderWine()
-{
-    if (Settings::forceLinuxCompatibilityMode) {
-        return true;
-    }
-    HKEY hKey;
-    LONG result = RegOpenKeyExA(HKEY_CURRENT_USER, "Software\\Wine", 0, KEY_READ, &hKey);
-    if (result == ERROR_SUCCESS)
-    {
-        RegCloseKey(hKey);
-        return true;
-    }
-    else
-    {
-        result = RegOpenKeyExA(HKEY_LOCAL_MACHINE, "Software\\Wine", 0, KEY_READ, &hKey);
-        if (result == ERROR_SUCCESS)
-        {
-            RegCloseKey(hKey);
-            return true;
-        }
-    }
-
-    HMODULE hNtDll = GetModuleHandleA("ntdll.dll");
-    if (hNtDll)
-    {
-        FARPROC wine_get_version = GetProcAddress(hNtDll, "wine_get_version");
-        if (wine_get_version)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
 
 Texture** getTextureInfo(const std::string& eliteSpec, int* outResourceId) {
     auto it = textureMap.find(eliteSpec);
@@ -364,112 +389,113 @@ std::string formatDamage(double damage) {
 }
 
 
-void waitForFile(const std::string& filePath)
-{
-    HANDLE hFile = INVALID_HANDLE_VALUE;
-    DWORD previousSize = 0;
-    //APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME,
-    //    ("Waiting for file: " + filePath).c_str());
-    while (true)
-    {
-        hFile = CreateFile(
-            filePath.c_str(),
-            GENERIC_READ,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-            nullptr,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            nullptr);
 
-        if (hFile == INVALID_HANDLE_VALUE)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            continue;
-        }
-
-        DWORD currentSize = GetFileSize(hFile, nullptr);
-
-        if (currentSize == previousSize && currentSize != INVALID_FILE_SIZE)
-        {
-            CloseHandle(hFile);
-            break;
-        }
-
-        previousSize = currentSize;
-        CloseHandle(hFile);
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+void RegisterWindowForNexusEsc(BaseWindowSettings* window, const std::string& defaultName) {
+    if (window && window->useNexusEscClose) {
+        const std::string& identifier = window->getDisplayName(defaultName);
+        APIDefs->UI.RegisterCloseOnEscape(identifier.c_str(), &window->isEnabled);
     }
 }
 
-std::vector<char> extractZipFile(const std::string& filePath) {
-    int err = 0;
-    zip* z = zip_open(filePath.c_str(), 0, &err);
-    if (!z) {
-        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, ("Failed to open zip file. Error code: " + std::to_string(err) + " filepath: " + filePath).c_str());
-        return std::vector<char>();
+void UnregisterWindowFromNexusEsc(BaseWindowSettings* window, const std::string& defaultName) {
+    if (window) {
+        const std::string& identifier = window->getDisplayName(defaultName);
+        APIDefs->UI.DeregisterCloseOnEscape(identifier.c_str());
     }
-
-    zip_stat_t zstat;
-    zip_stat_init(&zstat);
-    zip_stat_index(z, 0, 0, &zstat);
-
-    std::vector<char> buffer(zstat.size);
-    zip_file* f = zip_fopen_index(z, 0, 0);
-    if (!f) {
-        zip_close(z);
-        APIDefs->Log(ELogLevel_DEBUG, ADDON_NAME, "Failed to open file in zip");
-        return std::vector<char>();
-    }
-
-    zip_fread(f, buffer.data(), zstat.size);
-    zip_fclose(f);
-    zip_close(z);
-
-    return buffer;
 }
 
-std::filesystem::path getArcPath()
+
+uint64_t getSortValue(const std::string& sortCriteria, const SpecStats& stats, bool vsLogPlayers) {
+    if (sortCriteria == "players") {
+        return stats.count;
+    }
+    else if (sortCriteria == "damage") {
+        return vsLogPlayers ? stats.totalDamageVsPlayers : stats.totalDamage;
+    }
+    else if (sortCriteria == "down cont") {
+        return vsLogPlayers ? stats.totalDownedContributionVsPlayers : stats.totalDownedContribution;
+    }
+    else if (sortCriteria == "kill cont") {
+        return vsLogPlayers ? stats.totalKillContributionVsPlayers : stats.totalKillContribution;
+    }
+    else if (sortCriteria == "deaths") {
+        return stats.totalDeaths;
+    }
+    else if (sortCriteria == "downs") {
+        return stats.totalDowned;
+    }
+    return 0;
+}
+
+uint64_t getBarValue(const std::string& representation, const SpecStats& stats, bool vsLogPlayers) {
+    if (representation == "players") {
+        return stats.count;
+    }
+    else if (representation == "damage") {
+        return vsLogPlayers ? stats.totalDamageVsPlayers : stats.totalDamage;
+    }
+    else if (representation == "down cont") {
+        return vsLogPlayers ? stats.totalDownedContributionVsPlayers : stats.totalDownedContribution;
+    }
+    else if (representation == "kill cont") {
+        return vsLogPlayers ? stats.totalKillContributionVsPlayers : stats.totalKillContribution;
+    }
+    else if (representation == "deaths") {
+        return stats.totalDeaths;
+    }
+    else if (representation == "downs") {
+        return stats.totalDowned;
+    }
+    return 0;
+}
+
+std::pair<uint64_t, uint64_t> getSecondaryBarValues(
+    const std::string& barRep,
+    const SpecStats& stats,
+    bool vsLogPlayers
+) {
+    if (barRep == "damage") {
+        uint64_t primaryValue = vsLogPlayers ? stats.totalDamageVsPlayers : stats.totalDamage;
+        uint64_t secondaryValue = vsLogPlayers ? stats.totalDownedContributionVsPlayers : stats.totalDownedContribution;
+        return { primaryValue, secondaryValue };
+    }
+    else if (barRep == "down cont") {
+        uint64_t primaryValue = vsLogPlayers ? stats.totalDownedContributionVsPlayers : stats.totalDownedContribution;
+        uint64_t secondaryValue = vsLogPlayers ? stats.totalKillContributionVsPlayers : stats.totalKillContribution;
+        return { primaryValue, secondaryValue };
+    }
+    return { 0, 0 };
+}
+
+std::function<bool(
+    const std::pair<std::string, SpecStats>&,
+    const std::pair<std::string, SpecStats>&
+    )>
+    getSpecSortComparator(const std::string& sortCriteria, bool vsLogPlayers)
 {
-    std::filesystem::path filename = APIDefs->Paths.GetAddonDirectory("arcdps\\arcdps.ini");
+    return [sortCriteria, vsLogPlayers](
+        const std::pair<std::string, SpecStats>& a,
+        const std::pair<std::string, SpecStats>& b)
+        {
+            uint64_t valueA = getSortValue(sortCriteria, a.second, vsLogPlayers);
+            uint64_t valueB = getSortValue(sortCriteria, b.second, vsLogPlayers);
 
-    char buffer[256] = { 0 };
+            if (valueA != valueB) {
+                return valueA > valueB;
+            }
 
-    GetPrivateProfileStringA(
-        "session",
-        "boss_encounter_path",
-        "",
-        buffer,
-        sizeof(buffer),
-        filename.string().c_str()
-    );
+            uint64_t damageA = vsLogPlayers ?
+                a.second.totalDamageVsPlayers : a.second.totalDamage;
+            uint64_t damageB = vsLogPlayers ?
+                b.second.totalDamageVsPlayers : b.second.totalDamage;
 
-    std::filesystem::path boss_encounter_path = buffer;
+            if (damageA != damageB) {
+                return damageA > damageB;
+            }
+
+            if (a.second.count != b.second.count) {
+                return a.second.count > b.second.count;
+            }
 
     return boss_encounter_path;
-}
-
-// Convert a
-// * Windows-1252 (aka CP1252) stored as an std::string
-// into an
-// * UTF8 std::string.
-std::string CP1252_to_UTF8(const std::string& byte_array) {
-    // Byte array => Unicode.
-    std::wstring unicode(byte_array.size(), L' ');
-    for (size_t i = 0; i < unicode.size(); ++i)
-        unicode[i] = CP1252_UNICODE_TABLE[(uint8_t)byte_array[i]];
-
-    // Unicode => UTF8.
-    int utf8_size = WideCharToMultiByte(CP_UTF8, 0, unicode.c_str(), -1, nullptr, 0, nullptr, nullptr);
-    if (utf8_size == 0) {
-        // Fehlerbehandlung
-        return "";
-    }
-
-    std::string utf8_string(utf8_size, '\0');
-    WideCharToMultiByte(CP_UTF8, 0, unicode.c_str(), -1, &utf8_string[0], utf8_size, nullptr, nullptr);
-
-    // Entfernen des Nullterminators
-    utf8_string.resize(utf8_size - 1);
-
-    return utf8_string;
 }
