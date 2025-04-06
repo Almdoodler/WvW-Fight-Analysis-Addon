@@ -388,6 +388,28 @@ std::string formatDamage(double damage) {
     }
 }
 
+std::string CP1252_to_UTF8(const std::string& byte_array) {
+    // Byte array => Unicode.
+    std::wstring unicode(byte_array.size(), L' ');
+    for (size_t i = 0; i < unicode.size(); ++i)
+        unicode[i] = CP1252_UNICODE_TABLE[(uint8_t)byte_array[i]];
+
+    // Unicode => UTF8.
+    int utf8_size = WideCharToMultiByte(CP_UTF8, 0, unicode.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    if (utf8_size == 0) {
+        // Fehlerbehandlung
+        return "";
+    }
+
+    std::string utf8_string(utf8_size, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, unicode.c_str(), -1, &utf8_string[0], utf8_size, nullptr, nullptr);
+
+    // Entfernen des Nullterminators
+    utf8_string.resize(utf8_size - 1);
+
+    return utf8_string;
+}
+
 
 
 void RegisterWindowForNexusEsc(BaseWindowSettings* window, const std::string& defaultName) {
@@ -496,6 +518,6 @@ std::function<bool(
             if (a.second.count != b.second.count) {
                 return a.second.count > b.second.count;
             }
-
-    return boss_encounter_path;
+            return a.first < b.first;
+        };
 }
